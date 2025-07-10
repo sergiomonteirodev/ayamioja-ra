@@ -16,10 +16,10 @@
              renderer="colorManagement: true, physicallyCorrectLights"
              vr-mode-ui="enabled: false"
              device-orientation-permission-ui="enabled: true">
-
+<!-- 
       <a-assets>
         <video id="video" src="./assets/ayo_teste.mp4" preload="auto" loop muted crossorigin="anonymous" webkit-playsinline playsinline></video>
-      </a-assets>
+      </a-assets> -->
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -33,7 +33,7 @@
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const sceneEl = document.querySelector("a-scene");
-        // const videoEl = document.querySelector("#video");
+        //const videoEl = document.querySelector("#video");
         const target = sceneEl.querySelector("[mindar-image-target]");
 
         target.addEventListener("targetFound", () => {
