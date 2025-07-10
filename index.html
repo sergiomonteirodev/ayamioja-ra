@@ -10,7 +10,7 @@
     </style>
   </head>
   <body>
-    <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; autoStart: true;"
+    <a-scene mindar-image="imageTargetSrc: /ayamioja-ra/targets/targets.mind; autoStart: true;"
              embedded
              color-space="sRGB"
              renderer="colorManagement: true, physicallyCorrectLights"
@@ -24,15 +24,14 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-video 
-          src="#video" 
-          width="1" 
-          height="0.56" 
-          position="0 0 0" 
-          rotation="0 0 0"
-          autoplay="false"
-          loop="true"
-        ></a-video>
+        <video id="video" 
+            src="./assets/ayo_teste.mp4" 
+            preload="auto" 
+            loop muted 
+            crossorigin="anonymous" 
+            webkit-playsinline playsinline>
+        </video>
+
       </a-entity>
 
     </a-scene>
