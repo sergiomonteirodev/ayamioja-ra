@@ -1,0 +1,62 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <a-scene 
+      mindar-image="imageTargetSrc: ./targets/targets-5.mind;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false"
+      embedded
+    >
+      <a-assets>
+        <video id="video" src="./assets/ayo_teste.mp4" preload="auto" loop muted crossorigin="anonymous" webkit-playsinline playsinline></video>
+      </a-assets>
+
+      <!-- câmera padrão -->
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <!-- vídeo grande fixo na frente da câmera -->
+      <a-video 
+        id="bgvideo"
+        src="#video" 
+        width="4" 
+        height="2.25" 
+        position="0 0 -3" 
+        rotation="0 0 0"
+        autoplay="false"
+        loop="true"
+        muted
+        visible="false"
+      ></a-video>
+
+      <!-- marcador apenas como gatilho -->
+      <a-entity mindar-image-target="targetIndex: 0" id="triggerTarget"></a-entity>
+    </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const videoEl = document.querySelector("#video");
+        const videoPlane = document.querySelector("#bgvideo");
+        const target = document.querySelector("#triggerTarget");
+
+        target.addEventListener("targetFound", () => {
+          videoPlane.setAttribute("visible", "true");
+          videoEl.play();
+        });
+
+        target.addEventListener("targetLost", () => {
+          videoEl.pause();
+          videoPlane.setAttribute("visible", "false");
+        });
+      });
+    </script>
+  </body>
+</html>
