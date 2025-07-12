@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR Vídeo - Ayamioja</title>
+    <title>MindAR - Vídeo Fundo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
       html, body {
@@ -13,7 +13,6 @@
         overflow: hidden;
         width: 100%;
         height: 100%;
-        position: fixed;
         background-color: black;
       }
       video {
@@ -22,59 +21,63 @@
     </style>
   </head>
   <body>
-    <a-scene 
-      mindar-image="imageTargetSrc: ./targets/targets-5.mind;" 
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets/targets-5.mind;"
+      embedded
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: true"
-      embedded
     >
-
       <a-assets>
-        <video id="video"
-               src="./assets/ayo_teste.mp4"
-               preload="auto"
-               loop
-               muted
-               crossorigin="anonymous"
-               webkit-playsinline
-               playsinline>
-        </video>
+        <video
+          id="video"
+          src="./assets/ayo_teste.mp4"
+          preload="auto"
+          loop
+          muted
+          crossorigin="anonymous"
+          webkit-playsinline
+          playsinline
+        ></video>
       </a-assets>
 
+      <!-- câmera -->
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- grande plano de fundo, visível ao detectar -->
-      <a-plane 
-        id="bgvideo"
+      <!-- vídeo grande na frente da câmera -->
+      <a-video
+        id="fullscreen-video"
         src="#video"
-        width="16"
-        height="9"
-        position="0 0 -10"
-        material="shader: flat"
-        visible="false">
-      </a-plane>
+        position="0 0 -5"
+        width="10"
+        height="5.625"
+        autoplay="false"
+        loop="true"
+        muted="true"
+        visible="false"
+      ></a-video>
 
       <!-- marcador apenas como gatilho -->
-      <a-entity mindar-image-target="targetIndex: 0" id="triggerTarget"></a-entity>
-
+      <a-entity mindar-image-target="targetIndex: 0" id="trigger"></a-entity>
     </a-scene>
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const videoEl = document.querySelector("#video");
-        const videoPlane = document.querySelector("#bgvideo");
-        const target = document.querySelector("#triggerTarget");
+        const video = document.querySelector("#video");
+        const videoEntity = document.querySelector("#fullscreen-video");
+        const target = document.querySelector("#trigger");
 
         target.addEventListener("targetFound", () => {
-          videoPlane.setAttribute("visible", "true");
-          videoEl.play();
+          videoEntity.setAttribute("visible", "true");
+          setTimeout(() => {
+            video.play();
+          }, 200); // dá tempo do navegador inicializar vídeo
         });
 
         target.addEventListener("targetLost", () => {
-          videoEl.pause();
-          videoPlane.setAttribute("visible", "false");
+          video.pause();
+          videoEntity.setAttribute("visible", "false");
         });
       });
     </script>
