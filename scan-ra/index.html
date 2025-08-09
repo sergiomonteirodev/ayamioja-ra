@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          overflow: hidden;
+          background: transparent; /* opcional para evitar fundo branco */
+        }
+        a-scene {
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          width: 100%;
+        }
+    </style>
+  </head>
+  <body>
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets/targets-10.mind;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights: true"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
+      embedded
+    >
+      <a-assets>
+        <video
+          id="video"
+          src="assets/ayo_teste.mp4"
+          preload="auto"
+          loop
+          crossorigin="anonymous"
+          webkit-playsinline
+          playsinline
+          muted
+        ></video>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity mindar-image-target="targetIndex: 0" id="triggerTarget">
+        <a-plane
+          id="bgvideo"
+          width="1"
+          height="1"
+          position="0 0.1 0.1"
+          material="shader: flat; src: #video"
+          visible="false"
+        ></a-plane>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const videoEl = document.querySelector("#video");
+        const videoPlane = document.querySelector("#bgvideo");
+        const target = document.querySelector("#triggerTarget");
+
+        // Obrigatório para navegadores móveis
+        const enableVideo = () => {
+          videoEl.play().catch((e) => console.warn("Video play blocked:", e));
+        };
+
+        // Primeira interação do usuário
+        document.body.addEventListener("click", () => {
+          videoEl.muted = true;
+          enableVideo();
+        });
+
+        target.addEventListener("targetFound", () => {
+          console.log("🎯 Target found");
+          videoPlane.setAttribute("visible", "true");
+          enableVideo();
+        });
+      });
+    </script>
+  </body>
+</html>
