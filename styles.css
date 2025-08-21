@@ -6,7 +6,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #feead2;
+    background-color: #b36f35;
     min-height: 100vh;
     overflow-x: hidden;
 }
@@ -31,19 +31,19 @@ body {
 }
 
 .nav-link {
-    color: #ff6b35;
+    color: #e26a02;
     text-decoration: none;
     font-weight: 600;
     font-size: 16px;
 }
 
 .nav-separator {
-    color: #ff6b35;
+    color:#e26a02;
     font-weight: bold;
 }
 
 .social-icon {
-    background-color: #ff6b35;
+    background-color: #e26a02;
     color: white;
     width: 32px;
     height: 32px;
@@ -51,7 +51,7 @@ body {
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: 25px;
     transition: all 0.3s ease;
 }
 
@@ -61,7 +61,7 @@ body {
 }
 
 .social-icon:hover {
-    background-color: #e55a2b;
+    background-color: #e26a02;
     transform: translateY(-1px);
 }
 
@@ -85,7 +85,7 @@ body {
   background-color: rgb(255, 255, 255);
   padding: 8px 15px;
   border-radius: 25px;
-  color: #ff6b35;
+  color: #e26a02;
   font-weight: 600;
   cursor: pointer;
 
@@ -117,7 +117,7 @@ body {
 }
 
 .toggle-input:checked + .toggle-slider {
-    background-color: #ff6b35;
+    background-color: #5b2c09;
 }
 
 .toggle-input:checked + .toggle-slider::before {
@@ -242,7 +242,7 @@ body {
     width: 600px;
     height: 600px;
     border-radius: 50%;
-    border: 8px solid #ff6b35;
+    border: 8px solid #86450e;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -272,14 +272,17 @@ body {
     z-index: 2;
 }
 
-.instruction-banner {
-    position: relative;
-    background-color: white;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-size: 14px;
-    color: #333;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+.instruction-banner{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.instruction-banner img {
+    max-width: 60%;
+    height: auto;
+ 
 }
 
 /* Action Buttons */
@@ -294,7 +297,7 @@ position: absolute;
 }
 
 .btn-primary {
-    background-color: #ff6b35;
+    background-color: #e26a02;
     color: white;
     border: none;
     padding: 12px 24px;
@@ -308,9 +311,9 @@ position: absolute;
 }
 
 .btn-secondary {
-    background-color: white;
-    color: #ff6b35;
-    border: 2px solid #ff6b35;
+    background-color: #e26a02;
+    color: white;
+    border: none;
     padding: 12px 24px;
     border-radius: 25px;
     font-weight: 700;
@@ -322,14 +325,17 @@ position: absolute;
 }
 
 .btn-primary:hover {
-    background-color: #e55a2b;
+    background-color: #fff;
     transform: translateY(-2px);
+    color:#e26a02;
+    border: 2px solid #e26a02;
 }
 
 .btn-secondary:hover {
-    background-color: #ff6b35;
-    color: white;
+    background-color: #fff;
     transform: translateY(-2px);
+    color:#e26a02;
+    border: 2px solid #e26a02;
 }
 
 /* Interpreter Video */
@@ -350,7 +356,7 @@ position: absolute;
 .interpreter-container.show {
     display: block;
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-1);
 }
 
 .interpreter-video {
@@ -450,17 +456,17 @@ position: absolute;
 @media (max-width: 480px) {
     /* Ajusta ainda mais para celulares pequenos */
     .circular-text-container {
-        width: 400px;
-        height: 400px;
+        width: 350px;
+        height: 350px;
     }
 
     .main-circle {
-        width: 400px;
-        height: 400px;
+        width: 350px;
+        height: 350px;
     }
 
     .btn-primary, .btn-secondary {
-        font-size: 25px;
+        font-size: 18px;
         padding: 10px;
     }
     .interpreter-container{
@@ -471,4 +477,35 @@ position: absolute;
     .logo-container img {
         max-width: 350px;
     }
+    .toggle-text{
+        font-size: 15px;
+    }
+
+    .nav-link
+    {
+        font-size: 14px;
+    }
+    .instruction-banner{
+        font-size: 18px;
+        padding: 4px 10px;
+    }
+}
+
+@media (max-width: 375px) {
+
+.circular-text-container {
+    width: 250px;
+    height: 250px;
+}
+
+  .main-circle {
+    width: 250px;
+    height: 250px;
+  }
+
+    .interpreter-container {
+    width: 170px;
+    height: 170px;
+  }
+
 }
