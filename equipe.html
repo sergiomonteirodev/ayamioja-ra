@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AYÀ MI O JÁ - Eu não tenho medo</title>
+    <title>Equipe - AYÀ MI O JÁ - Eu não tenho medo</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="internal-page">
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-content">
-            <a href="#" class="nav-link">Início</a>
+            <a href="index.html" class="nav-link">Início</a>
             <span class="nav-separator">|</span>
             <a href="sobre.html" class="nav-link">Sobre</a>
             <span class="nav-separator">|</span>
@@ -30,81 +30,34 @@
             </a>
         </div>
     </nav>
-
-    <!-- Toggle Controls -->
-    <div class="toggle-controls">
-        <div class="toggle-left">
-            <label class="toggle-label">
-                <span class="toggle-text">libras</span>
-                <input type="checkbox" id="libras-toggle" class="toggle-input">
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
-        <div class="toggle-right">
-            <label class="toggle-label">
-                <input type="checkbox" id="audio-toggle" class="toggle-input">
-                <span class="toggle-slider"></span>
-                <span class="toggle-text">áudiodescrição</span>
-            </label>
-        </div>
-    </div>
     
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Title Section -->
-           <div class="logo-container">
-                <img src="logo_ayamioja.png" alt="Logo Ayà Mi O Já">
-            </div>
-        <!-- Central Circle with Video -->
-        <div class="main-circle">
-      
-        <section class="circle-section">
+        <div class="page-content">
+            <h1 class="page-title">Nossa Equipe</h1>
             
-            <div class="circular-text-container">
-                <!-- Círculo com vídeo -->
-                 <!-- Logomarca acima do círculo -->
-                    <video 
-                        id="main-video" 
-                        class="main-video" 
-                        autoplay 
-                        loop 
-                        playsinline
-                    >
-                        <source src="anim_ayo.mp4" type="video/mp4">
-                        Seu navegador não suporta vídeos HTML5.
-                    </video>
+            <div class="content-section">
+                <div class="content-image">
+                    <img src="logo_ayamioja.png" alt="Logo Ayà Mi O Já" class="page-image">
+                </div>
+                
+                <div class="content-text">
+                    <h2>Conheça Nossa Equipe</h2>
+                    <p>Somos um grupo diverso de profissionais apaixonados por educação, tecnologia e inclusão, unidos pela missão de criar experiências de leitura que celebrem a diversidade cultural brasileira.</p>
+                    
+                    <h2>Nossos Valores</h2>
+                    <p>Trabalhamos com transparência, respeito e compromisso com a excelência, sempre priorizando o impacto positivo em nossas comunidades e o desenvolvimento de soluções inovadoras para a educação inclusiva.</p>
+                    
+                    <h2>Junte-se a Nós</h2>
+                    <p>Estamos sempre em busca de novos talentos que compartilhem nossa visão e queiram contribuir para um futuro mais inclusivo e representativo na literatura infantil.</p>
                 </div>
             </div>
-            
-            <div class="instruction-banner">
-              <img src="tarjeta_instrucoes.png" alt="">
-                
-            </div>
-          
-        </section>
-
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button class="btn-primary">Escanear o livro</button>
-            <button class="btn-secondary">Acesse a história</button>
         </div>
     </main>
 
-    <!-- Interpreter Video -->
-    <div id="interpreter-video" class="interpreter-container" style="display: none;">
-        <video 
-            id="interpreter" 
-            class="interpreter-video" 
-            autoplay 
-            loop 
-            playsinline
-        >
-            <source src="anim_ayo.mp4" type="video/mp4">
-        </video>
-    </div>
-    
+    <!-- Footer -->
     <footer>Copyright © 2025 Aya mi o ja -  Eu não tenho medo. Todos os direitos reservados</footer>
+
     <script src="script.js"></script>
 </body>
 </html>
-
