@@ -44,8 +44,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Configurar vídeo principal
     const mainVideo = document.getElementById('main-video');
+    const interpreterVideo = document.getElementById('interpreter');
+    const replayButton = document.getElementById('replay-button');
+    
+    let hasPlayedOnce = false;
+    let isVideoLoaded = false;
+    
     if (mainVideo) {
         mainVideo.volume = 0.7; // Volume inicial
+        mainVideo.loop = false; // Desabilitar loop para controlar manualmente
+        
+        // Melhorar carregamento do vídeo
+        mainVideo.addEventListener('loadeddata', () => {
+            isVideoLoaded = true;
+            console.log('Vídeo carregado com sucesso');
+        });
+        
+        mainVideo.addEventListener('canplaythrough', () => {
+            console.log('Vídeo pronto para reprodução');
+        });
+        
+        // Quando o vídeo terminar, mostrar botão de replay
+        mainVideo.addEventListener('ended', () => {
+            hasPlayedOnce = true;
+            mainVideo.style.display = 'none';
+            replayButton.style.display = 'flex';
+        });
         
         // Tentar reproduzir o vídeo
         mainVideo.play().catch(function(error) {
@@ -54,22 +78,61 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Configurar vídeo do intérprete
-    const interpreterVideo = document.getElementById('interpreter');
     if (interpreterVideo) {
-        interpreterVideo.volume = 0.5;
+        interpreterVideo.volume = 0; // Sem áudio no vídeo de libras
+        interpreterVideo.muted = true; // Garantir que está mudo
+        interpreterVideo.loop = false; // Desabilitar loop para sincronizar
         
         // Sincronizar com o vídeo principal
         if (mainVideo) {
+            // Quando o vídeo principal tocar, o de libras também toca (em background)
             mainVideo.addEventListener('play', () => {
-                if (librasToggle.checked) {
-                    interpreterVideo.play();
-                }
+                interpreterVideo.currentTime = mainVideo.currentTime;
+                interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
             });
             
+            // Quando o vídeo principal pausar, o de libras também pausa
             mainVideo.addEventListener('pause', () => {
                 interpreterVideo.pause();
             });
+            
+            // Sincronizar tempo de reprodução
+            mainVideo.addEventListener('timeupdate', () => {
+                if (!interpreterVideo.paused) {
+                    interpreterVideo.currentTime = mainVideo.currentTime;
+                }
+            });
+            
+            // Quando o vídeo principal reiniciar, o de libras também reinicia
+            mainVideo.addEventListener('seeked', () => {
+                if (!interpreterVideo.paused) {
+                    interpreterVideo.currentTime = mainVideo.currentTime;
+                }
+            });
+            
+            // Quando o vídeo principal terminar, o de libras também termina
+            mainVideo.addEventListener('ended', () => {
+                interpreterVideo.pause();
+                interpreterVideo.currentTime = 0;
+            });
         }
+    }
+    
+    // Botão Assistir Novamente
+    if (replayButton) {
+        replayButton.addEventListener('click', () => {
+            // Reiniciar vídeos
+            mainVideo.currentTime = 0;
+            interpreterVideo.currentTime = 0;
+            
+            // Esconder botão e mostrar vídeo
+            replayButton.style.display = 'none';
+            mainVideo.style.display = 'block';
+            
+            // Reproduzir vídeos
+            mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
+            interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+        });
     }
     
     // Botões de ação

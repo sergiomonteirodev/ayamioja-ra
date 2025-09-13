@@ -275,6 +275,39 @@ body {
     z-index: 2;
 }
 
+/* Botão Assistir Novamente */
+.replay-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    background-color: rgba(226, 106, 2, 0.9);
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.replay-button:hover {
+    background-color: rgba(226, 106, 2, 1);
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.replay-button svg {
+    width: 20px;
+    height: 20px;
+}
+
 .instruction-banner{
     display: flex;
     justify-content: center;
@@ -659,6 +692,16 @@ body.internal-page {
         font-size: 16px;
     }
 
+    .replay-button {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .replay-button svg {
+        width: 18px;
+        height: 18px;
+    }
+
     footer {
         font-size: 13px;
         padding: 12px 0;
@@ -735,6 +778,16 @@ body.internal-page {
 
     .content-text p {
         font-size: 15px;
+    }
+
+    .replay-button {
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+
+    .replay-button svg {
+        width: 16px;
+        height: 16px;
     }
 
     footer {
@@ -863,6 +916,16 @@ body.internal-page {
         font-size: 14px;
     }
 
+    .replay-button {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+
+    .replay-button svg {
+        width: 14px;
+        height: 14px;
+    }
+
     footer {
         font-size: 11px;
         padding: 8px 0;
@@ -967,6 +1030,16 @@ body.internal-page {
 
     .content-text p {
         font-size: 13px;
+    }
+
+    .replay-button {
+        padding: 6px 14px;
+        font-size: 11px;
+    }
+
+    .replay-button svg {
+        width: 12px;
+        height: 12px;
     }
 
     footer {
