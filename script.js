@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainVideo = document.getElementById('main-video');
     const interpreterVideo = document.getElementById('interpreter');
     const replayButton = document.getElementById('replay-button');
+    const videoLoading = document.getElementById('video-loading');
     
     let hasPlayedOnce = false;
     let isVideoLoaded = false;
@@ -62,6 +63,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         mainVideo.addEventListener('canplaythrough', () => {
             console.log('Vídeo pronto para reprodução');
+            // Esconder loading e mostrar vídeo
+            if (videoLoading) {
+                videoLoading.style.display = 'none';
+            }
+            mainVideo.style.display = 'block';
         });
         
         // Quando o vídeo terminar, mostrar botão de replay
@@ -74,6 +80,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Tentar reproduzir o vídeo
         mainVideo.play().catch(function(error) {
             console.log('Autoplay bloqueado, clique para reproduzir:', error);
+            // Se autoplay falhar, esconder loading e mostrar vídeo
+            if (videoLoading) {
+                videoLoading.style.display = 'none';
+            }
+            mainVideo.style.display = 'block';
         });
     }
     
@@ -121,17 +132,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Botão Assistir Novamente
     if (replayButton) {
         replayButton.addEventListener('click', () => {
+            // Mostrar loading novamente
+            if (videoLoading) {
+                videoLoading.style.display = 'flex';
+            }
+            replayButton.style.display = 'none';
+            mainVideo.style.display = 'none';
+            
             // Reiniciar vídeos
             mainVideo.currentTime = 0;
             interpreterVideo.currentTime = 0;
             
-            // Esconder botão e mostrar vídeo
-            replayButton.style.display = 'none';
-            mainVideo.style.display = 'block';
-            
-            // Reproduzir vídeos
-            mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
-            interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+            // Aguardar um pouco e então mostrar vídeo
+            setTimeout(() => {
+                if (videoLoading) {
+                    videoLoading.style.display = 'none';
+                }
+                mainVideo.style.display = 'block';
+                
+                // Reproduzir vídeos
+                mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
+                interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+            }, 500);
         });
     }
     

@@ -63,12 +63,19 @@
             <div class="circular-text-container">
                 <!-- Círculo com vídeo -->
                  <!-- Logomarca acima do círculo -->
+                    <!-- Loading Placeholder -->
+                    <div id="video-loading" class="video-loading">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Carregando vídeo...</p>
+                    </div>
+                    
                     <video 
                         id="main-video" 
                         class="main-video" 
                         autoplay 
                         loop 
                         playsinline
+                        style="display: none;"
                     >
                         <source src="anim_ayo.mp4" type="video/mp4">
                         Seu navegador não suporta vídeos HTML5.
