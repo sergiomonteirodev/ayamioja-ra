@@ -493,6 +493,42 @@ position: absolute;
     object-fit: cover;
 }
 
+/* Mensagem quando vídeo de libras está pausado */
+.interpreter-paused-message {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.paused-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    text-align: center;
+}
+
+.paused-content svg {
+    width: 40px;
+    height: 40px;
+    opacity: 0.7;
+}
+
+.paused-content p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
 .logo-container {
     display: flex;
     justify-content: center;
@@ -622,6 +658,15 @@ body.internal-page {
         left: 20px;
     }
 
+    .paused-content svg {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .paused-content p {
+        font-size: 14px;
+    }
+
     .action-buttons {
         bottom: 20px;
         right: 0px;
@@ -747,6 +792,15 @@ body.internal-page {
         left: 20px;
     }
 
+    .paused-content svg {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .paused-content p {
+        font-size: 13px;
+    }
+
     .logo-container {
         margin-bottom: 15px;
     }
@@ -847,6 +901,15 @@ body.internal-page {
         height: 180px;
         bottom: 15px;
         left: 15px;
+    }
+
+    .paused-content svg {
+        width: 25px;
+        height: 25px;
+    }
+    
+    .paused-content p {
+        font-size: 12px;
     }
 
     .action-buttons {
@@ -1012,6 +1075,15 @@ body.internal-page {
         left: 10px;
     }
 
+    .paused-content svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .paused-content p {
+        font-size: 11px;
+    }
+
     .action-buttons {
         /*bottom: 10px;*/
         right: 0px;
@@ -1108,6 +1180,15 @@ body.internal-page {
         height: 120px;
         bottom: 8px;
         left: 8px;
+    }
+
+    .paused-content svg {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .paused-content p {
+        font-size: 10px;
     }
 
     .action-buttons {

@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const videoLoading = document.getElementById('video-loading');
     const progressFill = document.getElementById('progress-fill');
     const loadingPercentage = document.getElementById('loading-percentage');
+    const interpreterPausedMessage = document.getElementById('interpreter-paused-message');
     
     let hasPlayedOnce = false;
     let isVideoLoaded = false;
@@ -144,11 +145,19 @@ document.addEventListener('DOMContentLoaded', function() {
             mainVideo.addEventListener('play', () => {
                 interpreterVideo.currentTime = mainVideo.currentTime;
                 interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+                // Esconder mensagem no vídeo de libras
+                if (interpreterPausedMessage) {
+                    interpreterPausedMessage.style.display = 'none';
+                }
             });
             
             // Quando o vídeo principal pausar, o de libras também pausa
             mainVideo.addEventListener('pause', () => {
                 interpreterVideo.pause();
+                // Mostrar mensagem no vídeo de libras
+                if (interpreterPausedMessage) {
+                    interpreterPausedMessage.style.display = 'flex';
+                }
             });
             
             // Sincronizar tempo de reprodução
@@ -169,6 +178,10 @@ document.addEventListener('DOMContentLoaded', function() {
             mainVideo.addEventListener('ended', () => {
                 interpreterVideo.pause();
                 interpreterVideo.currentTime = 0;
+                // Mostrar mensagem no vídeo de libras
+                if (interpreterPausedMessage) {
+                    interpreterPausedMessage.style.display = 'flex';
+                }
             });
         }
     }
@@ -197,6 +210,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     videoLoading.style.display = 'none';
                 }
                 mainVideo.style.display = 'block';
+                
+                // Esconder mensagem no vídeo de libras
+                if (interpreterPausedMessage) {
+                    interpreterPausedMessage.style.display = 'none';
+                }
                 
                 // Ativar áudio e reproduzir vídeos
                 mainVideo.muted = false;
