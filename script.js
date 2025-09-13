@@ -52,7 +52,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let isVideoLoaded = false;
     
     if (mainVideo) {
-        mainVideo.volume = 0.7; // Volume inicial
+        mainVideo.volume = 0; // Começar mudo
+        mainVideo.muted = true; // Garantir que está mudo inicialmente
         mainVideo.loop = false; // Desabilitar loop para controlar manualmente
         
         // Melhorar carregamento do vídeo
@@ -68,6 +69,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 videoLoading.style.display = 'none';
             }
             mainVideo.style.display = 'block';
+            
+            // Agora ativar o áudio e reproduzir
+            mainVideo.muted = false;
+            mainVideo.volume = 0.7;
+            mainVideo.play().catch(function(error) {
+                console.log('Erro ao reproduzir vídeo:', error);
+            });
         });
         
         // Quando o vídeo terminar, mostrar botão de replay
@@ -77,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             replayButton.style.display = 'flex';
         });
         
-        // Tentar reproduzir o vídeo
+        // Tentar reproduzir o vídeo (ainda mudo)
         mainVideo.play().catch(function(error) {
             console.log('Autoplay bloqueado, clique para reproduzir:', error);
             // Se autoplay falhar, esconder loading e mostrar vídeo
@@ -85,6 +93,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 videoLoading.style.display = 'none';
             }
             mainVideo.style.display = 'block';
+            // Ativar áudio mesmo se autoplay falhar
+            mainVideo.muted = false;
+            mainVideo.volume = 0.7;
         });
     }
     
@@ -150,7 +161,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 mainVideo.style.display = 'block';
                 
-                // Reproduzir vídeos
+                // Ativar áudio e reproduzir vídeos
+                mainVideo.muted = false;
+                mainVideo.volume = 0.7;
                 mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
                 interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
             }, 500);
