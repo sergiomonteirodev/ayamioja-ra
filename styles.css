@@ -344,6 +344,57 @@ body {
     margin: 0;
 }
 
+/* Loading Progress Bar */
+.loading-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.progress-bar {
+    width: 200px;
+    height: 8px;
+    background-color: rgba(226, 106, 2, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e26a02, #ff8c42);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+.loading-percentage {
+    color: #e26a02;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -749,6 +800,15 @@ body.internal-page {
         border-width: 3px;
     }
     
+    .progress-bar {
+        width: 160px;
+        height: 6px;
+    }
+    
+    .loading-percentage {
+        font-size: 16px;
+    }
+    
     .loading-text {
         font-size: 14px;
     }
@@ -845,6 +905,15 @@ body.internal-page {
         width: 35px;
         height: 35px;
         border-width: 3px;
+    }
+    
+    .progress-bar {
+        width: 140px;
+        height: 6px;
+    }
+    
+    .loading-percentage {
+        font-size: 15px;
     }
     
     .loading-text {
@@ -993,6 +1062,15 @@ body.internal-page {
         border-width: 2px;
     }
     
+    .progress-bar {
+        width: 120px;
+        height: 5px;
+    }
+    
+    .loading-percentage {
+        font-size: 14px;
+    }
+    
     .loading-text {
         font-size: 12px;
     }
@@ -1117,6 +1195,15 @@ body.internal-page {
         width: 25px;
         height: 25px;
         border-width: 2px;
+    }
+    
+    .progress-bar {
+        width: 100px;
+        height: 5px;
+    }
+    
+    .loading-percentage {
+        font-size: 13px;
     }
     
     .loading-text {
