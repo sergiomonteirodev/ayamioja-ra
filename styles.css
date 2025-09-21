@@ -1,3 +1,88 @@
+/* Fontes RooneySans */
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansRegular.OTF') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansItalic.OTF') format('opentype');
+    font-weight: 400;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansLight.OTF') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansLightIt.OTF') format('opentype');
+    font-weight: 300;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansMedium.OTF') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansMediumIt.otf') format('opentype');
+    font-weight: 500;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansBold.OTF') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansBoldIt.OTF') format('opentype');
+    font-weight: 700;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansHv.OTF') format('opentype');
+    font-weight: 800;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansHvIt.OTF') format('opentype');
+    font-weight: 800;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansBlk.OTF') format('opentype');
+    font-weight: 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'RooneySans';
+    src: url('rooneysans/RooneySansBlkIt.OTF') format('opentype');
+    font-weight: 900;
+    font-style: italic;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,7 +90,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'RooneySans', Arial, sans-serif;
     background-color: #b36f35;
     min-height: 100vh;
     overflow-x: hidden;
@@ -171,7 +256,7 @@ body {
     transform: rotate(-5deg);
     display: inline-block;
     margin-right: 10px;
-    font-family: 'Arial Black', sans-serif;
+    font-family: 'RooneySans', sans-serif;
 }
 
 .title-mi {
@@ -179,7 +264,7 @@ body {
     transform: rotate(3deg);
     display: inline-block;
     margin: 0 5px;
-    font-family: 'Arial Black', sans-serif;
+    font-family: 'RooneySans', sans-serif;
 }
 
 .title-ga {
@@ -187,7 +272,7 @@ body {
     transform: rotate(-3deg);
     display: inline-block;
     margin-left: 10px;
-    font-family: 'Arial Black', sans-serif;
+    font-family: 'RooneySans', sans-serif;
 }
 
 .subtitle {
@@ -197,7 +282,7 @@ body {
     font-weight: 600;
     margin: 10px 0;
     transform: rotate(-2deg);
-    font-family: Arial, sans-serif;
+    font-family: 'RooneySans', sans-serif;
 }
 
 /* Circle Section */
@@ -226,7 +311,7 @@ body {
     height: 100%;
     font-size: 32px;
     font-weight: 900;
-    font-family: 'Arial Black', sans-serif;
+    font-family: 'RooneySans', sans-serif;
 }
 
 .circular-text.top {

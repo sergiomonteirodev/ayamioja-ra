@@ -3,6 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
         html, body {
@@ -10,7 +11,7 @@
           padding: 0;
           height: 100%;
           overflow: hidden;
-          background: transparent; /* opcional para evitar fundo branco */
+          background: transparent;
         }
         a-scene {
           position: absolute;
@@ -19,11 +20,44 @@
           height: 100%;
           width: 100%;
         }
+        .video-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1000;
+        }
+        .video-overlay {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          text-align: center;
+          font-family: Arial, sans-serif;
+          max-width: 300px;
+        }
+        .target-info {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 10px;
+          border-radius: 5px;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+        }
     </style>
   </head>
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets/targets-10.mind;"
+      mindar-image="imageTargetSrc: ./targets/multi-targets.mind;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true"
       vr-mode-ui="enabled: false"
@@ -31,8 +65,33 @@
       embedded
     >
       <a-assets>
+        <!-- Vídeo para Target 0 -->
         <video
-          id="video"
+          id="video1"
+          src="assets/ayo_teste.mp4"
+          preload="auto"
+          loop
+          crossorigin="anonymous"
+          webkit-playsinline
+          playsinline
+          muted
+        ></video>
+        
+        <!-- Vídeo para Target 1 (mesmo vídeo por enquanto) -->
+        <video
+          id="video2"
+          src="assets/ayo_teste.mp4"
+          preload="auto"
+          loop
+          crossorigin="anonymous"
+          webkit-playsinline
+          playsinline
+          muted
+        ></video>
+        
+        <!-- Vídeo para Target 2 (mesmo vídeo por enquanto) -->
+        <video
+          id="video3"
           src="assets/ayo_teste.mp4"
           preload="auto"
           loop
@@ -45,40 +104,157 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="triggerTarget">
+      <!-- Target 0 - Primeiro vídeo -->
+      <a-entity mindar-image-target="targetIndex: 0" id="target0">
         <a-plane
-          id="bgvideo"
+          id="videoPlane0"
           width="1"
           height="1"
           position="0 0.1 0.1"
-          material="shader: flat; src: #video"
+          material="shader: flat; src: #video1"
+          visible="false"
+        ></a-plane>
+      </a-entity>
+
+      <!-- Target 1 - Segundo vídeo -->
+      <a-entity mindar-image-target="targetIndex: 1" id="target1">
+        <a-plane
+          id="videoPlane1"
+          width="1"
+          height="1"
+          position="0 0.1 0.1"
+          material="shader: flat; src: #video2"
+          visible="false"
+        ></a-plane>
+      </a-entity>
+
+      <!-- Target 2 - Terceiro vídeo -->
+      <a-entity mindar-image-target="targetIndex: 2" id="target2">
+        <a-plane
+          id="videoPlane2"
+          width="1"
+          height="1"
+          position="0 0.1 0.1"
+          material="shader: flat; src: #video3"
           visible="false"
         ></a-plane>
       </a-entity>
     </a-scene>
 
+    <!-- Overlay de instruções -->
+    <div class="video-container">
+      <div class="video-overlay" id="instructions">
+        <h3>🎯 MindAR Multi-Targets</h3>
+        <p>Apontar a câmera para os targets para ver os vídeos</p>
+        <p>Clique na tela para ativar</p>
+      </div>
+      <div class="target-info" id="targetInfo" style="display: none;">
+        <div id="targetStatus">Nenhum target detectado</div>
+      </div>
+    </div>
+
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const videoEl = document.querySelector("#video");
-        const videoPlane = document.querySelector("#bgvideo");
-        const target = document.querySelector("#triggerTarget");
+        // Referências aos elementos
+        const videos = [
+          document.querySelector("#video1"),
+          document.querySelector("#video2"),
+          document.querySelector("#video3")
+        ];
+        
+        const videoPlanes = [
+          document.querySelector("#videoPlane0"),
+          document.querySelector("#videoPlane1"),
+          document.querySelector("#videoPlane2")
+        ];
+        
+        const targets = [
+          document.querySelector("#target0"),
+          document.querySelector("#target1"),
+          document.querySelector("#target2")
+        ];
 
-        // Obrigatório para navegadores móveis
-        const enableVideo = () => {
-          videoEl.play().catch((e) => console.warn("Video play blocked:", e));
+        const instructions = document.querySelector("#instructions");
+        const targetInfo = document.querySelector("#targetInfo");
+        const targetStatus = document.querySelector("#targetStatus");
+
+        // Função para ativar vídeo
+        const enableVideo = (video) => {
+          video.play().catch((e) => console.warn("Video play blocked:", e));
         };
+
+        // Função para pausar vídeo
+        const pauseVideo = (video) => {
+          video.pause();
+        };
+
+        // Função para atualizar status
+        const updateTargetStatus = (activeTargets) => {
+          if (activeTargets.length > 0) {
+            targetInfo.style.display = "block";
+            targetStatus.textContent = `Targets ativos: ${activeTargets.join(", ")}`;
+          } else {
+            targetInfo.style.display = "none";
+          }
+        };
+
+        // Array para rastrear targets ativos
+        let activeTargets = [];
 
         // Primeira interação do usuário
         document.body.addEventListener("click", () => {
-          videoEl.muted = true;
-          enableVideo();
+          instructions.style.display = "none";
+          videos.forEach(video => {
+            video.muted = true;
+            enableVideo(video);
+          });
         });
 
-        target.addEventListener("targetFound", () => {
-          console.log("🎯 Target found");
-          videoPlane.setAttribute("visible", "true");
-          enableVideo();
+        // Event listeners para cada target
+        targets.forEach((target, index) => {
+          const video = videos[index];
+          const videoPlane = videoPlanes[index];
+
+          // Quando o target é encontrado
+          target.addEventListener("targetFound", () => {
+            console.log(`🎯 Target ${index} encontrado`);
+            videoPlane.setAttribute("visible", "true");
+            enableVideo(video);
+            
+            // Adicionar à lista de targets ativos
+            if (!activeTargets.includes(index)) {
+              activeTargets.push(index);
+              updateTargetStatus(activeTargets);
+            }
+          });
+
+          // Quando o target é perdido
+          target.addEventListener("targetLost", () => {
+            console.log(`❌ Target ${index} perdido`);
+            videoPlane.setAttribute("visible", "false");
+            pauseVideo(video);
+            
+            // Remover da lista de targets ativos
+            activeTargets = activeTargets.filter(t => t !== index);
+            updateTargetStatus(activeTargets);
+          });
         });
+
+        // Controle de visibilidade do overlay
+        let hasFoundTarget = false;
+        targets.forEach(target => {
+          target.addEventListener("targetFound", () => {
+            if (!hasFoundTarget) {
+              hasFoundTarget = true;
+              instructions.style.display = "none";
+            }
+          });
+        });
+
+        // Log de inicialização
+        console.log(" MindAR Multi-Targets inicializado");
+        console.log(" Targets configurados:", targets.length);
+        console.log("🎥 Vídeos configurados:", videos.length);
       });
     </script>
   </body>
