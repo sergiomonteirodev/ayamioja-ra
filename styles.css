@@ -781,7 +781,7 @@ body.internal-page {
     }
 
     .action-buttons {
-        bottom: 40px;
+        bottom: 50px;
         right: 0px;
     }
 
@@ -889,7 +889,7 @@ body.internal-page {
     /* Botões */
     .action-buttons {
         position: absolute;
-        bottom: 40px;
+        bottom: 60px;
         right: 0px;
         flex-direction: column;
         gap: 10px;
@@ -1037,7 +1037,7 @@ body.internal-page {
     }
 
     .action-buttons {
-        bottom: 50px;
+        bottom: 70px;
         right: 0px;
     }
 
@@ -1217,7 +1217,7 @@ body.internal-page {
     }
 
     .action-buttons {
-        bottom: 60px;
+        bottom: 80px;
         right: 0px;
     }
 
@@ -1327,7 +1327,7 @@ body.internal-page {
     }
 
     .action-buttons {
-        bottom: 20px;
+        bottom: 90px;
         right: 0px;
     }
 
