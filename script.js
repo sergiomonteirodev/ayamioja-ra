@@ -231,7 +231,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (btnEscanear) {
         btnEscanear.addEventListener('click', function() {
-            alert('Funcionalidade "Escanear o livro" será implementada');
+            // Redirecionar para o scanner AR
+            window.location.href = 'scan-ra/index.html';
         });
     }
     
