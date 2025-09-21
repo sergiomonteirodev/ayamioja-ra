@@ -1,3 +1,20 @@
+// Função para detectar quando a página é carregada novamente
+function handlePageLoad() {
+    // Pequeno delay para garantir que o DOM está pronto
+    setTimeout(() => {
+        const mainVideo = document.getElementById('main-video');
+        if (mainVideo && mainVideo.readyState >= 3) {
+            console.log('Página recarregada, reiniciando vídeo...');
+            // Forçar recarregamento do vídeo
+            mainVideo.load();
+        }
+    }, 100);
+}
+
+// Detectar quando a página é carregada (incluindo quando volta de outra página)
+window.addEventListener('pageshow', handlePageLoad);
+window.addEventListener('focus', handlePageLoad);
+
 document.addEventListener('DOMContentLoaded', function() {
     // Toggle de Libras
     const librasToggle = document.getElementById('libras-toggle');
@@ -67,6 +84,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
+        // Função para reiniciar o carregamento do vídeo
+        function resetVideoLoading() {
+            // Resetar estados
+            isVideoLoaded = false;
+            hasPlayedOnce = false;
+            
+            // Mostrar loading
+            if (videoLoading) {
+                videoLoading.style.display = 'flex';
+            }
+            mainVideo.style.display = 'none';
+            if (replayButton) {
+                replayButton.style.display = 'none';
+            }
+            
+            // Resetar progresso
+            updateProgress(0);
+            
+            // Forçar recarregamento do vídeo
+            mainVideo.load();
+        }
+        
         // Eventos de carregamento do vídeo
         mainVideo.addEventListener('loadstart', () => {
             updateProgress(0);
@@ -119,18 +158,24 @@ document.addEventListener('DOMContentLoaded', function() {
             replayButton.style.display = 'flex';
         });
         
-        // Tentar reproduzir o vídeo (ainda mudo)
-        mainVideo.play().catch(function(error) {
-            console.log('Autoplay bloqueado, clique para reproduzir:', error);
-            // Se autoplay falhar, esconder loading e mostrar vídeo
-            if (videoLoading) {
-                videoLoading.style.display = 'none';
-            }
-            mainVideo.style.display = 'block';
-            // Ativar áudio mesmo se autoplay falhar
-            mainVideo.muted = false;
-            mainVideo.volume = 0.7;
-        });
+        // Verificar se o vídeo já está carregado (quando volta de outra página)
+        if (mainVideo.readyState >= 3) { // HAVE_FUTURE_DATA ou superior
+            console.log('Vídeo já carregado, reiniciando processo...');
+            resetVideoLoading();
+        } else {
+            // Tentar reproduzir o vídeo (ainda mudo)
+            mainVideo.play().catch(function(error) {
+                console.log('Autoplay bloqueado, clique para reproduzir:', error);
+                // Se autoplay falhar, esconder loading e mostrar vídeo
+                if (videoLoading) {
+                    videoLoading.style.display = 'none';
+                }
+                mainVideo.style.display = 'block';
+                // Ativar áudio mesmo se autoplay falhar
+                mainVideo.muted = false;
+                mainVideo.volume = 0.7;
+            });
+        }
     }
     
     // Configurar vídeo do intérprete
