@@ -765,8 +765,8 @@ body.internal-page {
     }
 
     .toggle-icon {
-        width: 20px;
-        height: 20px;
+        width: 45px;
+        height: 45px;
     }
 
     /* Círculo central */
@@ -1032,7 +1032,7 @@ body.internal-page {
 @media (max-width: 480px) {
     /* Ajusta ainda mais para celulares pequenos */
     .nav-content {
-        gap: 6px;
+        gap: 0px;
         font-size: 12px;
     }
 
@@ -1080,8 +1080,8 @@ body.internal-page {
     }
 
     .toggle-icon {
-        width: 16px;
-        height: 16px;
+        width: 35px;
+        height: 35px;
     }
 
     .circular-text-container {
@@ -1264,7 +1264,7 @@ body.internal-page {
     }
 
     .toggle-controls {
-        top: 85px;
+        top: 100px;
         padding: 0 8px;
     }
 
@@ -1293,8 +1293,8 @@ body.internal-page {
     }
 
     .toggle-icon {
-        width: 14px;
-        height: 14px;
+        width: 25px;
+        height: 25px;
     }
 
     .main-content {
