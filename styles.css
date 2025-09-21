@@ -1327,7 +1327,7 @@ body.internal-page {
     }
 
     .action-buttons {
-        bottom: 90px;
+        bottom: 0px;
         right: 0px;
     }
 
