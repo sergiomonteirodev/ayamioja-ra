@@ -3,7 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
         html, body {
@@ -185,12 +185,35 @@
         // Função para ativar vídeo
         const enableVideo = (video) => {
           console.log("🎥 Tentando reproduzir vídeo:", video.id);
-          video.currentTime = 0; // Reset para o início
-          video.play().then(() => {
-            console.log("✅ Vídeo reproduzindo:", video.id);
+          try {
+            video.setAttribute && video.setAttribute('playsinline', '');
+            video.setAttribute && video.setAttribute('webkit-playsinline', '');
+          } catch {}
+          video.playsInline = true;
+          video.muted = true;
+          // Se nunca carregou ou houve aborto, força load()
+          const mustLoad = video.readyState === 0 || video.networkState === 3; // NETWORK_NO_SOURCE
+          if (mustLoad) {
+            console.log("📦 Chamando load() no vídeo:", video.id, {readyState: video.readyState, networkState: video.networkState});
+            try { video.load(); } catch(e) { console.warn("load() falhou", e); }
+          }
+          // Tenta tocar
+          const tryPlay = () => video.play().then(() => {
+            console.log("✅ Vídeo reproduzindo:", video.id, {readyState: video.readyState});
           }).catch((e) => {
             console.warn("❌ Erro ao reproduzir vídeo:", video.id, e);
           });
+          if (video.readyState < 2) { // < HAVE_CURRENT_DATA
+            const canplayOnce = () => {
+              video.removeEventListener('canplay', canplayOnce);
+              tryPlay();
+            };
+            video.addEventListener('canplay', canplayOnce, {once: true});
+            // fallback timeout
+            setTimeout(tryPlay, 1500);
+          } else {
+            tryPlay();
+          }
         };
 
         // Função para pausar vídeo
@@ -215,6 +238,8 @@
         document.body.addEventListener("click", () => {
           instructions.style.display = "none";
           videos.forEach(video => {
+            // Força load antes do play para evitar NS_BINDING_ABORTED
+            try { video.load(); } catch {}
             video.muted = true;
             enableVideo(video);
           });
@@ -248,6 +273,10 @@
             console.log("📺 Ativando vídeo plane:", videoPlane.id);
             videoPlane.setAttribute("visible", "true");
             console.log("🎥 Habilitando vídeo:", video.id);
+            // Se ainda não carregou, garante load e play
+            if (video.readyState === 0) {
+              try { video.load(); } catch {}
+            }
             enableVideo(video);
             
             // Adicionar à lista de targets ativos
