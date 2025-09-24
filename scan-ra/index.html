@@ -57,7 +57,7 @@
   </head>
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets/targets(3).mind;"
+      mindar-image="imageTargetSrc: ./targets/targets(3).mind; maxTrack: 3; uiScanning: #instructions; uiLoading: #instructions;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true"
       vr-mode-ui="enabled: false"
@@ -147,6 +147,9 @@
         <h3>🎯 MindAR Multi-Targets</h3>
         <p>Apontar a câmera para os targets para ver os vídeos</p>
         <p>Clique na tela para ativar</p>
+        <button id="testVideo" style="margin-top: 10px; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+          🎥 Testar Vídeo
+        </button>
       </div>
       <div class="target-info" id="targetInfo" style="display: none;">
         <div id="targetStatus">Nenhum target detectado</div>
@@ -177,10 +180,17 @@
         const instructions = document.querySelector("#instructions");
         const targetInfo = document.querySelector("#targetInfo");
         const targetStatus = document.querySelector("#targetStatus");
+        const testVideoBtn = document.querySelector("#testVideo");
 
         // Função para ativar vídeo
         const enableVideo = (video) => {
-          video.play().catch((e) => console.warn("Video play blocked:", e));
+          console.log("🎥 Tentando reproduzir vídeo:", video.id);
+          video.currentTime = 0; // Reset para o início
+          video.play().then(() => {
+            console.log("✅ Vídeo reproduzindo:", video.id);
+          }).catch((e) => {
+            console.warn("❌ Erro ao reproduzir vídeo:", video.id, e);
+          });
         };
 
         // Função para pausar vídeo
@@ -209,6 +219,23 @@
             enableVideo(video);
           });
         });
+        
+        // Botão de teste de vídeo
+        testVideoBtn.addEventListener("click", () => {
+          console.log("🧪 Testando reprodução de vídeo...");
+          const firstVideo = videos[0];
+          const firstPlane = videoPlanes[0];
+          
+          console.log("📺 Forçando visibilidade do plane:", firstPlane.id);
+          firstPlane.setAttribute("visible", "true");
+          
+          console.log("🎥 Forçando reprodução do vídeo:", firstVideo.id);
+          enableVideo(firstVideo);
+          
+          // Mostrar status
+          targetInfo.style.display = "block";
+          targetStatus.textContent = "Teste de vídeo ativo";
+        });
 
         // Event listeners para cada target
         targets.forEach((target, index) => {
@@ -218,7 +245,9 @@
           // Quando o target é encontrado
           target.addEventListener("targetFound", () => {
             console.log(`🎯 Target ${index} encontrado`);
+            console.log("📺 Ativando vídeo plane:", videoPlane.id);
             videoPlane.setAttribute("visible", "true");
+            console.log("🎥 Habilitando vídeo:", video.id);
             enableVideo(video);
             
             // Adicionar à lista de targets ativos
@@ -252,9 +281,38 @@
         });
 
         // Log de inicialização
-        console.log(" MindAR Multi-Targets inicializado");
-        console.log(" Targets configurados:", targets.length);
+        console.log("🚀 MindAR Multi-Targets inicializado");
+        console.log("🎯 Targets configurados:", targets.length);
         console.log("🎥 Vídeos configurados:", videos.length);
+        console.log("📁 Arquivo .mind:", "./targets/targets(3).mind");
+        
+        // Verificar se os elementos foram encontrados
+        targets.forEach((target, index) => {
+          console.log(`Target ${index}:`, target ? "✅ Encontrado" : "❌ Não encontrado");
+        });
+        
+        videos.forEach((video, index) => {
+          console.log(`Vídeo ${index}:`, video ? "✅ Encontrado" : "❌ Não encontrado");
+          if (video) {
+            console.log(`  - src: ${video.src}`);
+            console.log(`  - readyState: ${video.readyState}`);
+          }
+        });
+        
+        videoPlanes.forEach((plane, index) => {
+          console.log(`Plane ${index}:`, plane ? "✅ Encontrado" : "❌ Não encontrado");
+        });
+        
+        // Aguardar o MindAR estar pronto
+        const scene = document.querySelector('a-scene');
+        scene.addEventListener('renderstart', () => {
+          console.log("🎬 MindAR renderizado e pronto!");
+        });
+        
+        // Verificar se há erros no carregamento do .mind
+        scene.addEventListener('error', (e) => {
+          console.error("❌ Erro no MindAR:", e);
+        });
       });
     </script>
   </body>
