@@ -57,7 +57,7 @@
   </head>
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets/targets(3).mind; maxTrack: 3; uiScanning: #instructions; uiLoading: #instructions;"
+      mindar-image="imageTargetSrc: ./targets/targets(13).mind; maxTrack: 3; uiScanning: #instructions; uiLoading: #instructions;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true"
       vr-mode-ui="enabled: false"
@@ -68,7 +68,7 @@
         <!-- Vídeo para Target 0 -->
         <video
           id="video1"
-          src="assets/ayo_teste.mp4"
+          src="assets/ayo_teste.mp4?v=2"
           preload="auto"
           loop
           crossorigin="anonymous"
@@ -80,7 +80,7 @@
         <!-- Vídeo para Target 1 (mesmo vídeo por enquanto) -->
         <video
           id="video2"
-          src="assets/ayo_teste.mp4"
+          src="assets/ayo_teste.mp4?v=2"
           preload="auto"
           loop
           crossorigin="anonymous"
@@ -92,7 +92,7 @@
         <!-- Vídeo para Target 2 (mesmo vídeo por enquanto) -->
         <video
           id="video3"
-          src="assets/ayo_teste.mp4"
+          src="assets/ayo_teste.mp4?v=2"
           preload="auto"
           loop
           crossorigin="anonymous"
@@ -170,6 +170,25 @@
           document.querySelector("#videoPlane1"),
           document.querySelector("#videoPlane2")
         ];
+
+        // Ajustar tamanho dos planos conforme o aspect ratio do vídeo
+        const applyVideoAspectToPlane = (video, plane) => {
+          const setRatio = () => {
+            if (!video.videoWidth || !video.videoHeight) return;
+            const ratio = video.videoWidth / video.videoHeight;
+            // Base: altura = 1 unidade; largura segue o ratio
+            const height = 1;
+            const width = ratio * height;
+            plane.setAttribute('width', width.toFixed(3));
+            plane.setAttribute('height', height.toFixed(3));
+            console.log(`📐 Plane ${plane.id} ajustado: ${width.toFixed(3)} x ${height.toFixed(3)} (ratio ${ratio.toFixed(3)})`);
+          };
+          if (video.readyState >= 1) {
+            setRatio();
+          } else {
+            video.addEventListener('loadedmetadata', setRatio, { once: true });
+          }
+        };
         
         const targets = [
           document.querySelector("#target0"),
@@ -267,6 +286,9 @@
           const video = videos[index];
           const videoPlane = videoPlanes[index];
 
+          // Aplicar proporção do vídeo ao plane
+          applyVideoAspectToPlane(video, videoPlane);
+
           // Quando o target é encontrado
           target.addEventListener("targetFound", () => {
             console.log(`🎯 Target ${index} encontrado`);
@@ -313,7 +335,7 @@
         console.log("🚀 MindAR Multi-Targets inicializado");
         console.log("🎯 Targets configurados:", targets.length);
         console.log("🎥 Vídeos configurados:", videos.length);
-        console.log("📁 Arquivo .mind:", "./targets/targets(3).mind");
+        console.log("📁 Arquivo .mind:", "./targets/targets(13).mind");
         
         // Verificar se os elementos foram encontrados
         targets.forEach((target, index) => {
