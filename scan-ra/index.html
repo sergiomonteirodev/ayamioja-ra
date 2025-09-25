@@ -57,7 +57,7 @@
   </head>
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets/targets(13).mind; maxTrack: 3; uiScanning: #instructions; uiLoading: #instructions;"
+      mindar-image="imageTargetSrc: ./targets/targets(13).mind; maxTrack: 3; uiScanning: #instructions; uiLoading: #instructions; filterMinCF: 0.0001; filterBeta: 0.05; missTolerance: 10; warmupTolerance: 5;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true"
       vr-mode-ui="enabled: false"
@@ -112,6 +112,7 @@
           height="1"
           position="0 0.1 0.1"
           material="shader: flat; src: #video1"
+          pose-smoother="positionFactor: 0.25; rotationFactor: 0.25; scaleFactor: 0.25"
           visible="false"
         ></a-plane>
       </a-entity>
@@ -124,6 +125,7 @@
           height="1"
           position="0 0.1 0.1"
           material="shader: flat; src: #video2"
+          pose-smoother="positionFactor: 0.25; rotationFactor: 0.25; scaleFactor: 0.25"
           visible="false"
         ></a-plane>
       </a-entity>
@@ -136,6 +138,7 @@
           height="1"
           position="0 0.1 0.1"
           material="shader: flat; src: #video3"
+          pose-smoother="positionFactor: 0.25; rotationFactor: 0.25; scaleFactor: 0.25"
           visible="false"
         ></a-plane>
       </a-entity>
@@ -158,6 +161,42 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        // Componente de suavização de pose para reduzir tremor
+        if (!AFRAME.components['pose-smoother']) {
+          AFRAME.registerComponent('pose-smoother', {
+            schema: {
+              positionFactor: { type: 'number', default: 0.2 },
+              rotationFactor: { type: 'number', default: 0.2 },
+              scaleFactor: { type: 'number', default: 0.2 }
+            },
+            init() {
+              this.lastPosition = new THREE.Vector3();
+              this.lastQuaternion = new THREE.Quaternion();
+              this.lastScale = new THREE.Vector3(1, 1, 1);
+              this.hasLast = false;
+            },
+            tick() {
+              const obj = this.el.object3D;
+              if (!obj) return;
+              if (!this.hasLast) {
+                this.lastPosition.copy(obj.position);
+                this.lastQuaternion.copy(obj.quaternion);
+                this.lastScale.copy(obj.scale);
+                this.hasLast = true;
+                return;
+              }
+              // Interpolação linear para posição e escala
+              this.lastPosition.lerp(obj.position, this.data.positionFactor);
+              this.lastScale.lerp(obj.scale, this.data.scaleFactor);
+              // Slerp para rotação
+              this.lastQuaternion.slerp(obj.quaternion, this.data.rotationFactor);
+              obj.position.copy(this.lastPosition);
+              obj.scale.copy(this.lastScale);
+              obj.quaternion.copy(this.lastQuaternion);
+            }
+          });
+        }
+
         // Referências aos elementos
         const videos = [
           document.querySelector("#video1"),
