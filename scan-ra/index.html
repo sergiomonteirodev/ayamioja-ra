@@ -57,7 +57,7 @@
   </head>
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets/targets(13).mind; maxTrack: 3; uiScanning: #instructions; uiLoading: #instructions; filterMinCF: 0.0001; filterBeta: 0.05; missTolerance: 10; warmupTolerance: 5;"
+      mindar-image="imageTargetSrc: ./targets/targets(13).mind; maxTrack: 3; uiScanning: #ui-scanning; uiLoading: #ui-loading; filterMinCF: 0.0001; filterBeta: 0.05; missTolerance: 10; warmupTolerance: 5;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true"
       vr-mode-ui="enabled: false"
@@ -144,8 +144,24 @@
       </a-entity>
     </a-scene>
 
-    <!-- Overlay de instruções -->
+    <!-- Overlays de UI (loading, scanning e instruções) -->
     <div class="video-container">
+      <!-- UI de Loading (pode trocar o conteúdo por um GIF) -->
+      <div id="ui-loading" class="video-overlay" style="display: none; background: rgba(0,0,0,0.6);">
+        <div style="display:flex; align-items:center; gap:10px; justify-content:center;">
+          <div style="width:18px; height:18px; border:3px solid #fff; border-top-color: transparent; border-radius:50%; animation: spin 1s linear infinite;"></div>
+          <span>Carregando…</span>
+        </div>
+      </div>
+
+      <!-- UI de Scanning (pode trocar por arte própria) -->
+      <div id="ui-scanning" class="video-overlay" style="display: none; background: rgba(0,0,0,0.6);">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+          <span>Escaneando… aponte a câmera para o marcador</span>
+          <div style="width:120px; height:120px; border:2px dashed rgba(255,255,255,0.8); border-radius:8px;"></div>
+        </div>
+      </div>
+
       <div class="video-overlay" id="instructions">
         <h3>🎯 MindAR Multi-Targets</h3>
         <p>Apontar a câmera para os targets para ver os vídeos</p>
@@ -161,6 +177,11 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        // CSS simples para animação do loading
+        const styleSpin = document.createElement('style');
+        styleSpin.innerHTML = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+        document.head.appendChild(styleSpin);
+
         // Componente de suavização de pose para reduzir tremor
         if (!AFRAME.components['pose-smoother']) {
           AFRAME.registerComponent('pose-smoother', {
