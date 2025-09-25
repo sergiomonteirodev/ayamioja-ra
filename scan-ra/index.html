@@ -135,7 +135,7 @@
           id="videoPlane2"
           width="1"
           height="1"
-          position="0 0.1 0.1"
+          position="0 0 0.01"
           material="shader: flat; src: #video3"
           pose-smoother="positionFactor: 0.25; rotationFactor: 0.25; scaleFactor: 0.25"
           visible="false"
@@ -238,9 +238,9 @@
             
             // Para o video3 (target 2), redimensionar para o tamanho do livro/target
             if (targetIndex === 2) {
-              // Tamanho aproximado de um livro (ajuste conforme necessário)
-              const bookWidth = 0.8;  // Largura do target em unidades A-Frame
-              const bookHeight = 1.0; // Altura do target em unidades A-Frame
+              // Tamanho mais próximo ao livro real (ajustado para melhor centralização)
+              const bookWidth = 0.9;   // Largura do target em unidades A-Frame
+              const bookHeight = 1.2;  // Altura do target em unidades A-Frame
               
               // Calcular dimensões mantendo o aspect ratio do vídeo
               let width, height;
