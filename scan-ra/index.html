@@ -135,7 +135,7 @@
           id="videoPlane2"
           width="1"
           height="1"
-          position="0 0 0.01"
+          position="0 0 0.005"
           material="shader: flat; src: #video3"
           pose-smoother="positionFactor: 0.25; rotationFactor: 0.25; scaleFactor: 0.25"
           visible="false"
@@ -239,8 +239,8 @@
             // Para o video3 (target 2), redimensionar para o tamanho do livro/target
             if (targetIndex === 2) {
               // Tamanho mais próximo ao livro real (ajustado para melhor centralização)
-              const bookWidth = 0.9;   // Largura do target em unidades A-Frame
-              const bookHeight = 1.2;  // Altura do target em unidades A-Frame
+              const bookWidth = 1.05;  // Largura do target em unidades A-Frame (ajuste fino)
+              const bookHeight = 1.40; // Altura do target em unidades A-Frame (ajuste fino)
               
               // Calcular dimensões mantendo o aspect ratio do vídeo
               let width, height;
@@ -367,7 +367,10 @@
             if (video.id !== 'video3') {
               video.muted = true;
             }
-            enableVideo(video);
+            // Para evitar áudio antes do target: só toca video3 quando o target 2 for encontrado
+            if (video.id !== 'video3') {
+              enableVideo(video);
+            }
           }
         });
         
@@ -416,6 +419,10 @@
               try { video.load(); } catch {}
             }
             await ensureVideoSourceAvailable(video);
+            // Para o video3, garantir áudio só aqui
+            if (video.id === 'video3') {
+              try { video.muted = false; } catch {}
+            }
             enableVideo(video);
 
             // Só exibe o plane quando o vídeo tiver dados para evitar frame preto
