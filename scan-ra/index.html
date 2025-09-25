@@ -261,6 +261,23 @@
         const targetStatus = document.querySelector("#targetStatus");
         const testVideoBtn = document.querySelector("#testVideo");
 
+        // Verificar disponibilidade do arquivo de vídeo e aplicar fallback se necessário
+        const FALLBACK_SRC = 'assets/ayo_teste.mp4?v=2';
+        const ensureVideoSourceAvailable = async (video) => {
+          try {
+            const src = video.getAttribute('src') || video.src;
+            if (!src) throw new Error('src vazio');
+            const response = await fetch(src, { method: 'HEAD', cache: 'no-store' });
+            if (!response.ok) {
+              console.warn(`⚠️ ${src} retornou ${response.status}. Usando fallback ${FALLBACK_SRC}`);
+              video.setAttribute('src', FALLBACK_SRC);
+            }
+          } catch (e) {
+            console.warn(`⚠️ Falha ao verificar vídeo (${video.id}). Usando fallback ${FALLBACK_SRC}`, e);
+            video.setAttribute('src', FALLBACK_SRC);
+          }
+        };
+
         // Função para ativar vídeo
         const enableVideo = (video) => {
           console.log("🎥 Tentando reproduzir vídeo:", video.id);
@@ -314,23 +331,25 @@
         let activeTargets = [];
 
         // Primeira interação do usuário
-        document.body.addEventListener("click", () => {
+        document.body.addEventListener("click", async () => {
           instructions.style.display = "none";
-          videos.forEach(video => {
+          for (const video of videos) {
+            await ensureVideoSourceAvailable(video);
             // Força load antes do play para evitar NS_BINDING_ABORTED
             try { video.load(); } catch {}
             video.muted = true;
             enableVideo(video);
-          });
+          }
         });
         
         // Botão de teste de vídeo
-        testVideoBtn.addEventListener("click", () => {
+        testVideoBtn.addEventListener("click", async () => {
           console.log("🧪 Testando reprodução de vídeo...");
           const firstVideo = videos[0];
           const firstPlane = videoPlanes[0];
 
           console.log("🎥 Forçando reprodução do vídeo:", firstVideo.id);
+          await ensureVideoSourceAvailable(firstVideo);
           enableVideo(firstVideo);
 
           const showWhenReady = () => {
@@ -360,13 +379,14 @@
           applyVideoAspectToPlane(video, videoPlane);
 
           // Quando o target é encontrado
-          target.addEventListener("targetFound", () => {
+          target.addEventListener("targetFound", async () => {
             console.log(`🎯 Target ${index} encontrado`);
             console.log("🎥 Habilitando vídeo:", video.id);
             // Se ainda não carregou, garante load e play
             if (video.readyState === 0) {
               try { video.load(); } catch {}
             }
+            await ensureVideoSourceAvailable(video);
             enableVideo(video);
 
             // Só exibe o plane quando o vídeo tiver dados para evitar frame preto
