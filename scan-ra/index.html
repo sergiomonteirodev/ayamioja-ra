@@ -98,7 +98,6 @@
           crossorigin="anonymous"
           webkit-playsinline
           playsinline
-          muted
         ></video>
       </a-assets>
 
@@ -231,17 +230,41 @@
           document.querySelector("#videoPlane2")
         ];
 
-        // Ajustar tamanho dos planos conforme o aspect ratio do vídeo
-        const applyVideoAspectToPlane = (video, plane) => {
+        // Ajustar tamanho dos planos conforme o aspect ratio do vídeo e target
+        const applyVideoAspectToPlane = (video, plane, targetIndex = 0) => {
           const setRatio = () => {
             if (!video.videoWidth || !video.videoHeight) return;
-            const ratio = video.videoWidth / video.videoHeight;
-            // Base: altura = 1 unidade; largura segue o ratio
-            const height = 1;
-            const width = ratio * height;
-            plane.setAttribute('width', width.toFixed(3));
-            plane.setAttribute('height', height.toFixed(3));
-            console.log(`📐 Plane ${plane.id} ajustado: ${width.toFixed(3)} x ${height.toFixed(3)} (ratio ${ratio.toFixed(3)})`);
+            const videoRatio = video.videoWidth / video.videoHeight;
+            
+            // Para o video3 (target 2), redimensionar para o tamanho do livro/target
+            if (targetIndex === 2) {
+              // Tamanho aproximado de um livro (ajuste conforme necessário)
+              const bookWidth = 0.8;  // Largura do target em unidades A-Frame
+              const bookHeight = 1.0; // Altura do target em unidades A-Frame
+              
+              // Calcular dimensões mantendo o aspect ratio do vídeo
+              let width, height;
+              if (videoRatio > bookWidth / bookHeight) {
+                // Vídeo é mais largo que o livro - ajustar pela largura
+                width = bookWidth;
+                height = bookWidth / videoRatio;
+              } else {
+                // Vídeo é mais alto que o livro - ajustar pela altura
+                height = bookHeight;
+                width = bookHeight * videoRatio;
+              }
+              
+              plane.setAttribute('width', width.toFixed(3));
+              plane.setAttribute('height', height.toFixed(3));
+              console.log(`📚 Plane ${plane.id} redimensionado para livro: ${width.toFixed(3)} x ${height.toFixed(3)} (ratio ${videoRatio.toFixed(3)})`);
+            } else {
+              // Para outros vídeos, usar proporção padrão
+              const height = 1;
+              const width = videoRatio * height;
+              plane.setAttribute('width', width.toFixed(3));
+              plane.setAttribute('height', height.toFixed(3));
+              console.log(`📐 Plane ${plane.id} ajustado: ${width.toFixed(3)} x ${height.toFixed(3)} (ratio ${videoRatio.toFixed(3)})`);
+            }
           };
           if (video.readyState >= 1) {
             setRatio();
@@ -286,7 +309,10 @@
             video.setAttribute && video.setAttribute('webkit-playsinline', '');
           } catch {}
           video.playsInline = true;
-          video.muted = true;
+          // Só mutar se não for o video3 (que deve ter áudio)
+          if (video.id !== 'video3') {
+            video.muted = true;
+          }
           // Se nunca carregou ou houve aborto, força load()
           const mustLoad = video.readyState === 0 || video.networkState === 3; // NETWORK_NO_SOURCE
           if (mustLoad) {
@@ -337,7 +363,10 @@
             await ensureVideoSourceAvailable(video);
             // Força load antes do play para evitar NS_BINDING_ABORTED
             try { video.load(); } catch {}
-            video.muted = true;
+            // Só mutar se não for o video3 (que deve ter áudio)
+            if (video.id !== 'video3') {
+              video.muted = true;
+            }
             enableVideo(video);
           }
         });
@@ -376,7 +405,7 @@
           const videoPlane = videoPlanes[index];
 
           // Aplicar proporção do vídeo ao plane
-          applyVideoAspectToPlane(video, videoPlane);
+          applyVideoAspectToPlane(video, videoPlane, index);
 
           // Quando o target é encontrado
           target.addEventListener("targetFound", async () => {
