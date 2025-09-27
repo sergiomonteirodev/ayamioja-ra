@@ -49,7 +49,7 @@
             <!-- Grid da Equipe -->
             <div class="team-grid">
                 <!-- Membro 1 -->
-                <div class="team-member">
+                <div class="team-member" data-member="maria">
                     <div class="member-image">
                         <img src="simbolo-RA.png" alt="Membro da Equipe" class="member-photo">
                     </div>
@@ -61,7 +61,7 @@
                 </div>
 
                 <!-- Membro 2 -->
-                <div class="team-member">
+                <div class="team-member" data-member="mae">
                     <div class="member-image">
                         <img src="simbolo-RA.png" alt="Membro da Equipe" class="member-photo">
                     </div>
@@ -73,7 +73,7 @@
                 </div>
 
                 <!-- Membro 3 -->
-                <div class="team-member">
+                <div class="team-member" data-member="avo">
                     <div class="member-image">
                         <img src="simbolo-RA.png" alt="Membro da Equipe" class="member-photo">
                     </div>
@@ -85,7 +85,7 @@
                 </div>
 
                 <!-- Membro 4 -->
-                <div class="team-member">
+                <div class="team-member" data-member="ayo">
                     <div class="member-image">
                         <img src="simbolo-RA.png" alt="Membro da Equipe" class="member-photo">
                     </div>
@@ -101,6 +101,25 @@
 
     <!-- Footer -->
     <footer>Copyright © 2025 Aya mi o ja -  Eu não tenho medo. Todos os direitos reservados</footer>
+
+    <!-- Modal Popup -->
+    <div id="member-modal" class="member-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <div class="modal-header">
+                <img id="modal-photo" src="" alt="Foto do membro" class="modal-photo">
+                <div class="modal-info">
+                    <h3 id="modal-name"></h3>
+                    <p id="modal-role"></p>
+                    <p id="modal-instagram"></p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p id="modal-bio"></p>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

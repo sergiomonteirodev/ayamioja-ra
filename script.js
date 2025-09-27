@@ -298,5 +298,78 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Funcionalidade "Acesse a história" será implementada');
         });
     }
+    
+    // Modal da Equipe
+    const teamMembers = document.querySelectorAll('.team-member');
+    const modal = document.getElementById('member-modal');
+    const modalClose = document.querySelector('.modal-close');
+    const modalOverlay = document.querySelector('.modal-overlay');
+    
+    // Dados dos membros da equipe
+    const memberData = {
+        maria: {
+            name: 'Maria Silva',
+            role: 'Diretora Criativa',
+            instagram: '@maria_silva',
+            bio: 'Maria é uma visionária criativa com mais de 10 anos de experiência em storytelling e design. Ela lidera nossa equipe na criação de narrativas envolventes que conectam crianças à diversidade cultural brasileira. Sua paixão pela educação inclusiva e tecnologia a impulsiona a desenvolver soluções inovadoras que fazem a diferença na vida de milhares de famílias.'
+        },
+        mae: {
+            name: 'Mãe de ayo',
+            role: 'Desenvolvedora AR',
+            instagram: '@mae_tech',
+            bio: 'Especialista em Realidade Aumentada, nossa desenvolvedora AR transforma histórias em experiências interativas mágicas. Com formação em Engenharia de Software e especialização em tecnologias emergentes, ela cria os elementos AR que fazem os personagens ganharem vida nas páginas dos livros. Sua dedicação à acessibilidade digital garante que todas as crianças possam desfrutar das experiências AR.'
+        },
+        avo: {
+            name: 'Avó de ayo',
+            role: 'Designer UX/UI',
+            instagram: '@avo_design',
+            bio: 'Com uma sensibilidade única para o design centrado no usuário, nossa designer UX/UI cria interfaces intuitivas e acessíveis. Ela combina sua experiência em design gráfico com conhecimento profundo em acessibilidade, garantindo que cada elemento visual seja pensado para incluir todas as crianças, independentemente de suas necessidades especiais. Sua criatividade transforma conceitos complexos em experiências simples e encantadoras.'
+        },
+        ayo: {
+            name: 'Ayo',
+            role: 'Especialista em Lembrar Memórias',
+            instagram: '@ayo_memorias',
+            bio: 'Ayo é o coração e a alma do nosso projeto. Como protagonista da história, ele representa a criança que todos nós fomos um dia - curiosa, corajosa e cheia de sonhos. Sua jornada de descoberta da própria identidade e herança cultural inspira crianças de todo o Brasil a abraçarem suas origens com orgulho. Através de suas aventuras, Ayo ensina que não há medo que não possa ser superado com amor, família e tradição.'
+        }
+    };
+    
+    // Função para abrir modal
+    function openModal(memberId) {
+        const member = memberData[memberId];
+        if (!member) return;
+        
+        document.getElementById('modal-photo').src = 'simbolo-RA.png';
+        document.getElementById('modal-name').textContent = member.name;
+        document.getElementById('modal-role').textContent = member.role;
+        document.getElementById('modal-instagram').textContent = member.instagram;
+        document.getElementById('modal-bio').textContent = member.bio;
+        
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+    
+    // Função para fechar modal
+    function closeModal() {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+    
+    // Event listeners
+    teamMembers.forEach(member => {
+        member.addEventListener('click', () => {
+            const memberId = member.getAttribute('data-member');
+            openModal(memberId);
+        });
+    });
+    
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', closeModal);
+    
+    // Fechar modal com ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
 });
 
