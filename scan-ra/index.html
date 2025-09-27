@@ -730,6 +730,9 @@
         const librasToggle = document.getElementById('libras-toggle');
         const audioToggle = document.getElementById('audio-toggle');
         
+        // Iniciar com toggle de libras ativado
+        librasToggle.checked = true;
+        
         // Criar containers para vídeos de libras (um para cada vídeo AR)
         const interpreterContainers = [];
         const interpreterVideos = [];
@@ -798,6 +801,9 @@
             });
           }
         });
+        
+        // Simular evento de change para aplicar o estado inicial
+        librasToggle.dispatchEvent(new Event('change'));
         
         // Audio toggle - controla áudio descrição
         audioToggle.addEventListener('change', () => {
