@@ -843,8 +843,8 @@ body.internal-page {
 }
 
 .page-image {
-    width: 100%;
-    height: auto;
+    width: auto;
+    height: 73px;
     border-radius: 15px;
 }
 
