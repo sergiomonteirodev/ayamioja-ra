@@ -54,71 +54,183 @@
           font-size: 14px;
         }
         
-        /* Toggle Controls */
+        /* Toggle Controls - Mesmo estilo da página principal */
         .toggle-controls {
           position: absolute;
-          top: 20px;
-          right: 20px;
+          top: 120px;
+          left: 0;
+          right: 0;
+          z-index: 999;
           display: flex;
-          gap: 15px;
-          z-index: 1002;
+          justify-content: space-between;
+          padding: 0 30px;
         }
-        
+
         .toggle-label {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
+          background-color: rgb(255, 255, 255);
+          padding: 8px 15px;
+          border-radius: 25px;
+          color: #e26a02;
+          font-weight: 600;
           cursor: pointer;
-          color: white;
-          font-family: Arial, sans-serif;
-          font-size: 14px;
-          background: rgba(0, 0, 0, 0.7);
-          padding: 8px 12px;
-          border-radius: 20px;
-          transition: all 0.3s ease;
+          font-family: 'RooneySans', Arial, sans-serif;
         }
-        
+
         .toggle-label:hover {
-          background: rgba(0, 0, 0, 0.9);
+          background-color: rgba(255, 255, 255, 0.9);
         }
-        
-        .toggle-icon {
-          width: 20px;
-          height: 20px;
-          object-fit: contain;
-        }
-        
-        .toggle-input {
-          display: none;
-        }
-        
+
         .toggle-slider {
+          width: 50px;
+          height: 24px;
+          background-color: #ccc;
+          border-radius: 12px;
           position: relative;
-          width: 40px;
-          height: 20px;
-          background: #ccc;
-          border-radius: 20px;
-          transition: background 0.3s ease;
+          transition: background-color 0.3s;
         }
-        
+
         .toggle-slider::before {
           content: '';
           position: absolute;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background-color: white;
           top: 2px;
           left: 2px;
-          width: 16px;
-          height: 16px;
-          background: white;
-          border-radius: 50%;
-          transition: transform 0.3s ease;
+          transition: transform 0.3s;
         }
-        
+
         .toggle-input:checked + .toggle-slider {
-          background: #4CAF50;
+          background-color: #5b2c09;
+        }
+
+        .toggle-input:checked + .toggle-slider::before {
+          transform: translateX(26px);
+        }
+
+        .toggle-text {
+          font-size: 25px;
+        }
+
+        .toggle-icon {
+          width: 45px;
+          height: 45px;
+          object-fit: contain;
         }
         
-        .toggle-input:checked + .toggle-slider::before {
-          transform: translateX(20px);
+        /* Responsive para mobile */
+        @media (max-width: 1024px) {
+          .toggle-controls {
+            top: 100px;
+            flex-direction: row;
+            justify-content: space-around;
+            padding: 0 15px;
+          }
+
+          .toggle-label {
+            font-size: 12px;
+            padding: 6px 12px;
+            gap: 8px;
+          }
+
+          .toggle-slider {
+            width: 40px;
+            height: 20px;
+          }
+
+          .toggle-slider::before {
+            width: 16px;
+            height: 16px;
+          }
+
+          .toggle-input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+          }
+
+          .toggle-text {
+            font-size: 18px;
+          }
+
+          .toggle-icon {
+            width: 35px;
+            height: 35px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .toggle-controls {
+            top: 90px;
+            padding: 0 10px;
+          }
+
+          .toggle-label {
+            font-size: 10px;
+            padding: 4px 8px;
+            gap: 6px;
+          }
+
+          .toggle-slider {
+            width: 35px;
+            height: 18px;
+          }
+
+          .toggle-slider::before {
+            width: 14px;
+            height: 14px;
+          }
+
+          .toggle-input:checked + .toggle-slider::before {
+            transform: translateX(17px);
+          }
+
+          .toggle-text {
+            font-size: 14px;
+          }
+
+          .toggle-icon {
+            width: 30px;
+            height: 30px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .toggle-controls {
+            top: 100px;
+            padding: 0 8px;
+          }
+
+          .toggle-label {
+            font-size: 9px;
+            padding: 3px 6px;
+            gap: 4px;
+          }
+
+          .toggle-slider {
+            width: 30px;
+            height: 16px;
+          }
+
+          .toggle-slider::before {
+            width: 12px;
+            height: 12px;
+          }
+
+          .toggle-input:checked + .toggle-slider::before {
+            transform: translateX(14px);
+          }
+
+          .toggle-text {
+            font-size: 12px;
+          }
+
+          .toggle-icon {
+            width: 25px;
+            height: 25px;
+          }
         }
     </style>
   </head>
