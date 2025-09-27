@@ -263,10 +263,9 @@
         
         /* Botão Voltar */
         .back-button-container {
-          position: absolute;
-          top: 50%;
-          right: 0;
-          transform: translateY(-50%);
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
           z-index: 999;
         }
         
@@ -291,7 +290,8 @@
         /* Responsivo para botão voltar */
         @media (max-width: 1024px) {
           .back-button-container {
-            right: 0;
+            bottom: 15px;
+            right: 15px;
           }
           
           .back-button-image {
@@ -302,7 +302,8 @@
         
         @media (max-width: 768px) {
           .back-button-container {
-            right: 0;
+            bottom: 15px;
+            right: 15px;
           }
           
           .back-button-image {
@@ -313,7 +314,8 @@
         
         @media (max-width: 600px) {
           .back-button-container {
-            right: 0;
+            bottom: 10px;
+            right: 10px;
           }
           
           .back-button-image {
@@ -324,7 +326,8 @@
         
         @media (max-width: 480px) {
           .back-button-container {
-            right: 0;
+            bottom: 10px;
+            right: 10px;
           }
           
           .back-button-image {
@@ -335,7 +338,8 @@
         
         @media (max-width: 360px) {
           .back-button-container {
-            right: 0;
+            bottom: 8px;
+            right: 8px;
           }
           
           .back-button-image {
