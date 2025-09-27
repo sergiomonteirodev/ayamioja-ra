@@ -260,6 +260,131 @@
             left: 15px;
           }
         }
+        
+        /* Botão Voltar */
+        .back-button-container {
+          position: absolute;
+          top: 50%;
+          right: 0;
+          transform: translateY(-50%);
+          z-index: 999;
+        }
+        
+        .back-button {
+          display: block;
+          text-decoration: none;
+          color: inherit;
+        }
+        
+        .back-button-content {
+          position: relative;
+        }
+        
+        .back-button-circle {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #e26a02, #5b2c09);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 15px rgba(226, 106, 2, 0.3);
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+        
+        .back-button-circle:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 20px rgba(226, 106, 2, 0.4);
+        }
+        
+        .back-arrow {
+          width: 24px;
+          height: 24px;
+          color: white;
+          fill: currentColor;
+        }
+        
+        /* Responsivo para botão voltar */
+        @media (max-width: 1024px) {
+          .back-button-container {
+            right: 0;
+          }
+          
+          .back-button-circle {
+            width: 50px;
+            height: 50px;
+          }
+          
+          .back-arrow {
+            width: 20px;
+            height: 20px;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .back-button-container {
+            right: 0;
+          }
+          
+          .back-button-circle {
+            width: 45px;
+            height: 45px;
+          }
+          
+          .back-arrow {
+            width: 18px;
+            height: 18px;
+          }
+        }
+        
+        @media (max-width: 600px) {
+          .back-button-container {
+            right: 0;
+          }
+          
+          .back-button-circle {
+            width: 40px;
+            height: 40px;
+          }
+          
+          .back-arrow {
+            width: 16px;
+            height: 16px;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .back-button-container {
+            right: 0;
+          }
+          
+          .back-button-circle {
+            width: 35px;
+            height: 35px;
+          }
+          
+          .back-arrow {
+            width: 14px;
+            height: 14px;
+          }
+        }
+        
+        @media (max-width: 360px) {
+          .back-button-container {
+            right: 0;
+          }
+          
+          .back-button-circle {
+            width: 30px;
+            height: 30px;
+          }
+          
+          .back-arrow {
+            width: 12px;
+            height: 12px;
+          }
+        }
     </style>
   </head>
   <body>
@@ -279,6 +404,19 @@
                 <img src="../ad.png" alt="áudio descrição" class="toggle-icon">
             </label>
         </div>
+    </div>
+    
+    <!-- Botão Voltar -->
+    <div class="back-button-container">
+        <a href="../index.html" class="back-button">
+            <div class="back-button-content">
+                <div class="back-button-circle">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="back-arrow">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
     </div>
 
     <a-scene
