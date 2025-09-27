@@ -829,13 +829,19 @@
         // Função para iniciar vídeo de libras automaticamente
         function startInterpreterVideo(videoIndex) {
           const interpreterVideo = interpreterVideos[videoIndex];
-          if (interpreterVideo && librasToggle.checked) {
+          const arVideo = videos[videoIndex];
+          
+          if (interpreterVideo && librasToggle.checked && arVideo && !arVideo.paused) {
+            // Só iniciar se o vídeo AR estiver tocando
+            interpreterVideo.currentTime = arVideo.currentTime;
+            
             // Garantir que o vídeo está carregado
             if (interpreterVideo.readyState >= 2) {
               interpreterVideo.play().catch(e => console.log(`Erro ao iniciar vídeo de libras ${videoIndex}:`, e));
             } else {
               // Aguardar o vídeo carregar
               interpreterVideo.addEventListener('canplay', () => {
+                interpreterVideo.currentTime = arVideo.currentTime;
                 interpreterVideo.play().catch(e => console.log(`Erro ao iniciar vídeo de libras ${videoIndex}:`, e));
               }, { once: true });
             }
@@ -844,19 +850,24 @@
         
         // Função para mostrar apenas o vídeo de libras do target ativo
         function showActiveInterpreter(activeIndex) {
-          interpreterContainers.forEach((container, index) => {
-            if (index === activeIndex && librasToggle.checked) {
-              container.style.display = 'block';
-              container.style.opacity = '1';
-            } else {
-              container.style.opacity = '0';
-              setTimeout(() => {
-                if (index !== activeIndex) {
-                  container.style.display = 'none';
-                }
-              }, 300);
-            }
-          });
+          const arVideo = videos[activeIndex];
+          
+          // Só mostrar se o vídeo AR estiver tocando
+          if (arVideo && !arVideo.paused && librasToggle.checked) {
+            interpreterContainers.forEach((container, index) => {
+              if (index === activeIndex) {
+                container.style.display = 'block';
+                container.style.opacity = '1';
+              } else {
+                container.style.opacity = '0';
+                setTimeout(() => {
+                  if (index !== activeIndex) {
+                    container.style.display = 'none';
+                  }
+                }, 300);
+              }
+            });
+          }
         }
         
         // Monitorar mudanças nos vídeos AR individuais
@@ -873,8 +884,16 @@
           
           video.addEventListener('pause', () => {
             console.log(`Vídeo AR ${index} pausado`);
+            // Esconder vídeo de libras quando AR pausa
+            if (librasToggle.checked) {
+              interpreterContainers[index].style.opacity = '0';
+              setTimeout(() => {
+                interpreterContainers[index].style.display = 'none';
+              }, 300);
+            }
             syncInterpreterWithAR(index);
           });
+          
           
           video.addEventListener('timeupdate', () => {
             syncInterpreterWithAR(index);
