@@ -28,6 +28,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 interpreterContainer.style.opacity = '1';
                 interpreterContainer.style.transform = 'translateY(0)';
             }, 10);
+            
+            // Iniciar vídeo de libras automaticamente se o vídeo principal estiver tocando
+            if (mainVideo && !mainVideo.paused) {
+                interpreterVideo.currentTime = mainVideo.currentTime;
+                interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+            }
         } else {
             // Esconder intérprete
             interpreterContainer.style.opacity = '0';
@@ -186,15 +192,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Sincronizar com o vídeo principal
         if (mainVideo) {
-            // Quando o vídeo principal tocar, o de libras também toca (em background)
-            mainVideo.addEventListener('play', () => {
-                interpreterVideo.currentTime = mainVideo.currentTime;
+        // Quando o vídeo principal tocar, o de libras também toca (em background)
+        mainVideo.addEventListener('play', () => {
+            interpreterVideo.currentTime = mainVideo.currentTime;
+            // Só reproduzir vídeo de libras se o toggle estiver ativo
+            if (librasToggle && librasToggle.checked) {
                 interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
-                // Esconder mensagem no vídeo de libras
-                if (interpreterPausedMessage) {
-                    interpreterPausedMessage.style.display = 'none';
-                }
-            });
+            }
+            // Esconder mensagem no vídeo de libras
+            if (interpreterPausedMessage) {
+                interpreterPausedMessage.style.display = 'none';
+            }
+        });
             
             // Quando o vídeo principal pausar, o de libras também pausa
             mainVideo.addEventListener('pause', () => {
@@ -265,7 +274,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 mainVideo.muted = false;
                 mainVideo.volume = 0.7;
                 mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
-                interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+                // Só reproduzir vídeo de libras se o toggle estiver ativo
+                if (librasToggle && librasToggle.checked) {
+                    interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+                }
             }, 500);
         });
     }
