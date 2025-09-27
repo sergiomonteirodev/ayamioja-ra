@@ -777,17 +777,17 @@
           interpreterVideos.push(interpreterVideo);
         }
         
+        // Variável para controlar se algum target está ativo
+        let activeTargetIndex = -1;
+        
         // Libras toggle - controla visibilidade dos vídeos de libras
         librasToggle.addEventListener('change', () => {
           console.log('Libras toggle:', librasToggle.checked);
           if (librasToggle.checked) {
-            // Mostrar todos os containers de intérprete (mas só o ativo ficará visível)
-            interpreterContainers.forEach(container => {
-              container.style.display = 'block';
-              setTimeout(() => {
-                container.style.opacity = '1';
-              }, 10);
-            });
+            // Só mostrar vídeo de libras se algum target estiver ativo
+            if (activeTargetIndex !== -1) {
+              showActiveInterpreter(activeTargetIndex);
+            }
           } else {
             // Esconder todos os containers de intérprete
             interpreterContainers.forEach(container => {
@@ -863,8 +863,11 @@
         videos.forEach((video, index) => {
           video.addEventListener('play', () => {
             console.log(`Vídeo AR ${index} iniciado`);
-            showActiveInterpreter(index);
-            startInterpreterVideo(index); // Iniciar vídeo de libras automaticamente
+            activeTargetIndex = index; // Marcar target como ativo
+            if (librasToggle.checked) {
+              showActiveInterpreter(index);
+              startInterpreterVideo(index); // Iniciar vídeo de libras automaticamente
+            }
             syncInterpreterWithAR(index);
           });
           
@@ -883,6 +886,7 @@
           
           video.addEventListener('ended', () => {
             console.log(`Vídeo AR ${index} finalizado`);
+            activeTargetIndex = -1; // Marcar que nenhum target está ativo
             syncInterpreterWithAR(index);
             // Pausar e esconder o container de libras correspondente
             interpreterVideos[index].pause();
