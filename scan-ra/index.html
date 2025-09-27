@@ -53,9 +53,94 @@
           font-family: Arial, sans-serif;
           font-size: 14px;
         }
+        
+        /* Toggle Controls */
+        .toggle-controls {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          display: flex;
+          gap: 15px;
+          z-index: 1002;
+        }
+        
+        .toggle-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          color: white;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          background: rgba(0, 0, 0, 0.7);
+          padding: 8px 12px;
+          border-radius: 20px;
+          transition: all 0.3s ease;
+        }
+        
+        .toggle-label:hover {
+          background: rgba(0, 0, 0, 0.9);
+        }
+        
+        .toggle-icon {
+          width: 20px;
+          height: 20px;
+          object-fit: contain;
+        }
+        
+        .toggle-input {
+          display: none;
+        }
+        
+        .toggle-slider {
+          position: relative;
+          width: 40px;
+          height: 20px;
+          background: #ccc;
+          border-radius: 20px;
+          transition: background 0.3s ease;
+        }
+        
+        .toggle-slider::before {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 16px;
+          height: 16px;
+          background: white;
+          border-radius: 50%;
+          transition: transform 0.3s ease;
+        }
+        
+        .toggle-input:checked + .toggle-slider {
+          background: #4CAF50;
+        }
+        
+        .toggle-input:checked + .toggle-slider::before {
+          transform: translateX(20px);
+        }
     </style>
   </head>
   <body>
+    <!-- Toggle Controls -->
+    <div class="toggle-controls">
+        <div class="toggle-left">
+            <label class="toggle-label">
+                <img src="../libras.png" alt="Libras" class="toggle-icon">
+                <input type="checkbox" id="libras-toggle" class="toggle-input">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="toggle-right">
+            <label class="toggle-label">
+                <input type="checkbox" id="audio-toggle" class="toggle-input">
+                <span class="toggle-slider"></span>
+                <img src="../ad.png" alt="áudio descrição" class="toggle-icon">
+            </label>
+        </div>
+    </div>
+
     <a-scene
       mindar-image="imageTargetSrc: ./targets/targets(13).mind; maxTrack: 3; uiScanning: #ui-scanning; uiLoading: #ui-loading; filterMinCF: 0.0001; filterBeta: 0.05; missTolerance: 10; warmupTolerance: 5;"
       color-space="sRGB"
@@ -499,6 +584,22 @@
         // Verificar se há erros no carregamento do .mind
         scene.addEventListener('error', (e) => {
           console.error("❌ Erro no MindAR:", e);
+        });
+        
+        // Toggle Controls
+        const librasToggle = document.getElementById('libras-toggle');
+        const audioToggle = document.getElementById('audio-toggle');
+        
+        // Libras toggle - controla visibilidade do vídeo de libras
+        librasToggle.addEventListener('change', () => {
+          console.log('Libras toggle:', librasToggle.checked);
+          // Aqui você pode adicionar lógica para controlar vídeo de libras se necessário
+        });
+        
+        // Audio toggle - controla áudio descrição
+        audioToggle.addEventListener('change', () => {
+          console.log('Audio toggle:', audioToggle.checked);
+          // Aqui você pode adicionar lógica para áudio descrição se necessário
         });
       });
     </script>
