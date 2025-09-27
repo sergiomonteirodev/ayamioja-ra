@@ -911,8 +911,8 @@
           const interpreterVideo = interpreterVideos[videoIndex];
           const interpreterContainer = interpreterContainers[videoIndex];
           
-          if (arVideo && interpreterVideo && librasToggle.checked) {
-            // Sincronizar tempo
+          if (arVideo && interpreterVideo && librasToggle.checked && arVideo.readyState >= 3) {
+            // Sincronizar tempo apenas se o vídeo AR estiver pronto
             interpreterVideo.currentTime = arVideo.currentTime;
             
             // Se o vídeo AR está tocando, o de libras correspondente também deve tocar
@@ -932,17 +932,32 @@
           const arVideo = videos[videoIndex];
           
           if (interpreterVideo && librasToggle.checked && arVideo && !arVideo.paused) {
-            // Só iniciar se o vídeo AR estiver tocando
-            interpreterVideo.currentTime = arVideo.currentTime;
-            
-            // Garantir que o vídeo está carregado
-            if (interpreterVideo.readyState >= 2) {
-              interpreterVideo.play().catch(e => console.log(`Erro ao iniciar vídeo de libras ${videoIndex}:`, e));
-            } else {
-              // Aguardar o vídeo carregar
-              interpreterVideo.addEventListener('canplay', () => {
-                interpreterVideo.currentTime = arVideo.currentTime;
+            // Só iniciar se o vídeo AR estiver tocando e pronto para reproduzir
+            if (arVideo.readyState >= 3) { // HAVE_FUTURE_DATA ou superior
+              interpreterVideo.currentTime = arVideo.currentTime;
+              
+              // Garantir que o vídeo de libras está carregado
+              if (interpreterVideo.readyState >= 2) {
                 interpreterVideo.play().catch(e => console.log(`Erro ao iniciar vídeo de libras ${videoIndex}:`, e));
+              } else {
+                // Aguardar o vídeo de libras carregar
+                interpreterVideo.addEventListener('canplay', () => {
+                  interpreterVideo.currentTime = arVideo.currentTime;
+                  interpreterVideo.play().catch(e => console.log(`Erro ao iniciar vídeo de libras ${videoIndex}:`, e));
+                }, { once: true });
+              }
+            } else {
+              // Aguardar o vídeo AR estar pronto
+              arVideo.addEventListener('canplay', () => {
+                interpreterVideo.currentTime = arVideo.currentTime;
+                if (interpreterVideo.readyState >= 2) {
+                  interpreterVideo.play().catch(e => console.log(`Erro ao iniciar vídeo de libras ${videoIndex}:`, e));
+                } else {
+                  interpreterVideo.addEventListener('canplay', () => {
+                    interpreterVideo.currentTime = arVideo.currentTime;
+                    interpreterVideo.play().catch(e => console.log(`Erro ao iniciar vídeo de libras ${videoIndex}:`, e));
+                  }, { once: true });
+                }
               }, { once: true });
             }
           }
@@ -952,8 +967,8 @@
         function showActiveInterpreter(activeIndex) {
           const arVideo = videos[activeIndex];
           
-          // Só mostrar se o vídeo AR estiver tocando
-          if (arVideo && !arVideo.paused && librasToggle.checked) {
+          // Só mostrar se o vídeo AR estiver tocando e pronto para reproduzir
+          if (arVideo && !arVideo.paused && arVideo.readyState >= 3 && librasToggle.checked) {
             interpreterContainers.forEach((container, index) => {
               if (index === activeIndex) {
                 container.style.display = 'block';
