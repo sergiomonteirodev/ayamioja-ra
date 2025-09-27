@@ -706,16 +706,149 @@
         const librasToggle = document.getElementById('libras-toggle');
         const audioToggle = document.getElementById('audio-toggle');
         
-        // Libras toggle - controla visibilidade do vídeo de libras
+        // Criar containers para vídeos de libras (um para cada vídeo AR)
+        const interpreterContainers = [];
+        const interpreterVideos = [];
+        
+        // Criar 3 containers de vídeo de libras (um para cada vídeo AR)
+        for (let i = 0; i < 3; i++) {
+          const interpreterContainer = document.createElement('div');
+          interpreterContainer.id = `interpreter-video-${i}`;
+          interpreterContainer.className = 'interpreter-container';
+          interpreterContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+          `;
+          
+          // Criar vídeo de libras específico para cada target
+          const interpreterVideo = document.createElement('video');
+          interpreterVideo.id = `interpreter-${i}`;
+          interpreterVideo.className = 'interpreter-video';
+          interpreterVideo.style.cssText = `
+            max-width: 80%;
+            max-height: 80%;
+            object-fit: contain;
+          `;
+          interpreterVideo.src = '../anim_ayo.mp4';
+          interpreterVideo.muted = true;
+          interpreterVideo.volume = 0;
+          interpreterVideo.loop = false;
+          interpreterVideo.playsinline = true;
+          interpreterVideo.webkitPlaysinline = true;
+          
+          interpreterContainer.appendChild(interpreterVideo);
+          document.body.appendChild(interpreterContainer);
+          
+          interpreterContainers.push(interpreterContainer);
+          interpreterVideos.push(interpreterVideo);
+        }
+        
+        // Libras toggle - controla visibilidade dos vídeos de libras
         librasToggle.addEventListener('change', () => {
           console.log('Libras toggle:', librasToggle.checked);
-          // Aqui você pode adicionar lógica para controlar vídeo de libras se necessário
+          if (librasToggle.checked) {
+            // Mostrar todos os containers de intérprete (mas só o ativo ficará visível)
+            interpreterContainers.forEach(container => {
+              container.style.display = 'flex';
+              setTimeout(() => {
+                container.style.opacity = '1';
+              }, 10);
+            });
+          } else {
+            // Esconder todos os containers de intérprete
+            interpreterContainers.forEach(container => {
+              container.style.opacity = '0';
+              setTimeout(() => {
+                container.style.display = 'none';
+              }, 300);
+            });
+          }
         });
         
         // Audio toggle - controla áudio descrição
         audioToggle.addEventListener('change', () => {
           console.log('Audio toggle:', audioToggle.checked);
           // Aqui você pode adicionar lógica para áudio descrição se necessário
+        });
+        
+        // Sincronizar vídeo de libras específico com seu vídeo AR correspondente
+        function syncInterpreterWithAR(videoIndex) {
+          const arVideo = videos[videoIndex];
+          const interpreterVideo = interpreterVideos[videoIndex];
+          const interpreterContainer = interpreterContainers[videoIndex];
+          
+          if (arVideo && interpreterVideo && librasToggle.checked) {
+            // Sincronizar tempo
+            interpreterVideo.currentTime = arVideo.currentTime;
+            
+            // Se o vídeo AR está tocando, o de libras correspondente também deve tocar
+            if (!arVideo.paused && interpreterVideo.paused) {
+              interpreterVideo.play().catch(e => console.log(`Erro ao reproduzir vídeo de libras ${videoIndex}:`, e));
+            }
+            // Se o vídeo AR está pausado, o de libras correspondente também deve pausar
+            else if (arVideo.paused && !interpreterVideo.paused) {
+              interpreterVideo.pause();
+            }
+          }
+        }
+        
+        // Função para mostrar apenas o vídeo de libras do target ativo
+        function showActiveInterpreter(activeIndex) {
+          interpreterContainers.forEach((container, index) => {
+            if (index === activeIndex && librasToggle.checked) {
+              container.style.display = 'flex';
+              container.style.opacity = '1';
+            } else {
+              container.style.opacity = '0';
+              setTimeout(() => {
+                if (index !== activeIndex) {
+                  container.style.display = 'none';
+                }
+              }, 300);
+            }
+          });
+        }
+        
+        // Monitorar mudanças nos vídeos AR individuais
+        videos.forEach((video, index) => {
+          video.addEventListener('play', () => {
+            console.log(`Vídeo AR ${index} iniciado`);
+            showActiveInterpreter(index);
+            syncInterpreterWithAR(index);
+          });
+          
+          video.addEventListener('pause', () => {
+            console.log(`Vídeo AR ${index} pausado`);
+            syncInterpreterWithAR(index);
+          });
+          
+          video.addEventListener('timeupdate', () => {
+            syncInterpreterWithAR(index);
+          });
+          
+          video.addEventListener('seeked', () => {
+            syncInterpreterWithAR(index);
+          });
+          
+          video.addEventListener('ended', () => {
+            console.log(`Vídeo AR ${index} finalizado`);
+            syncInterpreterWithAR(index);
+            // Esconder o container de libras correspondente
+            interpreterContainers[index].style.opacity = '0';
+            setTimeout(() => {
+              interpreterContainers[index].style.display = 'none';
+            }, 300);
+          });
         });
       });
     </script>
