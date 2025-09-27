@@ -20,6 +20,23 @@
           height: 100%;
           width: 100%;
         }
+        
+        /* Esconder ícones do A-Frame */
+        .a-enter-vr-button,
+        .a-orientation-modal,
+        .a-enter-vr-modal,
+        .a-fullscreen-button,
+        .a-fullscreen-modal,
+        .a-fullscreen-overlay,
+        .a-fullscreen-icon,
+        [class*="fullscreen"],
+        [class*="vr-button"],
+        [class*="orientation"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
         .video-container {
           position: absolute;
           top: 0;
