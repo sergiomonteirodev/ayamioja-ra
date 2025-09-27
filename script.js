@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const librasToggle = document.getElementById('libras-toggle');
     const interpreterContainer = document.getElementById('interpreter-video');
     
-    librasToggle.addEventListener('change', function() {
+    // Verificar se os elementos existem antes de adicionar event listeners
+    if (librasToggle && interpreterContainer) {
+        librasToggle.addEventListener('change', function() {
         if (this.checked) {
             // Mostrar intérprete
             interpreterContainer.style.display = 'block';
@@ -42,13 +44,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 interpreterContainer.style.display = 'none';
             }, 300);
         }
-    });
+        });
+    }
     
     // Toggle de Áudio (audiodescrição)
     const audioToggle = document.getElementById('audio-toggle');
     let audioDescription = null;
     
-    audioToggle.addEventListener('change', function() {
+    if (audioToggle) {
+        audioToggle.addEventListener('change', function() {
         if (this.checked) {
             // Ativar audiodescrição
             console.log('Audiodescrição ativada');
@@ -63,7 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 audioDescription = null;
             }
         }
-    });
+        });
+    }
     
     // Configurar vídeo principal
     const mainVideo = document.getElementById('main-video');
@@ -185,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Configurar vídeo do intérprete
-    if (interpreterVideo) {
+    if (interpreterVideo && mainVideo) {
         interpreterVideo.volume = 0; // Sem áudio no vídeo de libras
         interpreterVideo.muted = true; // Garantir que está mudo
         interpreterVideo.loop = false; // Desabilitar loop para sincronizar
@@ -282,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Botões de ação
+    // Botões de ação (apenas na página principal)
     const btnEscanear = document.querySelector('.btn-primary');
     const btnAcessar = document.querySelector('.btn-secondary');
     
@@ -299,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Modal da Equipe
+    // Modal da Equipe (apenas na página equipe.html)
     const teamMembers = document.querySelectorAll('.team-member');
     const modal = document.getElementById('member-modal');
     const modalClose = document.querySelector('.modal-close');
@@ -354,22 +359,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.remove('modal-open');
     }
     
-    // Event listeners
-    teamMembers.forEach(member => {
-        member.addEventListener('click', () => {
-            const memberId = member.getAttribute('data-member');
-            openModal(memberId);
+    // Event listeners (apenas se os elementos existirem)
+    if (teamMembers.length > 0 && modal && modalClose && modalOverlay) {
+        teamMembers.forEach(member => {
+            member.addEventListener('click', () => {
+                const memberId = member.getAttribute('data-member');
+                openModal(memberId);
+            });
         });
-    });
-    
-    modalClose.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', closeModal);
-    
-    // Fechar modal com ESC
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeModal();
-        }
-    });
+        
+        modalClose.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', closeModal);
+        
+        // Fechar modal com ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+    }
 });
 
