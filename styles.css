@@ -675,13 +675,21 @@ footer {
 
 .team-member {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 20px;
     background: white;
     padding: 20px;
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.team-member:nth-child(odd) {
+    flex-direction: row; /* Imagem à esquerda, texto à direita */
+}
+
+.team-member:nth-child(even) {
+    flex-direction: row-reverse; /* Imagem à direita, texto à esquerda */
 }
 
 .team-member:hover {
@@ -744,7 +752,7 @@ footer {
     }
     
     .team-member {
-        flex-direction: column;
+        flex-direction: column !important;
         text-align: center;
         gap: 15px;
         padding: 15px;
@@ -776,6 +784,7 @@ footer {
     }
     
     .team-member {
+        flex-direction: column !important;
         padding: 12px;
     }
     
