@@ -625,6 +625,159 @@
             height: 60px;
           }
         }
+        
+        /* Responsividade para 320px (menor tela) */
+        @media (max-width: 320px) {
+          /* Toggle Controls */
+          .toggle-controls {
+            top: 80px;
+            padding: 0 5px;
+            gap: 5px;
+          }
+
+          .toggle-label {
+            font-size: 8px;
+            padding: 2px 4px;
+            gap: 3px;
+            border-radius: 15px;
+          }
+
+          .toggle-slider {
+            width: 28px;
+            height: 14px;
+            border-radius: 7px;
+          }
+
+          .toggle-slider::before {
+            width: 10px;
+            height: 10px;
+          }
+
+          .toggle-input:checked + .toggle-slider::before {
+            transform: translateX(14px);
+          }
+
+          .toggle-text {
+            font-size: 10px;
+          }
+
+          .toggle-icon {
+            width: 20px;
+            height: 20px;
+          }
+          
+          /* Vídeo de Libras */
+          .interpreter-container {
+            width: 140px !important;
+            height: 140px !important;
+            bottom: 10px !important;
+            left: 10px !important;
+            border-width: 2px !important;
+          }
+          
+          .interpreter-video {
+            border-radius: 10px !important;
+          }
+          
+          /* Botão Voltar */
+          .back-button-container {
+            bottom: 5px;
+            right: 5px;
+          }
+          
+          .back-button-image {
+            width: 50px;
+            height: 50px;
+          }
+          
+          /* Modal de Instruções */
+          .instructions-content {
+            padding: 30px 20px;
+            max-width: 280px;
+            gap: 15px;
+            border-radius: 15px;
+          }
+          
+          .target-icon {
+            font-size: 40px;
+          }
+          
+          .instructions-title {
+            font-size: 22px;
+          }
+          
+          .instructions-text {
+            font-size: 14px;
+          }
+          
+          .instructions-subtext {
+            font-size: 12px;
+          }
+          
+          .test-video-button {
+            padding: 10px 20px;
+            font-size: 12px;
+            border-radius: 10px;
+            gap: 8px;
+          }
+          
+          .button-icon {
+            font-size: 14px;
+          }
+          
+          .button-text {
+            font-size: 12px;
+          }
+          
+          /* Modal de Scanning */
+          .scanning-content {
+            padding: 30px 20px;
+            max-width: 280px;
+            gap: 15px;
+          }
+          
+          .scanning-icon {
+            width: 60px;
+            height: 60px;
+          }
+          
+          .scanning-circle {
+            width: 60px;
+            height: 60px;
+            border-width: 3px;
+          }
+          
+          .scanning-dot {
+            width: 6px;
+            height: 6px;
+          }
+          
+          .scanning-title {
+            font-size: 18px;
+          }
+          
+          .scanning-text {
+            font-size: 13px;
+          }
+          
+          .progress-bar {
+            height: 6px;
+          }
+          
+          /* Video Overlay */
+          .video-overlay {
+            padding: 10px;
+          }
+          
+          /* Target Info */
+          .target-info {
+            top: 10px;
+            left: 10px;
+            padding: 6px 10px;
+            font-size: 11px;
+            border-radius: 10px;
+          }
+        }
     </style>
   </head>
   <body>

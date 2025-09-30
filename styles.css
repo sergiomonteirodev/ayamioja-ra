@@ -1756,5 +1756,272 @@ body.modal-open {
         font-size: 10px;
         padding: 6px 0;
     }
+}
 
+/* Responsividade para telas de 320px */
+@media (max-width: 320px) {
+    body {
+        font-size: 12px;
+    }
+    
+    /* Navegação */
+    .nav-content {
+        padding: 5px;
+        gap: 5px;
+        margin-left: 5px;
+    }
+    
+    .page-image {
+        height: 40px;
+        width: auto;
+    }
+    
+    /* Toggle Controls */
+    .toggle-controls {
+        gap: 5px;
+        top: 50px;
+        padding: 0 5px;
+    }
+    
+    .toggle-label {
+        font-size: 8px;
+        padding: 4px 6px;
+        gap: 3px;
+        border-radius: 12px;
+    }
+    
+    .toggle-slider {
+        width: 28px;
+        height: 14px;
+    }
+    
+    .toggle-slider::before {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .toggle-input:checked + .toggle-slider::before {
+        transform: translateX(14px);
+    }
+    
+    .toggle-icon {
+        width: 18px;
+        height: 18px;
+    }
+    
+    /* Vídeo Principal */
+    .video-container {
+        height: 200px;
+    }
+    
+    video {
+        max-height: 200px;
+    }
+    
+    /* Círculo Central */
+    .main-circle {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .main-circle::before {
+        width: 160px;
+        height: 160px;
+        top: -10px;
+        right: -10px;
+        bottom: -10px;
+        left: -10px;
+    }
+    
+    .circular-text {
+        font-size: 9px;
+    }
+    
+    .logo-container {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .logo {
+        width: 50px;
+        height: 50px;
+    }
+    
+    /* Títulos */
+    .main-title {
+        font-size: 30px;
+    }
+    
+    .title-aya {
+        font-size: 30px;
+    }
+    
+    .title-mi {
+        font-size: 30px;
+    }
+    
+    .title-oja {
+        font-size: 30px;
+    }
+    
+    .subtitle {
+        font-size: 11px;
+        margin-top: 3px;
+    }
+    
+    /* Botões de Ação */
+    .action-buttons {
+        gap: 15px;
+        margin-top: 15px;
+        bottom: 100px;
+    }
+    
+    .action-button {
+        padding: 8px 15px;
+        font-size: 10px;
+        border-radius: 20px;
+        gap: 5px;
+    }
+    
+    .button-icon {
+        width: 16px;
+        height: 16px;
+    }
+    
+    /* Vídeo Intérprete */
+    .interpreter-container {
+        width: 120px !important;
+        height: 120px !important;
+        bottom: 8px !important;
+        left: 8px !important;
+        border-width: 2px !important;
+    }
+    
+    .interpreter-video {
+        border-radius: 8px !important;
+    }
+    
+    /* Loading */
+    .video-loading {
+        padding: 15px;
+    }
+    
+    .loading-spinner {
+        width: 30px;
+        height: 30px;
+        border-width: 3px;
+    }
+    
+    .progress-bar {
+        width: 80px;
+        height: 4px;
+    }
+    
+    .loading-percentage {
+        font-size: 11px;
+    }
+    
+    .loading-text {
+        font-size: 9px;
+    }
+    
+    /* Página Sobre */
+    .page-title {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    .content-text h2 {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    
+    .content-text p {
+        font-size: 11px;
+        line-height: 1.4;
+    }
+    
+    /* Equipe */
+    .team-grid {
+        gap: 15px;
+        padding: 10px;
+    }
+    
+    .team-member {
+        flex-direction: column !important;
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .member-image {
+        width: 80px;
+        height: 80px;
+        min-width: 80px;
+    }
+    
+    .member-photo {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .member-info {
+        gap: 5px;
+    }
+    
+    .member-name {
+        font-size: 14px;
+    }
+    
+    .member-role {
+        font-size: 11px;
+    }
+    
+    .member-instagram {
+        font-size: 10px;
+    }
+    
+    /* Modal da Equipe */
+    .modal-content {
+        max-width: 90%;
+        padding: 15px;
+        border-radius: 15px;
+    }
+    
+    .modal-close {
+        width: 30px;
+        height: 30px;
+        font-size: 20px;
+        top: 8px;
+        right: 8px;
+    }
+    
+    .modal-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-photo {
+        width: 80px;
+        height: 80px;
+        min-width: 80px;
+    }
+    
+    .modal-info h3 {
+        font-size: 16px;
+    }
+    
+    .modal-info p {
+        font-size: 11px;
+    }
+    
+    .modal-body p {
+        font-size: 11px;
+        line-height: 1.5;
+    }
+    
+    /* Footer */
+    footer {
+        font-size: 9px;
+        padding: 5px 0;
+    }
 }
