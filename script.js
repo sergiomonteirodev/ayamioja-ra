@@ -83,8 +83,18 @@ document.addEventListener('DOMContentLoaded', function() {
     let isVideoLoaded = false;
     
     if (mainVideo) {
-        mainVideo.volume = 0; // Começar mudo
-        mainVideo.muted = true; // Garantir que está mudo inicialmente
+        // Detectar iOS/iPhone primeiro
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        // Para iOS, começar mudo para permitir autoplay
+        if (isIOS) {
+            mainVideo.muted = true;
+            mainVideo.volume = 0;
+        } else {
+            mainVideo.muted = false;
+            mainVideo.volume = 0.7;
+        }
         mainVideo.loop = false; // Desabilitar loop para controlar manualmente
         
         // Função para atualizar progresso
@@ -173,50 +183,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Detectar iOS/iPhone
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
         // Verificar se o vídeo já está carregado (quando volta de outra página)
         if (mainVideo.readyState >= 3) { // HAVE_FUTURE_DATA ou superior
             console.log('Vídeo já carregado, reiniciando processo...');
             resetVideoLoading();
         } else {
-            // Para iOS, forçar interação do usuário primeiro
-            if (isIOS) {
-                console.log('iOS detectado, aguardando interação do usuário...');
-                updateProgress(100);
-                setTimeout(() => {
-                    if (videoLoading) {
-                        videoLoading.style.display = 'none';
-                    }
-                    mainVideo.style.display = 'block';
-                    // Tentar reproduzir no iOS (mudo primeiro)
-                    mainVideo.play().then(() => {
-                        console.log('Vídeo reproduzindo no iOS');
-                        // Depois de 1 segundo, ativar áudio
-                        setTimeout(() => {
-                            mainVideo.muted = false;
-                            mainVideo.volume = 0.7;
-                        }, 1000);
-                    }).catch(error => {
-                        console.log('iOS: Autoplay bloqueado, aguardando interação:', error);
-                    });
-                }, 500);
-            } else {
-                // Tentar reproduzir o vídeo (ainda mudo) em outros dispositivos
-                mainVideo.play().catch(function(error) {
-                    console.log('Autoplay bloqueado, clique para reproduzir:', error);
-                    // Se autoplay falhar, esconder loading e mostrar vídeo
-                    if (videoLoading) {
-                        videoLoading.style.display = 'none';
-                    }
-                    mainVideo.style.display = 'block';
-                    // Ativar áudio mesmo se autoplay falhar
+            // Tentar reproduzir o vídeo automaticamente
+            mainVideo.play().then(() => {
+                console.log('Vídeo reproduzindo automaticamente');
+                // Para iOS, ativar áudio após 500ms
+                if (isIOS) {
+                    setTimeout(() => {
+                        mainVideo.muted = false;
+                        mainVideo.volume = 0.7;
+                        console.log('Áudio ativado no iOS');
+                    }, 500);
+                }
+            }).catch(function(error) {
+                console.log('Autoplay bloqueado, aguardando interação:', error);
+                // Se autoplay falhar, esconder loading e mostrar vídeo
+                if (videoLoading) {
+                    videoLoading.style.display = 'none';
+                }
+                mainVideo.style.display = 'block';
+                // Ativar áudio se não for iOS
+                if (!isIOS) {
                     mainVideo.muted = false;
                     mainVideo.volume = 0.7;
-                });
-            }
+                }
+            });
         }
     }
     

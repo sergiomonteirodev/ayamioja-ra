@@ -1881,9 +1881,22 @@ body.modal-open {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
-        justify-content: center !important;
-        padding-top: 100px;
+        justify-content: flex-start !important;
+        padding-top: 20px !important;
         width: 100%;
+        gap: 20px;
+    }
+    
+    .logo-container {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 0 !important;
+        order: 1;
+    }
+    
+    .logo-container img {
+        max-width: 80%;
+        height: auto;
     }
     
     .circle-section {
@@ -1893,11 +1906,13 @@ body.modal-open {
         justify-content: center !important;
         width: 100%;
         position: relative;
+        order: 2;
+        margin: 20px 0;
     }
     
     .circular-text-container {
-        width: 300px !important;
-        height: 300px !important;
+        width: 320px !important;
+        height: 320px !important;
         margin: 0 auto !important;
         display: flex !important;
         align-items: center !important;
@@ -1906,18 +1921,18 @@ body.modal-open {
     }
     
     .main-circle {
-        width: 300px !important;
-        height: 300px !important;
-        margin: 0 auto !important;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 320px !important;
+        height: 320px !important;
+        margin: 0 !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     .main-video {
-        width: calc(100% - 5px) !important;
-        height: calc(100% - 5px) !important;
+        width: calc(100% - 10px) !important;
+        height: calc(100% - 10px) !important;
         object-fit: cover !important;
         border-radius: 50% !important;
         position: absolute !important;
@@ -1926,6 +1941,8 @@ body.modal-open {
         transform: translate(-50%, -50%) !important;
         -webkit-transform: translate(-50%, -50%) !important;
         z-index: 2 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     .video-loading {
@@ -1935,6 +1952,8 @@ body.modal-open {
         transform: translate(-50%, -50%) !important;
         -webkit-transform: translate(-50%, -50%) !important;
         z-index: 5 !important;
+        width: calc(100% - 10px) !important;
+        height: calc(100% - 10px) !important;
     }
     
     .replay-button {
@@ -1949,14 +1968,14 @@ body.modal-open {
     }
     
     .action-buttons {
+        position: absolute !important;
         bottom: 20px !important;
         right: 0px !important;
+        order: 3;
     }
     
-    .logo-container {
-        text-align: center;
-        width: 100%;
-        margin-bottom: 20px;
+    .toggle-controls {
+        top: 80px !important;
     }
 }
 
