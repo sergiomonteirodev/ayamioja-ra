@@ -90,6 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         
+        console.log('Configurando vídeo principal...');
+        console.log('iOS detectado:', isIOS);
+        
         // Manter o loop ativo
         mainVideo.loop = true;
         
@@ -97,9 +100,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isIOS) {
             mainVideo.muted = true;
             mainVideo.volume = 0;
+            console.log('Vídeo configurado para iOS (mudo inicial)');
         } else {
             mainVideo.muted = false;
             mainVideo.volume = 0.7;
+            console.log('Vídeo configurado para outros dispositivos');
         }
         
         // Função para atualizar progresso
@@ -132,47 +137,33 @@ document.addEventListener('DOMContentLoaded', function() {
             mainVideo.load();
         }
         
-        // Eventos de carregamento do vídeo
-        mainVideo.addEventListener('loadstart', () => {
-            updateProgress(0);
-        });
-        
-        mainVideo.addEventListener('progress', () => {
-            if (mainVideo.buffered.length > 0) {
-                const bufferedEnd = mainVideo.buffered.end(mainVideo.buffered.length - 1);
-                const duration = mainVideo.duration;
-                if (duration > 0) {
-                    const percent = (bufferedEnd / duration) * 100;
-                    updateProgress(percent);
-                }
-            }
-        });
-        
+        // Simplificar eventos de carregamento
         mainVideo.addEventListener('loadeddata', () => {
-            isVideoLoaded = true;
-            updateProgress(50);
-            console.log('Vídeo carregado com sucesso');
+            console.log('Vídeo carregado - mostrando imediatamente');
+            updateProgress(100);
             
-            // Tentar mostrar o vídeo imediatamente se estiver pronto
-            if (mainVideo.readyState >= 3) {
-                console.log('Vídeo pronto, mostrando...');
-                if (videoLoading) {
-                    videoLoading.style.display = 'none';
-                }
-                mainVideo.style.display = 'block';
+            // Mostrar vídeo imediatamente
+            if (videoLoading) {
+                videoLoading.style.display = 'none';
             }
+            mainVideo.style.display = 'block';
+            isVideoLoaded = true;
         });
         
         mainVideo.addEventListener('canplay', () => {
-            updateProgress(75);
-            console.log('Vídeo pode começar a reproduzir');
+            console.log('Vídeo pode reproduzir - mostrando');
+            updateProgress(100);
+            
+            // Mostrar vídeo
+            if (videoLoading) {
+                videoLoading.style.display = 'none';
+            }
+            mainVideo.style.display = 'block';
+            isVideoLoaded = true;
         });
         
-        mainVideo.addEventListener('canplaythrough', () => {
-            updateProgress(100);
-            console.log('Vídeo pronto para reprodução');
-            
-            // Mostrar vídeo imediatamente
+        mainVideo.addEventListener('play', () => {
+            console.log('Vídeo reproduzindo - garantindo que está visível');
             if (videoLoading) {
                 videoLoading.style.display = 'none';
             }
@@ -185,18 +176,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     mainVideo.muted = false;
                     mainVideo.volume = 0.7;
                     console.log('Áudio ativado no iOS');
-                }, 300);
+                }, 500);
             }
-        });
-        
-        // Garantir que o vídeo apareça quando começar a reproduzir
-        mainVideo.addEventListener('play', () => {
-            console.log('Vídeo começou a reproduzir');
-            if (videoLoading && videoLoading.style.display !== 'none') {
-                videoLoading.style.display = 'none';
-            }
-            mainVideo.style.display = 'block';
-            isVideoLoaded = true;
         });
         
         // Quando o vídeo terminar, ele vai fazer loop automaticamente
@@ -205,6 +186,24 @@ document.addEventListener('DOMContentLoaded', function() {
             hasPlayedOnce = true;
             // Com loop ativado, este evento não deve ser chamado normalmente
             console.log('Vídeo terminou - reiniciando loop');
+        });
+        
+        // Adicionar evento de clique no vídeo para mostrar botão de replay
+        mainVideo.addEventListener('click', () => {
+            if (mainVideo.paused) {
+                // Se estiver pausado, mostrar botão de replay
+                if (replayButton) {
+                    replayButton.style.display = 'flex';
+                    console.log('Mostrando botão de replay');
+                }
+            } else {
+                // Se estiver reproduzindo, pausar e mostrar botão
+                mainVideo.pause();
+                if (replayButton) {
+                    replayButton.style.display = 'flex';
+                    console.log('Vídeo pausado, mostrando botão de replay');
+                }
+            }
         });
         
         // Verificar se o vídeo já está carregado (quando volta de outra página)
@@ -230,22 +229,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Fallback: se após 3 segundos o vídeo não carregou, mostrar mesmo assim
+        // Fallback agressivo: forçar vídeo a aparecer após 2 segundos
         setTimeout(() => {
-            if (!isVideoLoaded && videoLoading && videoLoading.style.display !== 'none') {
-                console.log('Fallback: mostrando vídeo após timeout');
-                if (videoLoading) {
-                    videoLoading.style.display = 'none';
-                }
-                mainVideo.style.display = 'block';
-                isVideoLoaded = true;
-                
-                // Tentar reproduzir
-                if (mainVideo.paused) {
-                    mainVideo.play().catch(e => console.log('Erro ao reproduzir no fallback:', e));
-                }
+            console.log('Fallback: forçando vídeo a aparecer');
+            if (videoLoading) {
+                videoLoading.style.display = 'none';
             }
-        }, 3000);
+            mainVideo.style.display = 'block';
+            isVideoLoaded = true;
+            
+            // Tentar reproduzir
+            if (mainVideo.paused) {
+                mainVideo.play().catch(e => console.log('Erro ao reproduzir no fallback:', e));
+            }
+            
+            // Para iOS, ativar áudio
+            if (isIOS && mainVideo.muted) {
+                setTimeout(() => {
+                    mainVideo.muted = false;
+                    mainVideo.volume = 0.7;
+                    console.log('Áudio ativado no fallback iOS');
+                }, 500);
+            }
+        }, 2000);
     }
     
     // Configurar vídeo do intérprete
@@ -307,44 +313,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Botão Assistir Novamente
     if (replayButton) {
         const handleReplay = () => {
-            // Mostrar loading novamente e resetar progresso
-            if (videoLoading) {
-                videoLoading.style.display = 'flex';
-            }
-            if (progressFill && loadingPercentage) {
-                progressFill.style.width = '0%';
-                loadingPercentage.textContent = '0%';
-            }
-            replayButton.style.display = 'none';
-            mainVideo.style.display = 'none';
+            console.log('Botão replay clicado');
             
-            // Reiniciar vídeos
+            // Esconder botão de replay
+            replayButton.style.display = 'none';
+            
+            // Reiniciar vídeo para o início
             mainVideo.currentTime = 0;
             if (interpreterVideo) {
                 interpreterVideo.currentTime = 0;
             }
             
-            // Aguardar um pouco e então mostrar vídeo
-            setTimeout(() => {
-                if (videoLoading) {
-                    videoLoading.style.display = 'none';
-                }
-                mainVideo.style.display = 'block';
-                
-                // Esconder mensagem no vídeo de libras
-                if (interpreterPausedMessage) {
-                    interpreterPausedMessage.style.display = 'none';
-                }
-                
-                // Ativar áudio e reproduzir vídeos
-                mainVideo.muted = false;
-                mainVideo.volume = 0.7;
-                mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
-                // Só reproduzir vídeo de libras se o toggle estiver ativo
-                if (librasToggle && librasToggle.checked && interpreterVideo) {
-                    interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
-                }
-            }, 500);
+            // Reproduzir vídeo principal
+            mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
+            
+            // Se libras estiver ativo, reproduzir vídeo de libras também
+            if (librasToggle && librasToggle.checked && interpreterVideo) {
+                interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
+            }
+            
+            // Esconder mensagem no vídeo de libras
+            if (interpreterPausedMessage) {
+                interpreterPausedMessage.style.display = 'none';
+            }
         };
         
         // Adicionar eventos para desktop e mobile
