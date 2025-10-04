@@ -166,7 +166,11 @@ document.addEventListener('DOMContentLoaded', function() {
         mainVideo.addEventListener('ended', () => {
             hasPlayedOnce = true;
             mainVideo.style.display = 'none';
-            replayButton.style.display = 'flex';
+            if (replayButton) {
+                replayButton.style.display = 'flex';
+                replayButton.style.pointerEvents = 'auto';
+                replayButton.style.zIndex = '10';
+            }
         });
         
         // Verificar se o vídeo já está carregado (quando volta de outra página)
@@ -247,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Botão Assistir Novamente
     if (replayButton) {
-        replayButton.addEventListener('click', () => {
+        const handleReplay = () => {
             // Mostrar loading novamente e resetar progresso
             if (videoLoading) {
                 videoLoading.style.display = 'flex';
@@ -261,7 +265,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Reiniciar vídeos
             mainVideo.currentTime = 0;
-            interpreterVideo.currentTime = 0;
+            if (interpreterVideo) {
+                interpreterVideo.currentTime = 0;
+            }
             
             // Aguardar um pouco e então mostrar vídeo
             setTimeout(() => {
@@ -280,11 +286,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 mainVideo.volume = 0.7;
                 mainVideo.play().catch(e => console.log('Erro ao reproduzir vídeo principal:', e));
                 // Só reproduzir vídeo de libras se o toggle estiver ativo
-                if (librasToggle && librasToggle.checked) {
+                if (librasToggle && librasToggle.checked && interpreterVideo) {
                     interpreterVideo.play().catch(e => console.log('Erro ao reproduzir vídeo de libras:', e));
                 }
             }, 500);
-        });
+        };
+        
+        // Adicionar eventos para desktop e mobile
+        replayButton.addEventListener('click', handleReplay);
+        replayButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleReplay();
+        }, { passive: false });
     }
     
     // Botões de ação (apenas na página principal)
