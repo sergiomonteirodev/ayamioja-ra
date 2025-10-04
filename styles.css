@@ -520,7 +520,7 @@ position: absolute;
   right: 0px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
   z-index: 150;
 }
 
@@ -1210,7 +1210,7 @@ body.modal-open {
     /* Botões */
     .action-buttons {
         position: absolute;
-        bottom: 60px;
+        bottom: 20px;
         right: 0px;
         flex-direction: column;
         gap: 10px;
@@ -1871,9 +1871,8 @@ body.modal-open {
     
     /* Botões de Ação */
     .action-buttons {
-        gap: 15px;
-        margin-top: 15px;
-        bottom: 100px;
+        gap: 0px;
+        bottom: 20px;
     }
     
     .action-button {
