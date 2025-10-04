@@ -1055,26 +1055,54 @@ body.modal-open {
 /* iOS Safari Specific Fixes */
 @supports (-webkit-touch-callout: none) {
     /* iPhone 13 e dispositivos iOS */
+    .circular-text-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .main-circle {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
     .main-video {
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        -webkit-transform: translate(-50%, -50%) translateZ(0) !important;
+        transform: translate(-50%, -50%) translateZ(0) !important;
         will-change: transform;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .video-loading {
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        -webkit-transform: translate(-50%, -50%) !important;
+        transform: translate(-50%, -50%) !important;
     }
     
     .replay-button {
         z-index: 10 !important;
         pointer-events: auto !important;
         -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-    }
-    
-    .circular-text-container {
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        -webkit-transform: translate(-50%, -50%) !important;
+        transform: translate(-50%, -50%) !important;
+        margin: 0 !important;
     }
     
     video {
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
         -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
     }
@@ -1285,9 +1313,15 @@ body.modal-open {
     
     /* Vídeo e Replay Button */
     .main-video {
-        width: 100%;
-        height: 100%;
+        width: calc(100% - 5px);
+        height: calc(100% - 5px);
         object-fit: cover;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
     }
     
     .replay-button {
@@ -1325,6 +1359,10 @@ body.modal-open {
         padding-right: 10px;
         min-height: 100vh;
         padding-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .page-content {
@@ -1448,6 +1486,10 @@ body.modal-open {
         padding-right: 8px;
         min-height: 100vh;
         padding-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .page-content {
@@ -1620,6 +1662,10 @@ body.modal-open {
         padding-right: 5px;
         min-height: 100vh;
         padding-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .page-content {
@@ -1772,6 +1818,10 @@ body.modal-open {
         padding-right: 3px;
         min-height: 100vh;
         padding-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .page-content {
@@ -1818,6 +1868,95 @@ body.modal-open {
     footer {
         font-size: 10px;
         padding: 6px 0;
+    }
+}
+
+/* iPhone 13 e dispositivos similares (390px width) */
+@media (max-width: 430px) and (min-width: 360px) {
+    body {
+        overflow-x: hidden;
+    }
+    
+    .main-content {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding-top: 100px;
+        width: 100%;
+    }
+    
+    .circle-section {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100%;
+        position: relative;
+    }
+    
+    .circular-text-container {
+        width: 300px !important;
+        height: 300px !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: relative;
+    }
+    
+    .main-circle {
+        width: 300px !important;
+        height: 300px !important;
+        margin: 0 auto !important;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .main-video {
+        width: calc(100% - 5px) !important;
+        height: calc(100% - 5px) !important;
+        object-fit: cover !important;
+        border-radius: 50% !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        -webkit-transform: translate(-50%, -50%) !important;
+        z-index: 2 !important;
+    }
+    
+    .video-loading {
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        -webkit-transform: translate(-50%, -50%) !important;
+        z-index: 5 !important;
+    }
+    
+    .replay-button {
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        -webkit-transform: translate(-50%, -50%) !important;
+        z-index: 10 !important;
+        padding: 10px 18px !important;
+        font-size: 14px !important;
+    }
+    
+    .action-buttons {
+        bottom: 20px !important;
+        right: 0px !important;
+    }
+    
+    .logo-container {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 20px;
     }
 }
 

@@ -173,23 +173,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Detectar iOS/iPhone
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
         // Verificar se o vídeo já está carregado (quando volta de outra página)
         if (mainVideo.readyState >= 3) { // HAVE_FUTURE_DATA ou superior
             console.log('Vídeo já carregado, reiniciando processo...');
             resetVideoLoading();
         } else {
-            // Tentar reproduzir o vídeo (ainda mudo)
-            mainVideo.play().catch(function(error) {
-                console.log('Autoplay bloqueado, clique para reproduzir:', error);
-                // Se autoplay falhar, esconder loading e mostrar vídeo
-                if (videoLoading) {
-                    videoLoading.style.display = 'none';
-                }
-                mainVideo.style.display = 'block';
-                // Ativar áudio mesmo se autoplay falhar
-                mainVideo.muted = false;
-                mainVideo.volume = 0.7;
-            });
+            // Para iOS, forçar interação do usuário primeiro
+            if (isIOS) {
+                console.log('iOS detectado, aguardando interação do usuário...');
+                updateProgress(100);
+                setTimeout(() => {
+                    if (videoLoading) {
+                        videoLoading.style.display = 'none';
+                    }
+                    mainVideo.style.display = 'block';
+                    // Tentar reproduzir no iOS (mudo primeiro)
+                    mainVideo.play().then(() => {
+                        console.log('Vídeo reproduzindo no iOS');
+                        // Depois de 1 segundo, ativar áudio
+                        setTimeout(() => {
+                            mainVideo.muted = false;
+                            mainVideo.volume = 0.7;
+                        }, 1000);
+                    }).catch(error => {
+                        console.log('iOS: Autoplay bloqueado, aguardando interação:', error);
+                    });
+                }, 500);
+            } else {
+                // Tentar reproduzir o vídeo (ainda mudo) em outros dispositivos
+                mainVideo.play().catch(function(error) {
+                    console.log('Autoplay bloqueado, clique para reproduzir:', error);
+                    // Se autoplay falhar, esconder loading e mostrar vídeo
+                    if (videoLoading) {
+                        videoLoading.style.display = 'none';
+                    }
+                    mainVideo.style.display = 'block';
+                    // Ativar áudio mesmo se autoplay falhar
+                    mainVideo.muted = false;
+                    mainVideo.volume = 0.7;
+                });
+            }
         }
     }
     
@@ -392,4 +419,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
