@@ -87,6 +87,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         
+        // Manter o loop ativo
+        mainVideo.loop = true;
+        
         // Para iOS, começar mudo para permitir autoplay
         if (isIOS) {
             mainVideo.muted = true;
@@ -95,7 +98,6 @@ document.addEventListener('DOMContentLoaded', function() {
             mainVideo.muted = false;
             mainVideo.volume = 0.7;
         }
-        mainVideo.loop = false; // Desabilitar loop para controlar manualmente
         
         // Função para atualizar progresso
         function updateProgress(percent) {
@@ -165,54 +167,51 @@ document.addEventListener('DOMContentLoaded', function() {
                     videoLoading.style.display = 'none';
                 }
                 mainVideo.style.display = 'block';
+                isVideoLoaded = true;
                 
-                // Agora ativar o áudio
-                mainVideo.muted = false;
-                mainVideo.volume = 0.7;
-            }, 500);
-        });
-        
-        // Quando o vídeo terminar, mostrar botão de replay
-        mainVideo.addEventListener('ended', () => {
-            hasPlayedOnce = true;
-            mainVideo.style.display = 'none';
-            if (replayButton) {
-                replayButton.style.display = 'flex';
-                replayButton.style.pointerEvents = 'auto';
-                replayButton.style.zIndex = '10';
-            }
-        });
-        
-        // Verificar se o vídeo já está carregado (quando volta de outra página)
-        if (mainVideo.readyState >= 3) { // HAVE_FUTURE_DATA ou superior
-            console.log('Vídeo já carregado, reiniciando processo...');
-            resetVideoLoading();
-        } else {
-            // Tentar reproduzir o vídeo automaticamente
-            mainVideo.play().then(() => {
-                console.log('Vídeo reproduzindo automaticamente');
-                // Para iOS, ativar áudio após 500ms
-                if (isIOS) {
+                // Para iOS, ativar áudio após começar a reproduzir
+                if (isIOS && mainVideo.muted) {
                     setTimeout(() => {
                         mainVideo.muted = false;
                         mainVideo.volume = 0.7;
                         console.log('Áudio ativado no iOS');
-                    }, 500);
+                    }, 300);
                 }
-            }).catch(function(error) {
-                console.log('Autoplay bloqueado, aguardando interação:', error);
-                // Se autoplay falhar, esconder loading e mostrar vídeo
-                if (videoLoading) {
-                    videoLoading.style.display = 'none';
-                }
-                mainVideo.style.display = 'block';
-                // Ativar áudio se não for iOS
-                if (!isIOS) {
+            }, 500);
+        });
+        
+        // Quando o vídeo terminar, ele vai fazer loop automaticamente
+        // Mantém o evento caso o usuário desabilite o loop manualmente
+        mainVideo.addEventListener('ended', () => {
+            hasPlayedOnce = true;
+            // Com loop ativado, este evento não deve ser chamado normalmente
+            console.log('Vídeo terminou - reiniciando loop');
+        });
+        
+        // Verificar se o vídeo já está carregado (quando volta de outra página)
+        if (mainVideo.readyState >= 3) { // HAVE_FUTURE_DATA ou superior
+            console.log('Vídeo já carregado, processando...');
+            if (videoLoading) {
+                videoLoading.style.display = 'none';
+            }
+            mainVideo.style.display = 'block';
+            isVideoLoaded = true;
+            
+            // Garantir que está reproduzindo
+            if (mainVideo.paused) {
+                mainVideo.play().catch(e => console.log('Erro ao reproduzir:', e));
+            }
+            
+            // Para iOS, ativar áudio
+            if (isIOS && mainVideo.muted) {
+                setTimeout(() => {
                     mainVideo.muted = false;
                     mainVideo.volume = 0.7;
-                }
-            });
+                }, 300);
+            }
         }
+        // Se não estiver carregado, o evento canplaythrough cuidará disso
+        // O autoplay do HTML já iniciará o vídeo automaticamente
     }
     
     // Configurar vídeo do intérprete

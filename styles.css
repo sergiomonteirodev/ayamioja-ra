@@ -230,11 +230,12 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100vh;
     padding-left: 20px;
     padding-right: 20px;
-    padding-bottom: 20px;
+    padding-bottom: 80px;
+    gap: 30px;
 }
 
 /* Title Section */
@@ -1358,11 +1359,12 @@ body.modal-open {
         padding-left: 10px;
         padding-right: 10px;
         min-height: 100vh;
-        padding-bottom: 20px;
+        padding-bottom: 80px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 25px;
     }
 
     .page-content {
@@ -1485,11 +1487,12 @@ body.modal-open {
         padding-left: 8px;
         padding-right: 8px;
         min-height: 100vh;
-        padding-bottom: 20px;
+        padding-bottom: 80px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 20px;
     }
 
     .page-content {
@@ -1661,11 +1664,12 @@ body.modal-open {
         padding-left: 5px;
         padding-right: 5px;
         min-height: 100vh;
-        padding-bottom: 20px;
+        padding-bottom: 80px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 20px;
     }
 
     .page-content {
@@ -1817,11 +1821,12 @@ body.modal-open {
         padding-left: 3px;
         padding-right: 3px;
         min-height: 100vh;
-        padding-bottom: 20px;
+        padding-bottom: 80px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 15px;
     }
 
     .page-content {
@@ -1882,20 +1887,22 @@ body.modal-open {
         flex-direction: column !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        padding-top: 20px !important;
+        padding-top: 90px !important;
         width: 100%;
-        gap: 20px;
+        gap: 15px !important;
+        padding-bottom: 100px !important;
+        min-height: 100vh;
     }
     
     .logo-container {
         text-align: center;
         width: 100%;
-        margin-bottom: 0 !important;
-        order: 1;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     .logo-container img {
-        max-width: 80%;
+        max-width: 70%;
         height: auto;
     }
     
@@ -1906,14 +1913,14 @@ body.modal-open {
         justify-content: center !important;
         width: 100%;
         position: relative;
-        order: 2;
-        margin: 20px 0;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     .circular-text-container {
-        width: 320px !important;
-        height: 320px !important;
-        margin: 0 auto !important;
+        width: 300px !important;
+        height: 300px !important;
+        margin: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -1921,8 +1928,8 @@ body.modal-open {
     }
     
     .main-circle {
-        width: 320px !important;
-        height: 320px !important;
+        width: 300px !important;
+        height: 300px !important;
         margin: 0 !important;
         position: relative !important;
         display: flex !important;
@@ -1952,8 +1959,9 @@ body.modal-open {
         transform: translate(-50%, -50%) !important;
         -webkit-transform: translate(-50%, -50%) !important;
         z-index: 5 !important;
-        width: calc(100% - 10px) !important;
-        height: calc(100% - 10px) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
     }
     
     .replay-button {
@@ -1968,14 +1976,17 @@ body.modal-open {
     }
     
     .action-buttons {
-        position: absolute !important;
+        position: fixed !important;
         bottom: 20px !important;
-        right: 0px !important;
-        order: 3;
+        right: 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        z-index: 100 !important;
     }
     
     .toggle-controls {
-        top: 80px !important;
+        top: 70px !important;
     }
 }
 
