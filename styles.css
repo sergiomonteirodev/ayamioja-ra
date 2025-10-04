@@ -1358,7 +1358,7 @@ body.modal-open {
     }
 
     .action-buttons {
-        bottom: 70px;
+        bottom: 20px;
         right: 0px;
     }
 
@@ -1538,7 +1538,7 @@ body.modal-open {
     }
 
     .action-buttons {
-        bottom: 80px;
+        bottom: 20px;
         right: 0px;
     }
 
