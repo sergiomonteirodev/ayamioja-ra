@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Verificar se os elementos existem antes de adicionar event listeners
     if (librasToggle && interpreterContainer) {
+        // Garantir que o vídeo de Libras comece oculto
+        interpreterContainer.style.display = 'none';
+        
         librasToggle.addEventListener('change', function() {
         if (this.checked) {
             // Mostrar intérprete
@@ -149,6 +152,15 @@ document.addEventListener('DOMContentLoaded', function() {
             isVideoLoaded = true;
             updateProgress(50);
             console.log('Vídeo carregado com sucesso');
+            
+            // Tentar mostrar o vídeo imediatamente se estiver pronto
+            if (mainVideo.readyState >= 3) {
+                console.log('Vídeo pronto, mostrando...');
+                if (videoLoading) {
+                    videoLoading.style.display = 'none';
+                }
+                mainVideo.style.display = 'block';
+            }
         });
         
         mainVideo.addEventListener('canplay', () => {
@@ -160,24 +172,31 @@ document.addEventListener('DOMContentLoaded', function() {
             updateProgress(100);
             console.log('Vídeo pronto para reprodução');
             
-            // Pequeno delay para mostrar 100%
-            setTimeout(() => {
-                // Esconder loading e mostrar vídeo
-                if (videoLoading) {
-                    videoLoading.style.display = 'none';
-                }
-                mainVideo.style.display = 'block';
-                isVideoLoaded = true;
-                
-                // Para iOS, ativar áudio após começar a reproduzir
-                if (isIOS && mainVideo.muted) {
-                    setTimeout(() => {
-                        mainVideo.muted = false;
-                        mainVideo.volume = 0.7;
-                        console.log('Áudio ativado no iOS');
-                    }, 300);
-                }
-            }, 500);
+            // Mostrar vídeo imediatamente
+            if (videoLoading) {
+                videoLoading.style.display = 'none';
+            }
+            mainVideo.style.display = 'block';
+            isVideoLoaded = true;
+            
+            // Para iOS, ativar áudio após começar a reproduzir
+            if (isIOS && mainVideo.muted) {
+                setTimeout(() => {
+                    mainVideo.muted = false;
+                    mainVideo.volume = 0.7;
+                    console.log('Áudio ativado no iOS');
+                }, 300);
+            }
+        });
+        
+        // Garantir que o vídeo apareça quando começar a reproduzir
+        mainVideo.addEventListener('play', () => {
+            console.log('Vídeo começou a reproduzir');
+            if (videoLoading && videoLoading.style.display !== 'none') {
+                videoLoading.style.display = 'none';
+            }
+            mainVideo.style.display = 'block';
+            isVideoLoaded = true;
         });
         
         // Quando o vídeo terminar, ele vai fazer loop automaticamente
@@ -210,8 +229,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 300);
             }
         }
-        // Se não estiver carregado, o evento canplaythrough cuidará disso
-        // O autoplay do HTML já iniciará o vídeo automaticamente
+        
+        // Fallback: se após 3 segundos o vídeo não carregou, mostrar mesmo assim
+        setTimeout(() => {
+            if (!isVideoLoaded && videoLoading && videoLoading.style.display !== 'none') {
+                console.log('Fallback: mostrando vídeo após timeout');
+                if (videoLoading) {
+                    videoLoading.style.display = 'none';
+                }
+                mainVideo.style.display = 'block';
+                isVideoLoaded = true;
+                
+                // Tentar reproduzir
+                if (mainVideo.paused) {
+                    mainVideo.play().catch(e => console.log('Erro ao reproduzir no fallback:', e));
+                }
+            }
+        }, 3000);
     }
     
     // Configurar vídeo do intérprete
