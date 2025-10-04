@@ -12,13 +12,31 @@
           height: 100%;
           overflow: hidden;
           background: transparent;
+          position: relative;
         }
+        
+        * {
+          box-sizing: border-box;
+        }
+        
         a-scene {
-          position: absolute;
-          top: 0;
-          left: 0;
-          height: 100%;
-          width: 100%;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          height: 100% !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          display: block !important;
+        }
+        
+        /* Garantir que canvas da câmera ocupe 100% */
+        a-scene canvas {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
         }
         
         /* Esconder ícones do A-Frame */
@@ -545,12 +563,18 @@
           bottom: 20px;
           right: 20px;
           z-index: 999;
+          margin: 0;
+          padding: 0;
+          pointer-events: auto;
         }
         
         .back-button {
           display: block;
           text-decoration: none;
           color: inherit;
+          margin: 0;
+          padding: 0;
+          line-height: 0;
         }
         
         .back-button-image {
@@ -559,6 +583,11 @@
           object-fit: contain;
           transition: all 0.3s ease;
           cursor: pointer;
+          display: block;
+          margin: 0;
+          padding: 0;
+          border: none;
+          background: transparent;
         }
         
         .back-button-image:hover {
