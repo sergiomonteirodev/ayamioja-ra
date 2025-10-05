@@ -8,6 +8,7 @@ import TeamPage from './pages/TeamPage'
 function App() {
   return (
     <Router
+      basename="/ayamioja-ra"
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true
