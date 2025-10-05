@@ -57,28 +57,28 @@
 
 @font-face {
     font-family: 'RooneySans';
-    src: url('rooneysans/RooneySansHv.OTF') format('opentype');
+    src: url('/fonts/rooneysans/RooneySansHv.OTF') format('opentype');
     font-weight: 800;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'RooneySans';
-    src: url('rooneysans/RooneySansHvIt.OTF') format('opentype');
+    src: url('/fonts/rooneysans/RooneySansHvIt.OTF') format('opentype');
     font-weight: 800;
     font-style: italic;
 }
 
 @font-face {
     font-family: 'RooneySans';
-    src: url('rooneysans/RooneySansBlk.OTF') format('opentype');
+    src: url('/fonts/rooneysans/RooneySansBlk.OTF') format('opentype');
     font-weight: 900;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'RooneySans';
-    src: url('rooneysans/RooneySansBlkIt.OTF') format('opentype');
+    src: url('/fonts/rooneysans/RooneySansBlkIt.OTF') format('opentype');
     font-weight: 900;
     font-style: italic;
 }
