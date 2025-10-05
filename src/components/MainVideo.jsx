@@ -305,7 +305,7 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
             loop={false}
             onClick={handleVideoClick}
           >
-            <source src="/videos/anim_ayo.mp4" type="video/mp4" />
+            <source src="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
           </video>
           

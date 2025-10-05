@@ -120,8 +120,8 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
           <source src={customVideoSrc} type="video/mp4" />
         ) : (
           <>
-            <source src="/videos/libras_anim_ayo.mp4" type="video/mp4" />
-            <source src="/videos/libras_anim_ayo_2.mp4" type="video/mp4" />
+            <source src="/ayamioja-ra/videos/libras_anim_ayo.mp4" type="video/mp4" />
+            <source src="/ayamioja-ra/videos/libras_anim_ayo_2.mp4" type="video/mp4" />
           </>
         )}
       </video>
