@@ -106,7 +106,7 @@ const ScanPage = () => {
           setActiveTargetIndex(0)
           setShowScanningAnimation(false)
           
-          const librasVideoSrc = '/videos/libras_anim_ayo.mp4'
+          const librasVideoSrc = '/ayamioja-ra/videos/libras_anim_ayo.mp4'
           console.log('📹 Carregando vídeo de Libras:', librasVideoSrc)
           setCurrentLibrasVideo(librasVideoSrc)
           
@@ -150,7 +150,7 @@ const ScanPage = () => {
           setActiveTargetIndex(1)
           setShowScanningAnimation(false)
           
-          const librasVideoSrc = '/videos/libras_anim_ayo_2.mp4'
+          const librasVideoSrc = '/ayamioja-ra/videos/libras_anim_ayo_2.mp4'
           console.log('📹 Carregando vídeo de Libras:', librasVideoSrc)
           setCurrentLibrasVideo(librasVideoSrc)
           
@@ -194,7 +194,7 @@ const ScanPage = () => {
           setActiveTargetIndex(2)
           setShowScanningAnimation(false)
           
-          const librasVideoSrc = '/videos/libras_anim_ayo.mp4'
+          const librasVideoSrc = '/ayamioja-ra/videos/libras_anim_ayo.mp4'
           console.log('📹 Carregando vídeo de Libras:', librasVideoSrc)
           setCurrentLibrasVideo(librasVideoSrc)
           
