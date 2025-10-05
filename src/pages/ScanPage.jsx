@@ -284,13 +284,13 @@ const ScanPage = () => {
 
       {/* Botão Voltar como overlay */}
       <div className="back-button-overlay" onClick={handleBackClick}>
-        <SafeImage src="/images/voltar_botao.png" alt="Voltar" className="back-button-image-overlay" />
+        <SafeImage src="/ayamioja-ra/images/voltar_botao.png" alt="Voltar" className="back-button-image-overlay" />
       </div>
 
       {/* A-Frame Scene */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none;"
+        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(3).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true"
@@ -301,7 +301,7 @@ const ScanPage = () => {
         <a-assets>
           <video 
             id="video1" 
-            src="/ar-assets/assets/ayo_teste.mp4" 
+            src="/ayamioja-ra/ar-assets/assets/ayo_teste.mp4" 
             loop 
             playsInline
             crossOrigin="anonymous"
@@ -309,7 +309,7 @@ const ScanPage = () => {
           ></video>
           <video 
             id="video2" 
-            src="/ar-assets/assets/ayo_teste.mp4" 
+            src="/ayamioja-ra/ar-assets/assets/ayo_teste.mp4" 
             loop 
             playsInline
             crossOrigin="anonymous"
@@ -317,7 +317,7 @@ const ScanPage = () => {
           ></video>
           <video 
             id="video3" 
-            src="/ar-assets/assets/anim_2.mp4" 
+            src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" 
             loop
             playsInline
             crossOrigin="anonymous"
