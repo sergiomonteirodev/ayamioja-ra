@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import ghPages from 'vite-plugin-gh-pages'
+import { ghPages } from 'vite-plugin-gh-pages'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,10 +8,10 @@ export default defineConfig({
     react(),
     ghPages({
       branch: 'gh-pages',
-      repo: 'https://github.com/SEU_USUARIO/ayamioja-ra.git', // Substitua pelo seu repositório
+      repo: 'https://github.com/sergiomonteirodev/ayamioja-ra.git',
       user: {
-        name: 'SEU_NOME', // Substitua pelo seu nome
-        email: 'SEU_EMAIL@example.com' // Substitua pelo seu email
+        name: 'sergiomonteirodev',
+        email: 'sergio@example.com'
       }
     })
   ],
