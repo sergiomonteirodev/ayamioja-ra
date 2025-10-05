@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Ayamioja RA - Parallax</title>
+    <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.7/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <a-scene mindar-image="imageTargetSrc: ./public/targets.mind; autoStart: true;" 
+             embedded
+             color-space="sRGB"
+             renderer="colorManagement: true, physicallyCorrectLights"
+             vr-mode-ui="enabled: false"
+             device-orientation-permission-ui="enabled: true">
+
+      <a-assets>
+        <img id="fundo" src="./assets/fundo.png">
+        <img id="meio" src="./assets/meio.png">
+        <img id="frente" src="./assets/frente.png">
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-image src="#fundo" position="0 0 -0.05" width="1" height="0.7"></a-image>
+        <a-image src="#meio"  position="0 0  0.00" width="1" height="0.7"></a-image>
+        <a-image src="#frente" position="0 0 0.05" width="1" height="0.7"></a-image>
+      </a-entity>
+
+    </a-scene>
+  </body>
+</html>
