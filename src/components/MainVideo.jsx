@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-const MainVideo = ({ librasActive, onVideoStateChange }) => {
+const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [showLoading, setShowLoading] = useState(true)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -37,6 +37,26 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
     }
   }, [isAppleDevice])
 
+  // Ajustar volume baseado no toggle de audiodescrição
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    if (isAppleDevice && !userInteracted) {
+      // Para Apple, manter muted até interação
+      return
+    }
+
+    // Quando audiodescrição está ativa, reduzir volume do vídeo principal
+    if (audioActive) {
+      video.volume = 0.2 // Volume baixo quando AD está ativo
+      console.log('🔊 Volume do vídeo principal reduzido para 0.2 (AD ativo)')
+    } else {
+      video.volume = 0.7 // Volume normal quando AD está desativado
+      console.log('🔊 Volume do vídeo principal normalizado para 0.7 (AD desativado)')
+    }
+  }, [audioActive, isAppleDevice, userInteracted])
+
   // Atualizar estado do vídeo continuamente
   useEffect(() => {
     const video = videoRef.current
@@ -68,7 +88,8 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
       video.volume = 0
     } else {
       video.muted = false
-      video.volume = 0.7
+      // Volume baixo se audiodescrição estiver ativa, normal caso contrário
+      video.volume = audioActive ? 0.2 : 0.7
     }
 
     // Event listeners
@@ -120,7 +141,8 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
       // Para dispositivos Apple, ativar áudio após interação do usuário
       if (isAppleDevice && userInteracted && video.muted) {
         video.muted = false
-        video.volume = 0.7
+        // Volume baixo se audiodescrição estiver ativa, normal caso contrário
+        video.volume = audioActive ? 0.2 : 0.7
         console.log('🔊 Áudio ativado após interação do usuário')
       }
 
@@ -206,7 +228,8 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
       if (isIOS && video.muted) {
         setTimeout(() => {
           video.muted = false
-          video.volume = 0.7
+          // Volume baixo se audiodescrição estiver ativa, normal caso contrário
+          video.volume = audioActive ? 0.2 : 0.7
           console.log('🔊 Áudio ativado no fallback iOS')
         }, 500)
       }
@@ -226,7 +249,7 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
       video.removeEventListener('waiting', handleWaiting)
       clearTimeout(fallbackTimeout)
     }
-  }, [isAppleDevice, userInteracted, onVideoStateChange, hasEnded])
+    }, [isAppleDevice, userInteracted, onVideoStateChange, hasEnded, audioActive])
 
   const handleVideoClick = () => {
     const video = videoRef.current
@@ -235,7 +258,8 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
     // Para dispositivos Apple, ativar áudio ao clicar no vídeo
     if (isAppleDevice && video.muted) {
       video.muted = false
-      video.volume = 0.7
+      // Volume baixo se audiodescrição estiver ativa, normal caso contrário
+      video.volume = audioActive ? 0.2 : 0.7
       setUserInteracted(true)
       console.log('🔊 Áudio ativado ao clicar no vídeo')
     }
@@ -246,7 +270,8 @@ const MainVideo = ({ librasActive, onVideoStateChange }) => {
     if (!video) return
 
     video.muted = false
-    video.volume = 0.7
+    // Volume baixo se audiodescrição estiver ativa, normal caso contrário
+    video.volume = audioActive ? 0.2 : 0.7
     setUserInteracted(true)
     console.log('🔊 Áudio ativado via botão')
   }
