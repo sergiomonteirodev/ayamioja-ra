@@ -3,6 +3,7 @@ import Navigation from '../components/Navigation'
 import ToggleControls from '../components/ToggleControls'
 import MainVideo from '../components/MainVideo'
 import InterpreterVideo from '../components/InterpreterVideo'
+import AudioDescription from '../components/AudioDescription'
 import ActionButtons from '../components/ActionButtons'
 
 const HomePage = () => {
@@ -50,6 +51,11 @@ const HomePage = () => {
 
       <InterpreterVideo 
         librasActive={librasActive}
+        videoState={videoState}
+      />
+
+      <AudioDescription 
+        audioActive={audioActive}
         videoState={videoState}
       />
       
