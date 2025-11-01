@@ -107,9 +107,35 @@ const ScanPage = () => {
     const handleSceneLoaded = () => {
       console.log('✅ Scene A-Frame carregada')
       
+      // Função para ajustar material dos vídeos AR (remover fundo preto)
+      const adjustVideoMaterial = () => {
+        const videoElements = [
+          document.querySelector('#target0 a-video'),
+          document.querySelector('#target1 a-video'),
+          document.querySelector('#target2 a-video')
+        ]
+        
+        videoElements.forEach((videoEl, index) => {
+          if (videoEl) {
+            // Ajustar material para remover fundo preto
+            videoEl.setAttribute('material', {
+              shader: 'flat',
+              side: 'double',
+              transparent: true,
+              opacity: 1
+            })
+            
+            console.log(`📐 Material do vídeo AR ${index} ajustado`)
+          }
+        })
+      }
+      
       // Aguardar um pouco mais para garantir que todos os elementos estão prontos
       setTimeout(() => {
         console.log('🔍 Procurando targets...')
+        
+        // Ajustar material dos vídeos uma vez quando o scene estiver pronto
+        adjustVideoMaterial()
         
         // Configurar eventos de target
         const target0 = document.getElementById('target0')
@@ -320,6 +346,7 @@ const ScanPage = () => {
         device-orientation-permission-ui="enabled: false"
         renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true"
         embedded
+        background="color: transparent"
         style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 1}}
       >
         {/* Assets */}
@@ -355,10 +382,11 @@ const ScanPage = () => {
           <a-video 
             src="#video1" 
             position="0 0 0" 
-            rotation="0 0 -90" 
+            rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; side: double; opacity: 1"
+            material="shader: flat; side: double; transparent: true; opacity: 1"
+            autoplay="true"
           ></a-video>
         </a-entity>
 
@@ -366,10 +394,11 @@ const ScanPage = () => {
           <a-video 
             src="#video2" 
             position="0 0 0" 
-            rotation="0 0 -90" 
+            rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; side: double; opacity: 1"
+            material="shader: flat; side: double; transparent: true; opacity: 1"
+            autoplay="true"
           ></a-video>
         </a-entity>
 
@@ -377,10 +406,11 @@ const ScanPage = () => {
           <a-video 
             src="#video3" 
             position="0 0 0" 
-            rotation="0 0 -90" 
+            rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; side: double; opacity: 1"
+            material="shader: flat; side: double; transparent: true; opacity: 1"
+            autoplay="true"
           ></a-video>
         </a-entity>
 
