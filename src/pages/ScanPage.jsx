@@ -14,6 +14,7 @@ const ScanPage = () => {
   const [isArReady, setIsArReady] = useState(false)
   const [showScanningAnimation, setShowScanningAnimation] = useState(true)
   const [currentLibrasVideo, setCurrentLibrasVideo] = useState(null)
+  const [deviceOrientation, setDeviceOrientation] = useState('portrait') // 'portrait' ou 'landscape'
   
   const sceneRef = useRef(null)
   const navigate = useNavigate()
@@ -31,6 +32,50 @@ const ScanPage = () => {
   const handleBackClick = () => {
     navigate('/')
   }
+
+  // Detectar orientação do dispositivo e ajustar vídeos AR quando houver mudança
+  useEffect(() => {
+    const updateOrientation = () => {
+      const isPortrait = window.innerHeight > window.innerWidth
+      const newOrientation = isPortrait ? 'portrait' : 'landscape'
+      setDeviceOrientation(newOrientation)
+      console.log('📱 Orientação do dispositivo:', newOrientation)
+      
+      // Ajustar vídeos AR quando a orientação mudar
+      const adjustVideos = () => {
+        const videoElements = [
+          document.querySelector('#target0 a-video'),
+          document.querySelector('#target1 a-video'),
+          document.querySelector('#target2 a-video')
+        ]
+        
+        videoElements.forEach((videoEl, index) => {
+          if (videoEl) {
+            // Sempre manter proporção do livro aberto (largura > altura)
+            videoEl.setAttribute('rotation', '0 0 -90')
+            videoEl.setAttribute('width', '1.6') // Largura maior para livro aberto
+            videoEl.setAttribute('height', '0.8') // Altura menor para livro aberto
+            console.log(`📐 Vídeo AR ${index} ajustado para ${newOrientation}`)
+          }
+        })
+      }
+      
+      // Aguardar um pouco para garantir que os elementos estão prontos
+      setTimeout(adjustVideos, 200)
+    }
+    
+    // Ouvir mudanças de orientação
+    window.addEventListener('resize', updateOrientation)
+    window.addEventListener('orientationchange', () => {
+      // Delay maior para aguardar a mudança de orientação completar
+      setTimeout(updateOrientation, 500)
+    })
+    
+    return () => {
+      window.removeEventListener('resize', updateOrientation)
+      window.removeEventListener('orientationchange', updateOrientation)
+    }
+  }, [])
 
   // Controlar visibilidade da animação de scanning baseado em targets ativos
   useEffect(() => {
@@ -82,9 +127,32 @@ const ScanPage = () => {
     const handleSceneLoaded = () => {
       console.log('✅ Scene A-Frame carregada')
       
+      // Ajustar orientação dos vídeos AR quando o scene estiver pronto
+      const adjustVideosOrientation = () => {
+        const isPortrait = window.innerHeight > window.innerWidth
+        const videoElements = [
+          document.querySelector('#target0 a-video'),
+          document.querySelector('#target1 a-video'),
+          document.querySelector('#target2 a-video')
+        ]
+        
+        videoElements.forEach((videoEl, index) => {
+          if (videoEl) {
+            // Sempre manter proporção do livro aberto (largura > altura)
+            videoEl.setAttribute('rotation', '0 0 -90')
+            videoEl.setAttribute('width', '1.6') // Largura maior para livro aberto
+            videoEl.setAttribute('height', '0.8') // Altura menor para livro aberto
+            console.log(`📐 Vídeo AR ${index} ajustado para orientação: ${isPortrait ? 'portrait' : 'landscape'}`)
+          }
+        })
+      }
+      
       // Aguardar um pouco mais para garantir que todos os elementos estão prontos
       setTimeout(() => {
         console.log('🔍 Procurando targets...')
+        
+        // Ajustar orientação após os elementos estarem prontos
+        adjustVideosOrientation()
         
         // Configurar eventos de target
         const target0 = document.getElementById('target0')
@@ -331,8 +399,8 @@ const ScanPage = () => {
             src="#video1" 
             position="0 0 0" 
             rotation="0 0 -90" 
-            width="0.8" 
-            height="1.6"
+            width="1.6" 
+            height="0.8"
             material="shader: flat; side: double; opacity: 1"
           ></a-video>
         </a-entity>
@@ -342,8 +410,8 @@ const ScanPage = () => {
             src="#video2" 
             position="0 0 0" 
             rotation="0 0 -90" 
-            width="0.8" 
-            height="1.6"
+            width="1.6" 
+            height="0.8"
             material="shader: flat; side: double; opacity: 1"
           ></a-video>
         </a-entity>
@@ -353,8 +421,8 @@ const ScanPage = () => {
             src="#video3" 
             position="0 0 0" 
             rotation="0 0 -90" 
-            width="0.8" 
-            height="1.6"
+            width="1.6" 
+            height="0.8"
             material="shader: flat; side: double; opacity: 1"
           ></a-video>
         </a-entity>

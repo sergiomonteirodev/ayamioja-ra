@@ -1636,39 +1636,39 @@ body.modal-open {
 
     /* Toggles */
     .toggle-controls {
-        top: 100px;
+        top: 80px;
         flex-direction: row;
         justify-content: space-around;
-        padding: 0 15px;
+        padding: 0 10px;
     }
 
     .toggle-label {
-        font-size: 12px;
-        padding: 6px 12px;
-        gap: 8px;
+        font-size: 10px;
+        padding: 5px 10px;
+        gap: 6px;
     }
 
     .toggle-slider {
-        width: 40px;
-        height: 20px;
+        width: 32px;
+        height: 18px;
     }
 
     .toggle-slider::before {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
     }
 
     .toggle-input:checked + .toggle-slider::before {
-        transform: translateX(20px);
+        transform: translateX(14px);
     }
 
     .toggle-text {
-        font-size: 18px;
+        font-size: 14px;
     }
 
     .toggle-icon {
-        width: 45px;
-        height: 45px;
+        width: 30px;
+        height: 30px;
     }
 
     /* Círculo central */
@@ -2830,5 +2830,43 @@ body.modal-open {
     footer {
         font-size: 9px;
         padding: 5px 0;
+    }
+}
+
+/* Ajustes para orientação landscape (horizontal) em dispositivos móveis */
+@media (orientation: landscape) and (max-width: 1000px) {
+    .toggle-controls {
+        top: 60px;
+        padding: 0 15px;
+    }
+    
+    .toggle-label {
+        padding: 6px 12px;
+        gap: 8px;
+    }
+    
+    .toggle-slider {
+        width: 40px;
+        height: 20px;
+    }
+    
+    .toggle-slider::before {
+        width: 16px;
+        height: 16px;
+        top: 2px;
+        left: 2px;
+    }
+    
+    .toggle-input:checked + .toggle-slider::before {
+        transform: translateX(20px);
+    }
+    
+    .toggle-text {
+        font-size: 18px;
+    }
+    
+    .toggle-icon {
+        width: 35px;
+        height: 35px;
     }
 }
