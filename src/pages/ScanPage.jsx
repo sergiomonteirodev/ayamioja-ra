@@ -330,9 +330,9 @@ const ScanPage = () => {
           <a-video 
             src="#video1" 
             position="0 0 0" 
-            rotation="0 0 0" 
-            width="1.6" 
-            height="0.8"
+            rotation="0 0 -90" 
+            width="0.8" 
+            height="1.6"
             material="shader: flat; side: double; opacity: 1"
           ></a-video>
         </a-entity>
@@ -341,9 +341,9 @@ const ScanPage = () => {
           <a-video 
             src="#video2" 
             position="0 0 0" 
-            rotation="0 0 0" 
-            width="1.6" 
-            height="0.8"
+            rotation="0 0 -90" 
+            width="0.8" 
+            height="1.6"
             material="shader: flat; side: double; opacity: 1"
           ></a-video>
         </a-entity>
@@ -352,9 +352,9 @@ const ScanPage = () => {
           <a-video 
             src="#video3" 
             position="0 0 0" 
-            rotation="0 0 0" 
-            width="1.6" 
-            height="0.8"
+            rotation="0 0 -90" 
+            width="0.8" 
+            height="1.6"
             material="shader: flat; side: double; opacity: 1"
           ></a-video>
         </a-entity>
