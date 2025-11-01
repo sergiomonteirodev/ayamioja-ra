@@ -33,42 +33,22 @@ const ScanPage = () => {
     navigate('/')
   }
 
-  // Detectar orientação do dispositivo e ajustar vídeos AR quando houver mudança
+  // Detectar orientação do dispositivo (apenas para referência, sem ajustar vídeos)
   useEffect(() => {
     const updateOrientation = () => {
       const isPortrait = window.innerHeight > window.innerWidth
       const newOrientation = isPortrait ? 'portrait' : 'landscape'
       setDeviceOrientation(newOrientation)
       console.log('📱 Orientação do dispositivo:', newOrientation)
-      
-      // Ajustar vídeos AR quando a orientação mudar
-      const adjustVideos = () => {
-        const videoElements = [
-          document.querySelector('#target0 a-video'),
-          document.querySelector('#target1 a-video'),
-          document.querySelector('#target2 a-video')
-        ]
-        
-        videoElements.forEach((videoEl, index) => {
-          if (videoEl) {
-            // Sempre manter proporção do livro aberto (largura > altura)
-            videoEl.setAttribute('rotation', '0 0 -90')
-            videoEl.setAttribute('width', '1.6') // Largura maior para livro aberto
-            videoEl.setAttribute('height', '0.8') // Altura menor para livro aberto
-            console.log(`📐 Vídeo AR ${index} ajustado para ${newOrientation}`)
-          }
-        })
-      }
-      
-      // Aguardar um pouco para garantir que os elementos estão prontos
-      setTimeout(adjustVideos, 200)
     }
     
-    // Ouvir mudanças de orientação
+    // Verificar orientação inicial
+    updateOrientation()
+    
+    // Ouvir mudanças de orientação (apenas para tracking, não para ajustar vídeos)
     window.addEventListener('resize', updateOrientation)
     window.addEventListener('orientationchange', () => {
-      // Delay maior para aguardar a mudança de orientação completar
-      setTimeout(updateOrientation, 500)
+      setTimeout(updateOrientation, 300)
     })
     
     return () => {
@@ -127,32 +107,9 @@ const ScanPage = () => {
     const handleSceneLoaded = () => {
       console.log('✅ Scene A-Frame carregada')
       
-      // Ajustar orientação dos vídeos AR quando o scene estiver pronto
-      const adjustVideosOrientation = () => {
-        const isPortrait = window.innerHeight > window.innerWidth
-        const videoElements = [
-          document.querySelector('#target0 a-video'),
-          document.querySelector('#target1 a-video'),
-          document.querySelector('#target2 a-video')
-        ]
-        
-        videoElements.forEach((videoEl, index) => {
-          if (videoEl) {
-            // Sempre manter proporção do livro aberto (largura > altura)
-            videoEl.setAttribute('rotation', '0 0 -90')
-            videoEl.setAttribute('width', '1.6') // Largura maior para livro aberto
-            videoEl.setAttribute('height', '0.8') // Altura menor para livro aberto
-            console.log(`📐 Vídeo AR ${index} ajustado para orientação: ${isPortrait ? 'portrait' : 'landscape'}`)
-          }
-        })
-      }
-      
       // Aguardar um pouco mais para garantir que todos os elementos estão prontos
       setTimeout(() => {
         console.log('🔍 Procurando targets...')
-        
-        // Ajustar orientação após os elementos estarem prontos
-        adjustVideosOrientation()
         
         // Configurar eventos de target
         const target0 = document.getElementById('target0')
