@@ -43,6 +43,7 @@ const HomePage = () => {
         
         <MainVideo 
           librasActive={librasActive}
+          audioActive={audioActive}
           onVideoStateChange={handleVideoStateChange}
         />
         

@@ -14,16 +14,23 @@ const AudioDescription = ({ audioActive, videoState }) => {
       return
     }
 
+    // Configurar volume do áudio de audiodescrição
+    audio.volume = 0.8 // Volume adequado para audiodescrição (80%)
+
     console.log('✅ AudioDescription: audioRef disponível, iniciando carregamento')
 
     const handleCanPlay = () => {
       console.log('✅ Áudio de Audiodescrição pronto para reproduzir')
       setIsAudioReady(true)
+      // Garantir volume configurado
+      audio.volume = 0.8
     }
 
     const handleLoadedData = () => {
       console.log('✅ Áudio de Audiodescrição - dados carregados')
       setIsAudioReady(true)
+      // Garantir volume configurado
+      audio.volume = 0.8
     }
 
     audio.addEventListener('canplay', handleCanPlay)
@@ -67,10 +74,19 @@ const AudioDescription = ({ audioActive, videoState }) => {
         
         // Reproduzir áudio de Audiodescrição
         if (audio.paused) {
+          // Garantir volume configurado antes de reproduzir
+          audio.volume = 0.8
           console.log('▶️ Reproduzindo áudio de Audiodescrição')
           audio.play()
-            .then(() => console.log('✅ Áudio de Audiodescrição reproduzindo'))
+            .then(() => {
+              console.log('✅ Áudio de Audiodescrição reproduzindo')
+              // Garantir volume após play
+              audio.volume = 0.8
+            })
             .catch(e => console.log('❌ Erro ao reproduzir áudio de audiodescrição:', e))
+        } else {
+          // Se já está reproduzindo, garantir volume
+          audio.volume = 0.8
         }
       } else {
         // Vídeo principal pausado/terminou - PAUSAR áudio
