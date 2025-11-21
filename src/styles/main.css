@@ -254,7 +254,7 @@ body {
     padding-left: 20px;
     padding-right: 20px;
     padding-bottom: 80px;
-    gap: 40px;
+    gap: 0px;
 }
 
 /* Title Section */
@@ -312,7 +312,8 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
-    margin: 60px 0;
+    margin: 0px 0;
+    margin-top: -40px;
 }
 
 /* Circular Text Container */
@@ -668,7 +669,7 @@ body {
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin-bottom: 40px;
+    margin-bottom: 0px;
 }
 
 .logo-container img {
@@ -696,14 +697,14 @@ footer {
 
 /* Scan Page Container */
 .scan-page {
-    position: fixed;
+   
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     background-color: #000;
     overflow: hidden;
-    z-index: 1000;
+    z-index: 10000; /* Acima de tudo para UI funcionar, mas background transparente */
 }
 
 /* Toggles na Scan Page */
@@ -712,7 +713,7 @@ footer {
     top: 10px;
     left: 0;
     right: 0;
-    z-index: 150;
+    z-index: 100000 !important; /* Acima da câmera (9998) e canvas (9999) */
     padding: 0 20px;
     display: flex;
     justify-content: space-between;
@@ -723,7 +724,7 @@ footer {
     position: fixed;
     bottom: 70px;
     right: 20px;
-    z-index: 150;
+    z-index: 100000 !important; /* Acima da câmera (9998) e canvas (9999) */
     cursor: pointer;
     transition: transform 0.3s ease, filter 0.3s ease;
     filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
