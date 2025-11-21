@@ -675,6 +675,21 @@ const ScanPage = () => {
                 gl.enable(gl.BLEND)
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
                 gl.clearColor(0.0, 0.0, 0.0, 0.0) // Forçar transparente
+                
+                // CRÍTICO: Interceptar o método render para sempre limpar com alpha 0
+                if (!renderer._originalRender) {
+                  renderer._originalRender = renderer.render.bind(renderer)
+                  renderer.render = function(scene, camera) {
+                    // Antes de renderizar, garantir que o clearColor está com alpha 0
+                    const gl = this.getContext()
+                    if (gl) {
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    }
+                    // Chamar o render original
+                    renderer._originalRender(scene, camera)
+                  }
+                  console.log('✅ Método render interceptado para garantir transparência')
+                }
               }
             }
             
@@ -703,6 +718,22 @@ const ScanPage = () => {
                   if (gl) {
                     gl.enable(gl.BLEND)
                     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0) // Forçar transparente
+                    
+                    // CRÍTICO: Interceptar o método render para sempre limpar com alpha 0
+                    if (!renderer._originalRender) {
+                      renderer._originalRender = renderer.render.bind(renderer)
+                      renderer.render = function(scene, camera) {
+                        // Antes de renderizar, garantir que o clearColor está com alpha 0
+                        const gl = this.getContext()
+                        if (gl) {
+                          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                        }
+                        // Chamar o render original
+                        renderer._originalRender(scene, camera)
+                      }
+                      console.log('✅ Método render interceptado para garantir transparência (via AFRAME.scenes)')
+                    }
                   }
                 }
                 
@@ -725,11 +756,27 @@ const ScanPage = () => {
           if (gl) {
             // Forçar limpar o canvas com alpha transparente
             gl.clearColor(0.0, 0.0, 0.0, 0.0)
-            // NÃO chamar gl.clear() - isso causa piscar, deixa o A-Frame fazer isso
+            gl.enable(gl.BLEND)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+            
+            // Interceptar gl.clear() de forma inteligente: apenas garantir clearColor 0 antes de limpar
+            // Mas permitir que a limpeza aconteça normalmente (incluindo depth buffer para AR)
+            if (!gl._originalClear) {
+              gl._originalClear = gl.clear.bind(gl)
+              gl.clear = function(mask) {
+                // SEMPRE garantir clearColor com alpha 0 antes de limpar
+                // Isso garante transparência sem interferir na detecção
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                // Permitir que a limpeza aconteça normalmente (incluindo depth buffer)
+                gl._originalClear(mask)
+              }
+              console.log('✅ gl.clear interceptado para garantir transparência (permitindo limpeza normal)')
+            }
+            
             console.log('✅ Canvas WebGL configurado para transparência')
           }
         } catch (e) {
-          // Ignorar
+          console.warn('⚠️ Erro ao configurar WebGL:', e)
         }
       }
       
@@ -781,27 +828,351 @@ const ScanPage = () => {
     // O MindAR cria e gerencia o vídeo da câmera automaticamente
     // Apenas garantir que o canvas seja transparente
     const ensureCameraVideoVisible = () => {
-      // Apenas garantir transparência do canvas - NÃO tocar no vídeo
-      // O MindAR gerencia completamente o vídeo da câmera
+      // Garantir transparência do canvas primeiro
       makeRendererTransparent()
-      return false // Não fazer nada com o vídeo - o MindAR gerencia tudo
+      forceCanvasTransparency()
+      
+      // Encontrar o vídeo da câmera do MindAR
+      if (!cameraPermissionGranted) {
+        return false
+      }
+      
+      // Tentar encontrar o vídeo de várias formas
+      let mindarVideo = document.querySelector('#arVideo')
+      
+      if (!mindarVideo) {
+        // Procurar por vídeos que não são os vídeos AR (video1, video2, video3)
+        const allVideos = Array.from(document.querySelectorAll('video'))
+        console.log('🔍 Procurando vídeo da câmera entre', allVideos.length, 'vídeos encontrados')
+        mindarVideo = allVideos.find(v => {
+          const id = v.id || ''
+          // Não é um dos vídeos AR
+          if (['video1', 'video2', 'video3'].includes(id)) return false
+          // Tem stream ou dimensões de vídeo (é a câmera)
+          const hasStream = !!(v.srcObject || v.videoWidth > 0)
+          const isAutoplay = v.getAttribute('autoplay') === 'true' || v.autoplay
+          console.log('📹 Verificando vídeo:', { id, hasStream, isAutoplay, videoWidth: v.videoWidth, srcObject: !!v.srcObject })
+          return hasStream || isAutoplay
+        })
+      }
+      
+      if (!mindarVideo) {
+        console.log('⏳ Vídeo da câmera ainda não encontrado')
+        return false
+      }
+      
+      console.log('✅ Vídeo da câmera encontrado:', {
+        id: mindarVideo.id,
+        videoWidth: mindarVideo.videoWidth,
+        videoHeight: mindarVideo.videoHeight,
+        hasSrcObject: !!mindarVideo.srcObject,
+        paused: mindarVideo.paused,
+        readyState: mindarVideo.readyState
+      })
+      
+      // CRÍTICO: Garantir que o vídeo esteja no body (não dentro do a-scene)
+      // O MindAR pode criar o vídeo dentro do a-scene, o que pode causar problemas de visibilidade
+      if (mindarVideo.parentElement !== document.body) {
+        console.log('🔧 Movendo vídeo para o body para garantir visibilidade')
+        const parent = mindarVideo.parentElement
+        console.log('📦 Vídeo estava em:', parent?.tagName, parent?.id || parent?.className)
+        
+        // Remover do parent atual antes de mover
+        if (parent) {
+          parent.removeChild(mindarVideo)
+        }
+        // Adicionar como primeiro filho do body para garantir que fique atrás de tudo
+        if (document.body.firstChild) {
+          document.body.insertBefore(mindarVideo, document.body.firstChild)
+        } else {
+          document.body.appendChild(mindarVideo)
+        }
+        console.log('✅ Vídeo movido para o body')
+      }
+      
+      // Verificar se o parent tem estilos que podem limitar o tamanho
+      const parent = mindarVideo.parentElement
+      if (parent && parent !== document.body) {
+        const parentStyle = window.getComputedStyle(parent)
+        if (parentStyle.position !== 'static' || 
+            parentStyle.overflow === 'hidden' ||
+            parseInt(parentStyle.width) < window.innerWidth ||
+            parseInt(parentStyle.height) < window.innerHeight) {
+          console.warn('⚠️ Parent do vídeo pode estar limitando tamanho:', {
+            parentTag: parent.tagName,
+            parentPosition: parentStyle.position,
+            parentWidth: parentStyle.width,
+            parentHeight: parentStyle.height,
+            parentOverflow: parentStyle.overflow
+          })
+        }
+      }
+      
+      // Garantir que o vídeo esteja visível e posicionado corretamente
+      const computedStyle = window.getComputedStyle(mindarVideo)
+      
+      // Verificar tamanho atual vs viewport
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      const currentWidth = parseInt(computedStyle.width) || 0
+      const currentHeight = parseInt(computedStyle.height) || 0
+      const widthDiff = Math.abs(currentWidth - viewportWidth)
+      const heightDiff = Math.abs(currentHeight - viewportHeight)
+      
+      // Verificar se precisa ajustar
+      const needsAdjustment = 
+        computedStyle.position !== 'fixed' ||
+        computedStyle.zIndex !== '-2' ||
+        widthDiff > 10 || // Mais de 10px de diferença
+        heightDiff > 10 ||
+        computedStyle.display === 'none' ||
+        computedStyle.visibility === 'hidden' ||
+        computedStyle.opacity === '0'
+      
+      if (needsAdjustment) {
+        console.log('🔧 Aplicando estilos ao vídeo da câmera:', {
+          currentPosition: computedStyle.position,
+          currentZIndex: computedStyle.zIndex,
+          currentWidth: computedStyle.width,
+          currentHeight: computedStyle.height,
+          viewportWidth,
+          viewportHeight,
+          widthDiff,
+          heightDiff
+        })
+        
+        // Remover atributos width/height que podem interferir
+        mindarVideo.removeAttribute('width')
+        mindarVideo.removeAttribute('height')
+        
+        // Aplicar TODOS os estilos necessários de forma agressiva
+        mindarVideo.style.position = 'fixed'
+        mindarVideo.style.top = '0'
+        mindarVideo.style.left = '0'
+        mindarVideo.style.width = '100vw'
+        mindarVideo.style.height = '100vh'
+        mindarVideo.style.objectFit = 'cover'
+        mindarVideo.style.zIndex = '-2'
+        mindarVideo.style.margin = '0'
+        mindarVideo.style.padding = '0'
+        mindarVideo.style.backgroundColor = 'transparent'
+        mindarVideo.style.display = 'block'
+        mindarVideo.style.visibility = 'visible'
+        mindarVideo.style.opacity = '1'
+        
+        // Também usar setProperty com !important para garantir prioridade
+        mindarVideo.style.setProperty('position', 'fixed', 'important')
+        mindarVideo.style.setProperty('top', '0', 'important')
+        mindarVideo.style.setProperty('left', '0', 'important')
+        mindarVideo.style.setProperty('width', '100vw', 'important')
+        mindarVideo.style.setProperty('height', '100vh', 'important')
+        mindarVideo.style.setProperty('object-fit', 'cover', 'important')
+        mindarVideo.style.setProperty('z-index', '-2', 'important')
+        mindarVideo.style.setProperty('margin', '0', 'important')
+        mindarVideo.style.setProperty('padding', '0', 'important')
+        mindarVideo.style.setProperty('background-color', 'transparent', 'important')
+        mindarVideo.style.setProperty('display', 'block', 'important')
+        mindarVideo.style.setProperty('visibility', 'visible', 'important')
+        mindarVideo.style.setProperty('opacity', '1', 'important')
+        
+        // Verificar se os estilos foram aplicados corretamente
+        setTimeout(() => {
+          const newComputedStyle = window.getComputedStyle(mindarVideo)
+          const actualWidth = parseInt(newComputedStyle.width) || 0
+          const actualHeight = parseInt(newComputedStyle.height) || 0
+          
+          if (Math.abs(actualWidth - viewportWidth) > 10 || Math.abs(actualHeight - viewportHeight) > 10) {
+            console.warn('⚠️ Vídeo não está cobrindo toda a tela:', {
+              expectedWidth: viewportWidth,
+              actualWidth,
+              expectedHeight: viewportHeight,
+              actualHeight,
+              computedWidth: newComputedStyle.width,
+              computedHeight: newComputedStyle.height,
+              inlineWidth: mindarVideo.style.width,
+              inlineHeight: mindarVideo.style.height
+            })
+          } else {
+            console.log('✅ Vídeo está cobrindo toda a tela corretamente')
+          }
+        }, 100)
+      }
+      
+      // Garantir que o vídeo esteja reproduzindo
+      if (mindarVideo.paused && mindarVideo.readyState >= 2) {
+        const hasStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
+        if (hasStream) {
+          console.log('▶️ Tentando reproduzir vídeo da câmera')
+          mindarVideo.play().catch(e => {
+            console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
+          })
+        }
+      }
+      
+      // DIAGNÓSTICO FINAL: Verificar se o vídeo está realmente visível
+      setTimeout(() => {
+        const finalComputedStyle = window.getComputedStyle(mindarVideo)
+        const finalRect = mindarVideo.getBoundingClientRect()
+        const isVisible = 
+          finalComputedStyle.display !== 'none' &&
+          finalComputedStyle.visibility !== 'hidden' &&
+          finalComputedStyle.opacity !== '0' &&
+          finalRect.width > 0 &&
+          finalRect.height > 0
+        
+        // Verificar se há elementos cobrindo o vídeo
+        const canvas = document.querySelector('canvas')
+        const aScene = document.querySelector('a-scene')
+        let canvasInfo = null
+        let aSceneInfo = null
+        
+        if (canvas) {
+          const canvasStyle = window.getComputedStyle(canvas)
+          const canvasRect = canvas.getBoundingClientRect()
+          canvasInfo = {
+            zIndex: canvasStyle.zIndex,
+            position: canvasStyle.position,
+            backgroundColor: canvasStyle.backgroundColor,
+            opacity: canvasStyle.opacity,
+            display: canvasStyle.display,
+            visibility: canvasStyle.visibility,
+            boundingRect: {
+              top: canvasRect.top,
+              left: canvasRect.left,
+              width: canvasRect.width,
+              height: canvasRect.height
+            },
+            isCoveringVideo: canvasRect.width >= window.innerWidth && canvasRect.height >= window.innerHeight
+          }
+        }
+        
+        if (aScene) {
+          const aSceneStyle = window.getComputedStyle(aScene)
+          const aSceneRect = aScene.getBoundingClientRect()
+          aSceneInfo = {
+            zIndex: aSceneStyle.zIndex,
+            position: aSceneStyle.position,
+            backgroundColor: aSceneStyle.backgroundColor,
+            opacity: aSceneStyle.opacity,
+            display: aSceneStyle.display,
+            visibility: aSceneStyle.visibility,
+            boundingRect: {
+              top: aSceneRect.top,
+              left: aSceneRect.left,
+              width: aSceneRect.width,
+              height: aSceneRect.height
+            }
+          }
+        }
+        
+        console.log('🔍 DIAGNÓSTICO FINAL - Vídeo da câmera do dispositivo:', {
+          elemento: mindarVideo.tagName,
+          id: mindarVideo.id || '(sem id)',
+          parent: mindarVideo.parentElement?.tagName,
+          parentId: mindarVideo.parentElement?.id || '(sem id)',
+          parentClass: mindarVideo.parentElement?.className || '(sem classe)',
+          display: finalComputedStyle.display,
+          visibility: finalComputedStyle.visibility,
+          opacity: finalComputedStyle.opacity,
+          position: finalComputedStyle.position,
+          zIndex: finalComputedStyle.zIndex,
+          width: finalComputedStyle.width,
+          height: finalComputedStyle.height,
+          boundingRect: {
+            top: finalRect.top,
+            left: finalRect.left,
+            width: finalRect.width,
+            height: finalRect.height
+          },
+          viewport: {
+            width: window.innerWidth,
+            height: window.innerHeight
+          },
+          isVisible,
+          hasStream: !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0),
+          videoWidth: mindarVideo.videoWidth,
+          videoHeight: mindarVideo.videoHeight,
+          paused: mindarVideo.paused,
+          readyState: mindarVideo.readyState,
+          canvas: canvasInfo,
+          aScene: aSceneInfo
+        })
+        
+        if (!isVisible) {
+          console.error('❌ PROBLEMA: Vídeo da câmera do dispositivo NÃO está visível!')
+        } else if (finalRect.width < window.innerWidth * 0.9 || finalRect.height < window.innerHeight * 0.9) {
+          console.warn('⚠️ PROBLEMA: Vídeo da câmera do dispositivo não está cobrindo toda a tela!')
+        } else {
+          console.log('✅ Vídeo da câmera do dispositivo está visível e cobrindo a tela corretamente')
+        }
+        
+        // Verificar se o canvas está cobrindo o vídeo
+        if (canvasInfo && canvasInfo.isCoveringVideo) {
+          const videoZIndex = parseInt(finalComputedStyle.zIndex) || 0
+          const canvasZIndex = parseInt(canvasInfo.zIndex) || 0
+          
+          if (canvasZIndex > videoZIndex) {
+            // Canvas está na frente do vídeo (correto para AR overlay)
+            // Mas precisa estar transparente!
+            if (canvasInfo.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
+                canvasInfo.backgroundColor !== 'transparent') {
+              console.error('❌ PROBLEMA CRÍTICO: Canvas tem background opaco!', canvasInfo.backgroundColor)
+              // Forçar canvas transparente
+              if (canvas) {
+                canvas.style.setProperty('background-color', 'transparent', 'important')
+                canvas.style.setProperty('background', 'transparent', 'important')
+                makeRendererTransparent()
+              }
+            } else {
+              // Canvas está transparente no CSS, mas pode estar sendo limpo com cor opaca pelo WebGL
+              console.warn('⚠️ Canvas está transparente no CSS, mas pode estar sendo limpo com cor opaca pelo WebGL')
+              console.log('🔧 Configurando WebGL clearColor para transparência (sem interceptar gl.clear para não interferir na detecção)...')
+              
+              // Interceptar gl.clear() de forma inteligente: apenas garantir clearColor 0 antes de limpar
+              // Mas permitir que a limpeza aconteça normalmente (incluindo depth buffer para AR)
+              const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+              if (gl) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                gl.enable(gl.BLEND)
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+                
+                if (!gl._originalClear) {
+                  gl._originalClear = gl.clear.bind(gl)
+                  gl.clear = function(mask) {
+                    // SEMPRE garantir clearColor com alpha 0 antes de limpar
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    // Permitir que a limpeza aconteça normalmente
+                    gl._originalClear(mask)
+                  }
+                  console.log('✅ gl.clear interceptado no diagnóstico (permitindo limpeza normal)')
+                }
+              }
+            }
+          }
+        }
+      }, 200)
+      
+      return true // Vídeo encontrado e configurado
     }
     ensureCameraVideoVisibleRef.current = ensureCameraVideoVisible
     
     // Iniciar verificação periódica da câmera após a função ser definida
     if (!initialCameraCheckRef.current) {
+      let checkCount = 0
       initialCameraCheckRef.current = setInterval(() => {
         if (ensureCameraVideoVisibleRef.current) {
           const found = ensureCameraVideoVisibleRef.current()
           if (found) {
-            console.log('✅ Câmera encontrada e configurada! Parando verificação inicial...')
-            if (initialCameraCheckRef.current) {
-              clearInterval(initialCameraCheckRef.current)
-              initialCameraCheckRef.current = null
+            console.log('✅ Câmera encontrada e configurada! Continuando verificação para garantir...')
+            // Não parar a verificação - continuar verificando para garantir que permaneça visível
+          } else {
+            checkCount++
+            if (checkCount % 10 === 0) { // Log a cada 5 segundos (10 * 500ms)
+              console.log('⏳ Ainda procurando vídeo da câmera... (tentativa', checkCount, ')')
             }
           }
         }
-      }, 500) // Verificar a cada 500ms
+      }, 500) // Verificar a cada 500ms continuamente
     }
     
     // REMOVIDO: MutationObserver - deixar o MindAR gerenciar completamente
@@ -882,6 +1253,96 @@ const ScanPage = () => {
         const target2 = document.getElementById('target2')
         
         console.log('Targets encontrados:', { target0: !!target0, target1: !!target1, target2: !!target2 })
+        
+        // Verificar se os targets têm os atributos corretos
+        if (target0) {
+          console.log('Target0 atributos:', {
+            hasMindarTarget: target0.hasAttribute('mindar-image-target'),
+            targetIndex: target0.getAttribute('mindar-image-target'),
+            id: target0.id
+          })
+        }
+        if (target1) {
+          console.log('Target1 atributos:', {
+            hasMindarTarget: target1.hasAttribute('mindar-image-target'),
+            targetIndex: target1.getAttribute('mindar-image-target'),
+            id: target1.id
+          })
+        }
+        if (target2) {
+          console.log('Target2 atributos:', {
+            hasMindarTarget: target2.hasAttribute('mindar-image-target'),
+            targetIndex: target2.getAttribute('mindar-image-target'),
+            id: target2.id
+          })
+        }
+        
+        // Verificar se o MindAR está ativo e rastreando
+        const sceneElement = document.querySelector('a-scene')
+        if (sceneElement && sceneElement.systems) {
+          const mindarSystem = sceneElement.systems.mindar || 
+                              sceneElement.systems['mindar-image-system'] ||
+                              sceneElement.systems['mindar-image']
+          
+          if (mindarSystem) {
+            console.log('✅ Sistema MindAR encontrado ao configurar listeners:', {
+              isTracking: mindarSystem.isTracking,
+              isReady: mindarSystem.isReady,
+              hasTracker: !!mindarSystem.tracker,
+              trackerState: mindarSystem.tracker?.state || 'unknown'
+            })
+          } else {
+            console.warn('⚠️ Sistema MindAR não encontrado ao configurar listeners. Sistemas disponíveis:', Object.keys(sceneElement.systems || {}))
+          }
+        }
+        
+        // Verificar se os targets têm os atributos corretos
+        if (target0) {
+          console.log('Target0 atributos:', {
+            hasMindarTarget: target0.hasAttribute('mindar-image-target'),
+            targetIndex: target0.getAttribute('mindar-image-target'),
+            id: target0.id
+          })
+        }
+        if (target1) {
+          console.log('Target1 atributos:', {
+            hasMindarTarget: target1.hasAttribute('mindar-image-target'),
+            targetIndex: target1.getAttribute('mindar-image-target'),
+            id: target1.id
+          })
+        }
+        if (target2) {
+          console.log('Target2 atributos:', {
+            hasMindarTarget: target2.hasAttribute('mindar-image-target'),
+            targetIndex: target2.getAttribute('mindar-image-target'),
+            id: target2.id
+          })
+        }
+        
+        // Verificar se o MindAR está ativo (mas NÃO iniciar aqui - deixar o arReady fazer isso)
+        // Usar sceneElement que já foi declarado acima
+        if (sceneElement && sceneElement.systems) {
+          // Tentar diferentes nomes de sistema do MindAR
+          const mindarSystem = sceneElement.systems.mindar || 
+                              sceneElement.systems['mindar-image-system'] ||
+                              sceneElement.systems['mindar-image']
+          
+          if (mindarSystem) {
+            console.log('✅ Sistema MindAR encontrado:', {
+              isTracking: mindarSystem.isTracking,
+              isReady: mindarSystem.isReady,
+              hasTracker: !!mindarSystem.tracker,
+              systemName: mindarSystem.constructor?.name || 'unknown'
+            })
+            
+            // NÃO iniciar aqui - o arReady event já faz isso
+            // Apenas verificar o estado
+          } else {
+            console.warn('⚠️ Sistema MindAR não encontrado. Sistemas disponíveis:', Object.keys(sceneElement.systems || {}))
+          }
+        } else {
+          console.warn('⚠️ Scene ou systems não encontrados')
+        }
         
         // Target 0 - Habilitar vídeo quando target for encontrado
         if (target0) {
@@ -1017,8 +1478,211 @@ const ScanPage = () => {
       }, 2000)
     }
     
+    // Função para lidar com arReady - deve ser definida antes de ser usada
+    const handleArReady = () => {
+      console.log('✅ MindAR pronto! O MindAR gerencia a câmera completamente.')
+      setIsArReady(true)
+      
+      // Verificar e iniciar o MindAR se necessário
+      // Aguardar um pouco mais para garantir que o tracker esteja inicializado
+      setTimeout(() => {
+        const mindarSystem = scene.systems?.mindar || 
+                            scene.systems?.['mindar-image-system'] ||
+                            scene.systems?.['mindar-image']
+        
+        if (mindarSystem) {
+          console.log('🔍 Estado do MindAR após arReady:', {
+            isTracking: mindarSystem.isTracking,
+            isReady: mindarSystem.isReady,
+            hasStart: typeof mindarSystem.start === 'function',
+            hasTracker: !!mindarSystem.tracker
+          })
+          
+          // Verificar se o tracker existe antes de tentar iniciar
+          if (mindarSystem.tracker && mindarSystem.start && typeof mindarSystem.start === 'function') {
+            // Verificar se já está rastreando antes de iniciar
+            if (!mindarSystem.isTracking) {
+              console.log('🚀 Iniciando MindAR após arReady...')
+              try {
+                mindarSystem.start()
+                console.log('✅ MindAR iniciado após arReady')
+                
+                // Verificar novamente após iniciar
+                setTimeout(() => {
+                  console.log('🔍 Estado do MindAR após start():', {
+                    isTracking: mindarSystem.isTracking,
+                    isReady: mindarSystem.isReady,
+                    hasTracker: !!mindarSystem.tracker,
+                    trackerState: mindarSystem.tracker?.state || 'unknown'
+                  })
+                }, 500)
+              } catch (e) {
+                console.error('❌ Erro ao iniciar MindAR após arReady:', e)
+              }
+            } else {
+              console.log('✅ MindAR já está rastreando')
+            }
+          } else {
+            if (!mindarSystem.tracker) {
+              console.warn('⚠️ Tracker do MindAR ainda não está inicializado. Aguardando...')
+              // Tentar novamente após mais tempo
+              setTimeout(() => {
+                if (mindarSystem.tracker && mindarSystem.start && typeof mindarSystem.start === 'function' && !mindarSystem.isTracking) {
+                  try {
+                    mindarSystem.start()
+                    console.log('✅ MindAR iniciado após espera adicional')
+                    
+                    // Verificar novamente após iniciar
+                    setTimeout(() => {
+                      console.log('🔍 Estado do MindAR após start() (espera adicional):', {
+                        isTracking: mindarSystem.isTracking,
+                        isReady: mindarSystem.isReady,
+                        hasTracker: !!mindarSystem.tracker,
+                        trackerState: mindarSystem.tracker?.state || 'unknown'
+                      })
+                    }, 500)
+                  } catch (e) {
+                    console.error('❌ Erro ao iniciar MindAR após espera:', e)
+                  }
+                }
+              }, 1000)
+            }
+          }
+        } else {
+          console.warn('⚠️ Sistema MindAR não encontrado após arReady')
+        }
+      }, 1000) // Aumentar o delay para dar tempo do tracker inicializar
+      
+      // Verificar se o MindAR criou o vídeo da câmera e garantir visibilidade
+      setTimeout(() => {
+        // Usar a função centralizada para garantir visibilidade do vídeo
+        if (ensureCameraVideoVisibleRef.current) {
+          const found = ensureCameraVideoVisibleRef.current()
+          if (found) {
+            console.log('✅ Vídeo da câmera encontrado e configurado após arReady')
+          }
+        }
+        
+        // Log detalhado apenas uma vez para debug
+        const mindarVideo = document.querySelector('#arVideo') || 
+                           Array.from(document.querySelectorAll('video')).find(v => {
+                             const id = v.id || ''
+                             if (['video1', 'video2', 'video3'].includes(id)) return false
+                             return (v.videoWidth > 0 || v.srcObject) && !v.src
+                           })
+        
+        if (mindarVideo && !mindarVideo.dataset.logged) {
+          const computedStyle = window.getComputedStyle(mindarVideo)
+          const hasStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
+          const isPlaying = !mindarVideo.paused && !mindarVideo.ended
+          
+          console.log('✅ Vídeo do MindAR encontrado após arReady:', {
+            id: mindarVideo.id,
+            videoWidth: mindarVideo.videoWidth,
+            videoHeight: mindarVideo.videoHeight,
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            opacity: computedStyle.opacity,
+            zIndex: computedStyle.zIndex,
+            position: computedStyle.position,
+            width: computedStyle.width,
+            height: computedStyle.height,
+            hasStream,
+            hasSrcObject: !!mindarVideo.srcObject,
+            isPlaying,
+            paused: mindarVideo.paused,
+            readyState: mindarVideo.readyState
+          })
+          mindarVideo.dataset.logged = 'true'
+          
+          // Verificar se o vídeo está realmente atrás do canvas
+          const canvas = scene.querySelector('canvas')
+          if (canvas) {
+            const canvasStyle = window.getComputedStyle(canvas)
+            const videoZ = parseInt(computedStyle.zIndex) || -2
+            const canvasZ = parseInt(canvasStyle.zIndex) || 1
+            
+            console.log('📊 Verificação de z-index:', {
+              videoZIndex: computedStyle.zIndex,
+              canvasZIndex: canvasStyle.zIndex,
+              videoPosition: computedStyle.position,
+              canvasPosition: canvasStyle.position,
+              canvasBackgroundColor: canvasStyle.backgroundColor,
+              canvasOpacity: canvasStyle.opacity
+            })
+            
+            if (canvasZ > videoZ) {
+              console.log('✅ Canvas está na frente do vídeo (correto para overlay AR)')
+              console.log('✅ Canvas deve estar transparente para mostrar o vídeo')
+              
+              // CRÍTICO: Verificar se o canvas realmente permite ver através dele
+              if (canvasStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
+                  canvasStyle.backgroundColor !== 'transparent') {
+                console.error('❌ PROBLEMA: Canvas NÃO está transparente! backgroundColor:', canvasStyle.backgroundColor)
+              }
+            } else {
+              console.warn('⚠️ Canvas pode estar atrás do vídeo - verificar z-index')
+            }
+          }
+        } else if (!mindarVideo) {
+          console.log('⏳ Vídeo do MindAR ainda não foi criado - ele será criado automaticamente')
+        }
+      }, 1000)
+      
+      // Garantir que a animação de scanning apareça se não houver target ativo
+      if (activeTargetIndex === null) {
+        setShowScanningAnimation(true)
+        console.log('✅ Mostrando animação de scanning - nenhum target ativo')
+      }
+      
+      // SIMPLIFICADO: Apenas garantir transparência do canvas
+      // O MindAR gerencia completamente o vídeo da câmera - não precisamos fazer mais nada
+      forceCanvasTransparency()
+      makeRendererTransparent()
+      
+      // GARANTIR que o a-scene esteja visível
+      if (scene) {
+        scene.style.setProperty('opacity', '1', 'important')
+        scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1), mas transparente
+        scene.style.setProperty('background-color', 'transparent', 'important')
+        scene.style.setProperty('background', 'transparent', 'important')
+        scene.style.setProperty('position', 'fixed', 'important')
+        scene.style.setProperty('top', '0', 'important')
+        scene.style.setProperty('left', '0', 'important')
+        scene.style.setProperty('width', '100vw', 'important')
+        scene.style.setProperty('height', '100vh', 'important')
+        console.log('✅ a-scene configurado como visível após arReady')
+        
+        // Garantir que o canvas também esteja visível e transparente
+        const canvas = scene.querySelector('canvas')
+        if (canvas) {
+          canvas.style.setProperty('opacity', '1', 'important')
+          canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1), mas transparente
+          canvas.style.setProperty('background-color', 'transparent', 'important')
+          canvas.style.setProperty('background', 'transparent', 'important')
+          canvas.style.setProperty('position', 'fixed', 'important')
+          canvas.style.setProperty('top', '0', 'important')
+          canvas.style.setProperty('left', '0', 'important')
+          canvas.style.setProperty('width', '100vw', 'important')
+          canvas.style.setProperty('height', '100vh', 'important')
+          forceCanvasTransparency()
+          console.log('✅ Canvas configurado como visível e transparente após arReady')
+        }
+      }
+      
+      // Esconder UI de loading manualmente
+      const uiLoading = document.getElementById('ui-loading')
+      if (uiLoading) {
+        uiLoading.style.display = 'none'
+        console.log('✅ UI Loading escondida')
+      }
+    }
+    
     // Aguardar o A-Frame carregar completamente e então configurar listeners
     scene.addEventListener('loaded', handleSceneLoaded)
+    
+    // Adicionar listener para arReady
+    scene.addEventListener('arReady', handleArReady)
     
     // Função SIMPLIFICADA: Apenas garantir que o canvas seja transparente
     // O MindAR gerencia completamente o vídeo da câmera - não interferimos
@@ -1108,327 +1772,20 @@ const ScanPage = () => {
       }
     }
     
-    // Loop para forçar transparência continuamente
+    // Loop para forçar transparência continuamente e garantir visibilidade do vídeo
     if (transparencyIntervalRef.current) {
       clearInterval(transparencyIntervalRef.current)
     }
-    // Loop para garantir que o canvas seja transparente E o vídeo do MindAR esteja visível
     transparencyIntervalRef.current = setInterval(() => {
+      // Sempre garantir transparência do canvas
       forceCanvasTransparency()
       makeRendererTransparent()
       
-      // Verificar se o MindAR criou o vídeo da câmera e garantir que esteja visível
-      // NÃO mover ou manipular o vídeo, apenas garantir visibilidade básica
-      if (cameraPermissionGranted) {
-        const mindarVideo = document.querySelector('#arVideo') || 
-                           Array.from(document.querySelectorAll('video')).find(v => {
-                             const id = v.id || ''
-                             if (['video1', 'video2', 'video3'].includes(id)) return false
-                             // Verificar se é o vídeo da câmera (tem stream mas não tem src)
-                             return (v.videoWidth > 0 || v.srcObject) && !v.src
-                           })
-        
-        if (mindarVideo) {
-          // Garantir visibilidade e posicionamento correto do vídeo
-          const computedStyle = window.getComputedStyle(mindarVideo)
-          if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || computedStyle.opacity === '0') {
-            console.log('🔧 Garantindo visibilidade do vídeo do MindAR')
-            mindarVideo.style.setProperty('display', 'block', 'important')
-            mindarVideo.style.setProperty('visibility', 'visible', 'important')
-            mindarVideo.style.setProperty('opacity', '1', 'important')
-          }
-          
-          // CRÍTICO: Verificar se o vídeo tem stream e está reproduzindo
-          const hasStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
-          const isPlaying = !mindarVideo.paused && !mindarVideo.ended
-          
-          // Se o vídeo tem stream mas não está reproduzindo, forçar reprodução
-          if (hasStream && mindarVideo.paused && mindarVideo.readyState >= 2) {
-            console.log('🔧 Vídeo tem stream mas está pausado - forçando reprodução...')
-            mindarVideo.play().catch(e => {
-              console.warn('⚠️ Erro ao tentar reproduzir vídeo da câmera:', e)
-            })
-          }
-          
-          // Log detalhado apenas na primeira vez ou se houver problemas
-          if (!mindarVideo.dataset.logged || !hasStream || mindarVideo.paused) {
-            console.log('📹 Status do vídeo da câmera:', {
-              hasStream,
-              hasSrcObject: !!mindarVideo.srcObject,
-              videoWidth: mindarVideo.videoWidth,
-              videoHeight: mindarVideo.videoHeight,
-              isPlaying,
-              paused: mindarVideo.paused,
-              readyState: mindarVideo.readyState,
-              display: computedStyle.display,
-              visibility: computedStyle.visibility,
-              opacity: computedStyle.opacity
-            })
-            mindarVideo.dataset.logged = 'true'
-          }
-          
-          // CRÍTICO: Verificar se já foi ajustado (usar flag no elemento)
-          const alreadyAdjusted = mindarVideo.dataset.adjusted === 'true'
-          
-          // Verificar se precisa ajustar comparando com o tamanho da viewport
-          const viewportWidth = window.innerWidth
-          const viewportHeight = window.innerHeight
-          const currentWidth = parseInt(computedStyle.width) || 0
-          const currentHeight = parseInt(computedStyle.height) || 0
-          const widthDiff = Math.abs(currentWidth - viewportWidth)
-          const heightDiff = Math.abs(currentHeight - viewportHeight)
-          
-          // Verificar também se os estilos inline estão corretos
-          const inlineWidth = mindarVideo.style.width
-          const inlineHeight = mindarVideo.style.height
-          const inlinePosition = mindarVideo.style.position
-          
-          const needsResize = !alreadyAdjusted || 
-                              inlinePosition !== 'fixed' || 
-                              (inlineWidth !== '100vw' && inlineWidth !== '') ||
-                              (inlineHeight !== '100vh' && inlineHeight !== '') ||
-                              widthDiff > 50 || // Mais de 50px de diferença
-                              heightDiff > 50
-          
-          if (needsResize) {
-            console.log('🔧 Ajustando posição do vídeo para fixed e cobrindo tela', {
-              currentWidth: computedStyle.width,
-              currentHeight: computedStyle.height,
-              inlineWidth,
-              inlineHeight,
-              viewportWidth,
-              viewportHeight
-            })
-            
-            // Aplicar todos os estilos necessários
-            mindarVideo.style.position = 'fixed'
-            mindarVideo.style.top = '0'
-            mindarVideo.style.left = '0'
-            mindarVideo.style.width = '100vw'
-            mindarVideo.style.height = '100vh'
-            mindarVideo.style.objectFit = 'cover'
-            mindarVideo.style.zIndex = '-2'
-            mindarVideo.style.margin = '0'
-            mindarVideo.style.padding = '0'
-            
-            // Também usar setProperty para garantir prioridade
-            mindarVideo.style.setProperty('position', 'fixed', 'important')
-            mindarVideo.style.setProperty('top', '0', 'important')
-            mindarVideo.style.setProperty('left', '0', 'important')
-            mindarVideo.style.setProperty('width', '100vw', 'important')
-            mindarVideo.style.setProperty('height', '100vh', 'important')
-            mindarVideo.style.setProperty('object-fit', 'cover', 'important')
-            mindarVideo.style.setProperty('z-index', '-2', 'important')
-            
-            mindarVideo.dataset.adjusted = 'true' // Marcar como ajustado
-            
-            // Verificar novamente após aplicar
-            setTimeout(() => {
-              const newComputedStyle = window.getComputedStyle(mindarVideo)
-              console.log('✅ Vídeo ajustado para cobrir toda a tela', {
-                width: newComputedStyle.width,
-                height: newComputedStyle.height,
-                position: newComputedStyle.position,
-                inlineWidth: mindarVideo.style.width,
-                inlineHeight: mindarVideo.style.height
-              })
-            }, 100)
-          }
-          
-          // Verificar se o vídeo está realmente atrás do canvas
-          const canvas = scene.querySelector('canvas')
-          if (canvas) {
-            const canvasZ = parseInt(window.getComputedStyle(canvas).zIndex) || 0
-            const videoZ = parseInt(computedStyle.zIndex) || 0
-            
-            if (canvasZ <= videoZ) {
-              console.log('⚠️ Canvas pode estar cobrindo o vídeo - canvas z-index:', canvasZ, 'vídeo z-index:', videoZ)
-            }
-          }
-        }
+      // Garantir que o vídeo da câmera esteja visível (usando a função simplificada)
+      if (ensureCameraVideoVisibleRef.current) {
+        ensureCameraVideoVisibleRef.current()
       }
     }, 500) // Verificar a cada 500ms
-    
-      // Adicionar listener para quando o AR estiver pronto
-    scene.addEventListener('arReady', () => {
-      console.log('✅ MindAR pronto! O MindAR gerencia a câmera completamente.')
-      setIsArReady(true)
-      
-      // Verificar se o MindAR criou o vídeo da câmera e garantir visibilidade
-      setTimeout(() => {
-        const mindarVideo = document.querySelector('#arVideo') || 
-                           Array.from(document.querySelectorAll('video')).find(v => {
-                             const id = v.id || ''
-                             if (['video1', 'video2', 'video3'].includes(id)) return false
-                             return (v.videoWidth > 0 || v.srcObject) && !v.src
-                           })
-        
-        if (mindarVideo) {
-          const computedStyle = window.getComputedStyle(mindarVideo)
-          
-          // ANÁLISE PROFUNDA: Verificar todos os aspectos do vídeo
-          const hasStream = !!(mindarVideo.srcObject || mindarVideo.getAttribute('src'))
-          const isPlaying = !mindarVideo.paused && !mindarVideo.ended && mindarVideo.readyState > 2
-          const hasVideoTrack = mindarVideo.srcObject?.getVideoTracks?.().length > 0
-          
-          console.log('✅ Vídeo do MindAR encontrado após arReady:', {
-            id: mindarVideo.id,
-            videoWidth: mindarVideo.videoWidth,
-            videoHeight: mindarVideo.videoHeight,
-            display: computedStyle.display,
-            visibility: computedStyle.visibility,
-            opacity: computedStyle.opacity,
-            zIndex: computedStyle.zIndex,
-            position: computedStyle.position,
-            width: computedStyle.width,
-            height: computedStyle.height,
-            // ANÁLISE CRÍTICA:
-            hasStream: hasStream,
-            hasSrcObject: !!mindarVideo.srcObject,
-            srcObject: mindarVideo.srcObject,
-            isPlaying: isPlaying,
-            paused: mindarVideo.paused,
-            ended: mindarVideo.ended,
-            readyState: mindarVideo.readyState,
-            hasVideoTrack: hasVideoTrack,
-            networkState: mindarVideo.networkState,
-            error: mindarVideo.error,
-            // Verificar parent e siblings
-            parent: mindarVideo.parentElement?.tagName,
-            nextSibling: mindarVideo.nextElementSibling?.tagName,
-            previousSibling: mindarVideo.previousElementSibling?.tagName
-          })
-          
-          // Verificar se o vídeo tem stream mas não está visível
-          if (hasStream && !isPlaying && mindarVideo.readyState === 0) {
-            console.warn('⚠️ Vídeo tem stream mas não está carregado! Tentando forçar play...')
-            mindarVideo.play().catch(e => {
-              console.error('❌ Erro ao tentar reproduzir vídeo da câmera:', e)
-            })
-          }
-          
-          // Verificar se há elementos cobrindo o vídeo
-          const canvas = scene.querySelector('canvas')
-          if (canvas) {
-            const canvasStyle = window.getComputedStyle(canvas)
-            console.log('📊 Verificação de z-index:', {
-              videoZIndex: computedStyle.zIndex,
-              canvasZIndex: canvasStyle.zIndex,
-              videoPosition: computedStyle.position,
-              canvasPosition: canvasStyle.position,
-              canvasBackgroundColor: canvasStyle.backgroundColor,
-              canvasOpacity: canvasStyle.opacity,
-              canvasDisplay: canvasStyle.display,
-              canvasVisibility: canvasStyle.visibility
-            })
-            
-            // Se o canvas tiver z-index maior ou igual ao vídeo, pode estar cobrindo
-            const videoZ = parseInt(computedStyle.zIndex) || 0
-            const canvasZ = parseInt(canvasStyle.zIndex) || 0
-            if (canvasZ > videoZ) {
-              console.log('✅ Canvas está na frente do vídeo (correto para overlay AR)')
-              console.log('✅ Canvas deve estar transparente para mostrar o vídeo')
-              
-              // CRÍTICO: Verificar se o canvas realmente permite ver através dele
-              if (canvasStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
-                  canvasStyle.backgroundColor !== 'transparent') {
-                console.error('❌ PROBLEMA: Canvas NÃO está transparente! backgroundColor:', canvasStyle.backgroundColor)
-              }
-            } else {
-              console.warn('⚠️ Canvas pode estar atrás do vídeo - verificar z-index')
-            }
-            
-            // Verificar elementos entre vídeo e canvas
-            const allElements = document.elementsFromPoint(window.innerWidth / 2, window.innerHeight / 2)
-            const videoIndex = allElements.indexOf(mindarVideo)
-            const canvasIndex = allElements.indexOf(canvas)
-            if (canvasIndex < videoIndex) {
-              console.warn('⚠️ Canvas está na frente do vídeo no stacking context!', {
-                videoIndex,
-                canvasIndex,
-                elementsBetween: allElements.slice(canvasIndex, videoIndex).map(el => ({
-                  tag: el.tagName,
-                  zIndex: window.getComputedStyle(el).zIndex,
-                  position: window.getComputedStyle(el).position
-                }))
-              })
-            }
-          }
-          
-          // Verificar se há outros elementos cobrindo
-          const bodyChildren = Array.from(document.body.children)
-          const coveringElements = bodyChildren.filter(child => {
-            if (child === mindarVideo || child === scene) return false
-            const style = window.getComputedStyle(child)
-            const zIndex = parseInt(style.zIndex) || 0
-            const videoZ = parseInt(computedStyle.zIndex) || -2
-            return zIndex > videoZ && 
-                   style.position !== 'static' && 
-                   (style.display !== 'none' && style.visibility !== 'hidden')
-          })
-          
-          if (coveringElements.length > 0) {
-            console.warn('⚠️ Elementos que podem estar cobrindo o vídeo:', coveringElements.map(el => ({
-              tag: el.tagName,
-              id: el.id,
-              className: el.className,
-              zIndex: window.getComputedStyle(el).zIndex,
-              position: window.getComputedStyle(el).position
-            })))
-          }
-        } else {
-          console.log('⏳ Vídeo do MindAR ainda não foi criado - ele será criado automaticamente')
-        }
-      }, 1000)
-      
-      // Garantir que a animação de scanning apareça se não houver target ativo
-      if (activeTargetIndex === null) {
-        setShowScanningAnimation(true)
-        console.log('✅ Mostrando animação de scanning - nenhum target ativo')
-      }
-      
-      // SIMPLIFICADO: Apenas garantir transparência do canvas
-      // O MindAR gerencia completamente o vídeo da câmera - não precisamos fazer mais nada
-      forceCanvasTransparency()
-      makeRendererTransparent()
-      
-      // GARANTIR que o a-scene esteja visível
-      if (scene) {
-        scene.style.setProperty('opacity', '1', 'important')
-        scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1), mas transparente
-        scene.style.setProperty('background-color', 'transparent', 'important')
-        scene.style.setProperty('background', 'transparent', 'important')
-        scene.style.setProperty('position', 'fixed', 'important')
-        scene.style.setProperty('top', '0', 'important')
-        scene.style.setProperty('left', '0', 'important')
-        scene.style.setProperty('width', '100vw', 'important')
-        scene.style.setProperty('height', '100vh', 'important')
-        console.log('✅ a-scene configurado como visível após arReady')
-        
-        // Garantir que o canvas também esteja visível e transparente
-        const canvas = scene.querySelector('canvas')
-        if (canvas) {
-          canvas.style.setProperty('opacity', '1', 'important')
-          canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1), mas transparente
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-          canvas.style.setProperty('position', 'fixed', 'important')
-          canvas.style.setProperty('top', '0', 'important')
-          canvas.style.setProperty('left', '0', 'important')
-          canvas.style.setProperty('width', '100vw', 'important')
-          canvas.style.setProperty('height', '100vh', 'important')
-          forceCanvasTransparency()
-          console.log('✅ Canvas configurado como visível e transparente após arReady')
-        }
-      }
-      
-      // Esconder UI de loading manualmente
-      const uiLoading = document.getElementById('ui-loading')
-      if (uiLoading) {
-        uiLoading.style.display = 'none'
-        console.log('✅ UI Loading escondida')
-      }
-    })
 
     return () => {
       // Cleanup: remover listeners e intervalos quando componente desmontar
@@ -1453,7 +1810,7 @@ const ScanPage = () => {
       if (sceneRef.current) {
         const scene = sceneRef.current
         scene.removeEventListener('loaded', handleSceneLoaded)
-        scene.removeEventListener('arReady', () => {})
+        scene.removeEventListener('arReady', handleArReady)
       }
     }
   }, [cameraPermissionGranted, isArReady])
@@ -1572,7 +1929,7 @@ const ScanPage = () => {
       {/* A-Frame Scene */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: false; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
+        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: true"
