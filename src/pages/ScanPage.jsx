@@ -1682,8 +1682,13 @@ const ScanPage = () => {
       forceCanvasTransparency()
       makeRendererTransparent()
       
-      // GARANTIR que o a-scene esteja visível
+      // GARANTIR que o a-scene esteja visível e transparente
       if (scene) {
+        // Detectar Android/Chrome para aplicar correções mais agressivas
+        const isAndroid = /Android/i.test(navigator.userAgent)
+        const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+        const needsAggressiveFix = isAndroid && isChrome
+        
         scene.style.setProperty('opacity', '1', 'important')
         scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1), mas transparente
         scene.style.setProperty('background-color', 'transparent', 'important')
@@ -1693,7 +1698,55 @@ const ScanPage = () => {
         scene.style.setProperty('left', '0', 'important')
         scene.style.setProperty('width', '100vw', 'important')
         scene.style.setProperty('height', '100vh', 'important')
-        console.log('✅ a-scene configurado como visível após arReady')
+        
+        // No Android/Chrome, forçar background transparente no atributo também
+        if (needsAggressiveFix) {
+          scene.setAttribute('background', 'color: #000000; opacity: 0')
+          
+          // Interceptar o sistema de background do A-Frame se existir
+          if (scene.systems && scene.systems.background) {
+            const backgroundSystem = scene.systems.background
+            // Forçar background transparente no sistema
+            if (backgroundSystem.setBackground) {
+              backgroundSystem.setBackground('transparent', 0)
+            }
+            if (backgroundSystem.el) {
+              const bgEl = backgroundSystem.el
+              if (bgEl) {
+                bgEl.style.setProperty('background-color', 'transparent', 'important')
+                bgEl.style.setProperty('background', 'transparent', 'important')
+                bgEl.style.setProperty('opacity', '0', 'important')
+              }
+            }
+          }
+          
+          // Verificar e corrigir elementos filhos do a-scene que possam ter background preto
+          const sceneChildren = scene.querySelectorAll('*')
+          sceneChildren.forEach(child => {
+            const childStyle = window.getComputedStyle(child)
+            const bgColor = childStyle.backgroundColor
+            if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+              // Ignorar canvas e vídeos AR
+              if (child.tagName !== 'CANVAS' && child.tagName !== 'VIDEO' && !child.id.includes('video')) {
+                child.style.setProperty('background-color', 'transparent', 'important')
+                child.style.setProperty('background', 'transparent', 'important')
+                child.style.setProperty('opacity', '1', 'important')
+              }
+            }
+          })
+          
+          // Verificar se há um elemento a-sky ou similar que possa estar criando background
+          const skyElement = scene.querySelector('a-sky')
+          if (skyElement) {
+            skyElement.style.setProperty('background-color', 'transparent', 'important')
+            skyElement.style.setProperty('background', 'transparent', 'important')
+            skyElement.style.setProperty('opacity', '0', 'important')
+            skyElement.setAttribute('color', '#000000')
+            skyElement.setAttribute('opacity', '0')
+          }
+        }
+        
+        console.log('✅ a-scene configurado como visível após arReady', needsAggressiveFix ? '[Android/Chrome: correções agressivas]' : '')
         
         // Garantir que o canvas também esteja visível e transparente
         const canvas = scene.querySelector('canvas')
@@ -1874,6 +1927,61 @@ const ScanPage = () => {
       // Sempre garantir transparência do canvas
       forceCanvasTransparency()
       makeRendererTransparent()
+      
+      // Detectar Android/Chrome para aplicar correções mais agressivas
+      const isAndroid = /Android/i.test(navigator.userAgent)
+      const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+      const needsAggressiveFix = isAndroid && isChrome
+      
+      // No Android/Chrome, forçar a-scene e seus elementos a serem transparentes
+      if (needsAggressiveFix && scene) {
+        // Forçar a-scene transparente
+        scene.style.setProperty('background-color', 'transparent', 'important')
+        scene.style.setProperty('background', 'transparent', 'important')
+        scene.setAttribute('background', 'color: #000000; opacity: 0')
+        
+        // Interceptar o sistema de background do A-Frame se existir
+        if (scene.systems && scene.systems.background) {
+          const backgroundSystem = scene.systems.background
+          // Forçar background transparente no sistema
+          if (backgroundSystem.setBackground) {
+            backgroundSystem.setBackground('transparent', 0)
+          }
+          if (backgroundSystem.el) {
+            const bgEl = backgroundSystem.el
+            if (bgEl) {
+              bgEl.style.setProperty('background-color', 'transparent', 'important')
+              bgEl.style.setProperty('background', 'transparent', 'important')
+              bgEl.style.setProperty('opacity', '0', 'important')
+            }
+          }
+        }
+        
+        // Verificar e corrigir elementos filhos do a-scene
+        const sceneChildren = scene.querySelectorAll('*')
+        sceneChildren.forEach(child => {
+          const childStyle = window.getComputedStyle(child)
+          const bgColor = childStyle.backgroundColor
+          // Se não for canvas ou vídeo AR, e tiver background preto, forçar transparente
+          if (child.tagName !== 'CANVAS' && child.tagName !== 'VIDEO' && !child.id.includes('video')) {
+            if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+              child.style.setProperty('background-color', 'transparent', 'important')
+              child.style.setProperty('background', 'transparent', 'important')
+              child.style.setProperty('opacity', '1', 'important')
+            }
+          }
+        })
+        
+        // Verificar se há um elemento a-sky ou similar que possa estar criando background
+        const skyElement = scene.querySelector('a-sky')
+        if (skyElement) {
+          skyElement.style.setProperty('background-color', 'transparent', 'important')
+          skyElement.style.setProperty('background', 'transparent', 'important')
+          skyElement.style.setProperty('opacity', '0', 'important')
+          skyElement.setAttribute('color', '#000000')
+          skyElement.setAttribute('opacity', '0')
+        }
+      }
       
       // Verificar e corrigir elementos com background preto que possam estar cobrindo os vídeos
       const allElements = document.querySelectorAll('*')
