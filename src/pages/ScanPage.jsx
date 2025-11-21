@@ -1703,22 +1703,65 @@ const ScanPage = () => {
         if (needsAggressiveFix) {
           scene.setAttribute('background', 'color: #000000; opacity: 0')
           
-          // Interceptar o sistema de background do A-Frame se existir
+          // Interceptar e DESABILITAR completamente o sistema de background do A-Frame
           if (scene.systems && scene.systems.background) {
             const backgroundSystem = scene.systems.background
+            
+            // Desabilitar o sistema completamente interceptando seus métodos
+            if (backgroundSystem.update && !backgroundSystem._updateIntercepted) {
+              backgroundSystem._originalUpdate = backgroundSystem.update.bind(backgroundSystem)
+              backgroundSystem.update = function() {
+                // Não fazer nada - desabilitar completamente
+              }
+              backgroundSystem._updateIntercepted = true
+            }
+            
             // Forçar background transparente no sistema
             if (backgroundSystem.setBackground) {
               backgroundSystem.setBackground('transparent', 0)
             }
+            
+            // Remover ou esconder o elemento de background se existir
             if (backgroundSystem.el) {
               const bgEl = backgroundSystem.el
               if (bgEl) {
+                bgEl.style.setProperty('display', 'none', 'important')
+                bgEl.style.setProperty('visibility', 'hidden', 'important')
                 bgEl.style.setProperty('background-color', 'transparent', 'important')
                 bgEl.style.setProperty('background', 'transparent', 'important')
                 bgEl.style.setProperty('opacity', '0', 'important')
+                bgEl.style.setProperty('pointer-events', 'none', 'important')
+                // Tentar remover do DOM se possível
+                if (bgEl.parentNode) {
+                  try {
+                    bgEl.remove()
+                  } catch (e) {
+                    console.warn('⚠️ Não foi possível remover elemento de background:', e)
+                  }
+                }
               }
             }
           }
+          
+          // Procurar e remover qualquer elemento que possa ser o background do A-Frame
+          const possibleBackgroundElements = scene.querySelectorAll('[data-aframe-background], .a-background, [class*="background"]')
+          possibleBackgroundElements.forEach(bgEl => {
+            if (bgEl.tagName !== 'CANVAS' && bgEl.tagName !== 'VIDEO') {
+              const bgStyle = window.getComputedStyle(bgEl)
+              const bgColor = bgStyle.backgroundColor
+              if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+                console.warn('⚠️ Removendo elemento de background preto do A-Frame:', bgEl)
+                bgEl.style.setProperty('display', 'none', 'important')
+                bgEl.style.setProperty('visibility', 'hidden', 'important')
+                bgEl.style.setProperty('opacity', '0', 'important')
+                try {
+                  bgEl.remove()
+                } catch (e) {
+                  // Ignorar se não puder remover
+                }
+              }
+            }
+          })
           
           // Verificar e corrigir elementos filhos do a-scene que possam ter background preto
           const sceneChildren = scene.querySelectorAll('*')
@@ -1738,12 +1781,51 @@ const ScanPage = () => {
           // Verificar se há um elemento a-sky ou similar que possa estar criando background
           const skyElement = scene.querySelector('a-sky')
           if (skyElement) {
-            skyElement.style.setProperty('background-color', 'transparent', 'important')
-            skyElement.style.setProperty('background', 'transparent', 'important')
+            console.warn('⚠️ Removendo elemento a-sky que pode estar criando background preto')
+            skyElement.style.setProperty('display', 'none', 'important')
+            skyElement.style.setProperty('visibility', 'hidden', 'important')
             skyElement.style.setProperty('opacity', '0', 'important')
-            skyElement.setAttribute('color', '#000000')
-            skyElement.setAttribute('opacity', '0')
+            try {
+              skyElement.remove()
+            } catch (e) {
+              // Ignorar se não puder remover
+            }
           }
+          
+          // Verificação EXTRA AGRESSIVA: Procurar qualquer elemento grande com background preto e remover
+          const allSceneElements = scene.querySelectorAll('*')
+          allSceneElements.forEach(el => {
+            if (el.tagName === 'CANVAS' || el.tagName === 'VIDEO' || el.id.includes('video')) {
+              return // Ignorar canvas e vídeos
+            }
+            
+            const rect = el.getBoundingClientRect()
+            const style = window.getComputedStyle(el)
+            const bgColor = style.backgroundColor
+            
+            // Se o elemento é grande (cobre mais de 50% da tela) e tem background preto
+            if (rect.width > window.innerWidth * 0.5 && 
+                rect.height > window.innerHeight * 0.5 &&
+                bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+              console.error('❌ ELEMENTO GRANDE COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
+                tag: el.tagName,
+                id: el.id,
+                className: el.className,
+                width: rect.width,
+                height: rect.height,
+                backgroundColor: bgColor
+              })
+              el.style.setProperty('display', 'none', 'important')
+              el.style.setProperty('visibility', 'hidden', 'important')
+              el.style.setProperty('opacity', '0', 'important')
+              el.style.setProperty('pointer-events', 'none', 'important')
+              try {
+                el.remove()
+              } catch (e) {
+                console.warn('⚠️ Não foi possível remover elemento:', e)
+              }
+            }
+          })
         }
         
         console.log('✅ a-scene configurado como visível após arReady', needsAggressiveFix ? '[Android/Chrome: correções agressivas]' : '')
@@ -1940,22 +2022,65 @@ const ScanPage = () => {
         scene.style.setProperty('background', 'transparent', 'important')
         scene.setAttribute('background', 'color: #000000; opacity: 0')
         
-        // Interceptar o sistema de background do A-Frame se existir
+        // Interceptar e DESABILITAR completamente o sistema de background do A-Frame
         if (scene.systems && scene.systems.background) {
           const backgroundSystem = scene.systems.background
+          
+          // Desabilitar o sistema completamente interceptando seus métodos
+          if (backgroundSystem.update && !backgroundSystem._updateIntercepted) {
+            backgroundSystem._originalUpdate = backgroundSystem.update.bind(backgroundSystem)
+            backgroundSystem.update = function() {
+              // Não fazer nada - desabilitar completamente
+            }
+            backgroundSystem._updateIntercepted = true
+          }
+          
           // Forçar background transparente no sistema
           if (backgroundSystem.setBackground) {
             backgroundSystem.setBackground('transparent', 0)
           }
+          
+          // Remover ou esconder o elemento de background se existir
           if (backgroundSystem.el) {
             const bgEl = backgroundSystem.el
             if (bgEl) {
+              bgEl.style.setProperty('display', 'none', 'important')
+              bgEl.style.setProperty('visibility', 'hidden', 'important')
               bgEl.style.setProperty('background-color', 'transparent', 'important')
               bgEl.style.setProperty('background', 'transparent', 'important')
               bgEl.style.setProperty('opacity', '0', 'important')
+              bgEl.style.setProperty('pointer-events', 'none', 'important')
+              // Tentar remover do DOM se possível
+              if (bgEl.parentNode) {
+                try {
+                  bgEl.remove()
+                } catch (e) {
+                  console.warn('⚠️ Não foi possível remover elemento de background:', e)
+                }
+              }
             }
           }
         }
+        
+        // Procurar e remover qualquer elemento que possa ser o background do A-Frame
+        const possibleBackgroundElements = scene.querySelectorAll('[data-aframe-background], .a-background, [class*="background"]')
+        possibleBackgroundElements.forEach(bgEl => {
+          if (bgEl.tagName !== 'CANVAS' && bgEl.tagName !== 'VIDEO') {
+            const bgStyle = window.getComputedStyle(bgEl)
+            const bgColor = bgStyle.backgroundColor
+            if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+              console.warn('⚠️ Removendo elemento de background preto do A-Frame:', bgEl)
+              bgEl.style.setProperty('display', 'none', 'important')
+              bgEl.style.setProperty('visibility', 'hidden', 'important')
+              bgEl.style.setProperty('opacity', '0', 'important')
+              try {
+                bgEl.remove()
+              } catch (e) {
+                // Ignorar se não puder remover
+              }
+            }
+          }
+        })
         
         // Verificar e corrigir elementos filhos do a-scene
         const sceneChildren = scene.querySelectorAll('*')
@@ -1975,12 +2100,51 @@ const ScanPage = () => {
         // Verificar se há um elemento a-sky ou similar que possa estar criando background
         const skyElement = scene.querySelector('a-sky')
         if (skyElement) {
-          skyElement.style.setProperty('background-color', 'transparent', 'important')
-          skyElement.style.setProperty('background', 'transparent', 'important')
+          console.warn('⚠️ Removendo elemento a-sky que pode estar criando background preto')
+          skyElement.style.setProperty('display', 'none', 'important')
+          skyElement.style.setProperty('visibility', 'hidden', 'important')
           skyElement.style.setProperty('opacity', '0', 'important')
-          skyElement.setAttribute('color', '#000000')
-          skyElement.setAttribute('opacity', '0')
+          try {
+            skyElement.remove()
+          } catch (e) {
+            // Ignorar se não puder remover
+          }
         }
+        
+        // Verificação EXTRA AGRESSIVA: Procurar qualquer elemento grande com background preto e remover
+        const allSceneElements = scene.querySelectorAll('*')
+        allSceneElements.forEach(el => {
+          if (el.tagName === 'CANVAS' || el.tagName === 'VIDEO' || el.id.includes('video')) {
+            return // Ignorar canvas e vídeos
+          }
+          
+          const rect = el.getBoundingClientRect()
+          const style = window.getComputedStyle(el)
+          const bgColor = style.backgroundColor
+          
+          // Se o elemento é grande (cobre mais de 50% da tela) e tem background preto
+          if (rect.width > window.innerWidth * 0.5 && 
+              rect.height > window.innerHeight * 0.5 &&
+              bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+            console.error('❌ ELEMENTO GRANDE COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
+              tag: el.tagName,
+              id: el.id,
+              className: el.className,
+              width: rect.width,
+              height: rect.height,
+              backgroundColor: bgColor
+            })
+            el.style.setProperty('display', 'none', 'important')
+            el.style.setProperty('visibility', 'hidden', 'important')
+            el.style.setProperty('opacity', '0', 'important')
+            el.style.setProperty('pointer-events', 'none', 'important')
+            try {
+              el.remove()
+            } catch (e) {
+              console.warn('⚠️ Não foi possível remover elemento:', e)
+            }
+          }
+        })
       }
       
       // Verificar e corrigir elementos com background preto que possam estar cobrindo os vídeos
