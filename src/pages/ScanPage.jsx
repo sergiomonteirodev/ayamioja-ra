@@ -754,6 +754,11 @@ const ScanPage = () => {
         try {
           const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
           if (gl) {
+            // Detectar Android/Chrome para aplicar correções mais agressivas
+            const isAndroid = /Android/i.test(navigator.userAgent)
+            const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+            const needsAggressiveFix = isAndroid && isChrome
+            
             // Forçar limpar o canvas com alpha transparente
             gl.clearColor(0.0, 0.0, 0.0, 0.0)
             gl.enable(gl.BLEND)
@@ -769,11 +774,27 @@ const ScanPage = () => {
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
                 // Permitir que a limpeza aconteça normalmente (incluindo depth buffer)
                 gl._originalClear(mask)
+                // No Android/Chrome, forçar clearColor novamente após limpar
+                if (needsAggressiveFix) {
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                }
               }
-              console.log('✅ gl.clear interceptado para garantir transparência (permitindo limpeza normal)')
+              console.log('✅ gl.clear interceptado para garantir transparência (permitindo limpeza normal)', needsAggressiveFix ? '[Android/Chrome: modo agressivo]' : '')
             }
             
-            console.log('✅ Canvas WebGL configurado para transparência')
+            // No Android/Chrome, adicionar um intervalo que força clearColor a 0 continuamente
+            if (needsAggressiveFix && !gl._androidClearColorInterval) {
+              gl._androidClearColorInterval = setInterval(() => {
+                try {
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                } catch (e) {
+                  // Ignorar erros se o contexto foi perdido
+                }
+              }, 100) // A cada 100ms
+              console.log('✅ Intervalo de correção de clearColor ativado para Android/Chrome')
+            }
+            
+            console.log('✅ Canvas WebGL configurado para transparência', needsAggressiveFix ? '[Android/Chrome]' : '')
           }
         } catch (e) {
           console.warn('⚠️ Erro ao configurar WebGL:', e)
@@ -1132,6 +1153,11 @@ const ScanPage = () => {
               // Mas permitir que a limpeza aconteça normalmente (incluindo depth buffer para AR)
               const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
               if (gl) {
+                // Detectar Android/Chrome para aplicar correções mais agressivas
+                const isAndroid = /Android/i.test(navigator.userAgent)
+                const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+                const needsAggressiveFix = isAndroid && isChrome
+                
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
                 gl.enable(gl.BLEND)
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -1143,8 +1169,24 @@ const ScanPage = () => {
                     gl.clearColor(0.0, 0.0, 0.0, 0.0)
                     // Permitir que a limpeza aconteça normalmente
                     gl._originalClear(mask)
+                    // No Android/Chrome, forçar clearColor novamente após limpar
+                    if (needsAggressiveFix) {
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    }
                   }
-                  console.log('✅ gl.clear interceptado no diagnóstico (permitindo limpeza normal)')
+                  console.log('✅ gl.clear interceptado no diagnóstico (permitindo limpeza normal)', needsAggressiveFix ? '[Android/Chrome: modo agressivo]' : '')
+                }
+                
+                // No Android/Chrome, adicionar um intervalo que força clearColor a 0 continuamente
+                if (needsAggressiveFix && !gl._androidClearColorInterval) {
+                  gl._androidClearColorInterval = setInterval(() => {
+                    try {
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    } catch (e) {
+                      // Ignorar erros se o contexto foi perdido
+                    }
+                  }, 100) // A cada 100ms
+                  console.log('✅ Intervalo de correção de clearColor ativado no diagnóstico para Android/Chrome')
                 }
               }
             }
@@ -1725,6 +1767,11 @@ const ScanPage = () => {
             
             // Interceptar render() para garantir transparência a cada frame
             if (typeof renderer.render === 'function' && !renderer._renderIntercepted) {
+              // Detectar Android/Chrome para aplicar correções mais agressivas
+              const isAndroid = /Android/i.test(navigator.userAgent)
+              const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+              const needsAggressiveFix = isAndroid && isChrome
+              
               renderer._originalRender = renderer.render.bind(renderer)
               renderer.render = function(scene, camera) {
                 // CRÍTICO: Garantir clearColor transparente antes de renderizar
@@ -1745,8 +1792,24 @@ const ScanPage = () => {
                 }
                 // Chamar render original
                 renderer._originalRender(scene, camera)
+                
+                // No Android/Chrome, forçar clearColor novamente após renderizar
+                if (needsAggressiveFix) {
+                  try {
+                    const gl = renderer.getContext && renderer.getContext() || 
+                              renderer.domElement && (renderer.domElement.getContext('webgl') || renderer.domElement.getContext('webgl2'))
+                    if (gl) {
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    }
+                  } catch (e) {
+                    // Ignorar erro
+                  }
+                }
               }
               renderer._renderIntercepted = true
+              if (needsAggressiveFix) {
+                console.log('✅ Renderer.render interceptado com correção agressiva para Android/Chrome')
+              }
             }
             
             // Garantir que alpha seja habilitado
@@ -1763,9 +1826,40 @@ const ScanPage = () => {
         // Também configurar via WebGL diretamente
         const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
         if (gl) {
+          // Detectar Android/Chrome para aplicar correções mais agressivas
+          const isAndroid = /Android/i.test(navigator.userAgent)
+          const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+          const needsAggressiveFix = isAndroid && isChrome
+          
           gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: transparente
           gl.enable(gl.BLEND)
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+          
+          // Interceptar gl.clear() para garantir transparência
+          if (!gl._originalClear) {
+            gl._originalClear = gl.clear.bind(gl)
+            gl.clear = function(mask) {
+              // SEMPRE garantir clearColor com alpha 0 antes de limpar
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              // Permitir que a limpeza aconteça normalmente
+              gl._originalClear(mask)
+              // No Android/Chrome, forçar clearColor novamente após limpar
+              if (needsAggressiveFix) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              }
+            }
+          }
+          
+          // No Android/Chrome, adicionar um intervalo que força clearColor a 0 continuamente
+          if (needsAggressiveFix && !gl._androidClearColorInterval) {
+            gl._androidClearColorInterval = setInterval(() => {
+              try {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              } catch (e) {
+                // Ignorar erros se o contexto foi perdido
+              }
+            }, 100) // A cada 100ms
+          }
         }
       } catch (e) {
         console.warn('⚠️ Erro ao configurar transparência:', e)
@@ -1780,6 +1874,40 @@ const ScanPage = () => {
       // Sempre garantir transparência do canvas
       forceCanvasTransparency()
       makeRendererTransparent()
+      
+      // Verificar e corrigir elementos com background preto que possam estar cobrindo os vídeos
+      const allElements = document.querySelectorAll('*')
+      allElements.forEach(el => {
+        const style = window.getComputedStyle(el)
+        const bgColor = style.backgroundColor
+        // Verificar se tem background preto ou quase preto
+        if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+          // Ignorar elementos que devem ter background preto (como botões, etc)
+          const tagName = el.tagName.toLowerCase()
+          const className = el.className || ''
+          const id = el.id || ''
+          
+          // Se não for um elemento de UI conhecido e estiver cobrindo a tela
+          if (!['button', 'input', 'select', 'textarea'].includes(tagName) &&
+              !className.includes('back-button') &&
+              !className.includes('toggle') &&
+              !className.includes('nav') &&
+              !id.includes('ui-') &&
+              !id.includes('loading')) {
+            const rect = el.getBoundingClientRect()
+            // Se o elemento está cobrindo uma grande parte da tela
+            if (rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5) {
+              const zIndex = parseInt(style.zIndex) || 0
+              // Se está na frente do canvas (z-index > 1) mas não é um elemento de UI
+              if (zIndex > 1 && zIndex < 100000) {
+                console.warn('⚠️ Elemento com background preto detectado, forçando transparência:', el)
+                el.style.setProperty('background-color', 'transparent', 'important')
+                el.style.setProperty('background', 'transparent', 'important')
+              }
+            }
+          }
+        }
+      })
       
       // Garantir que o vídeo da câmera esteja visível (usando a função simplificada)
       if (ensureCameraVideoVisibleRef.current) {
