@@ -29,6 +29,7 @@ const ScanPage = () => {
   const cameraStreamRef = useRef(null)
   const mindarStartedRef = useRef(false)
   const transparencyIntervalRef = useRef(null)
+  const blackElementObserverRef = useRef(null)
   // REMOVIDO: Deixar o MindAR gerenciar completamente o vídeo da câmera
   // Não precisamos fazer nada - o MindAR gerencia tudo
 
@@ -2001,6 +2002,80 @@ const ScanPage = () => {
       }
     }
     
+    // Detectar Android/Chrome uma vez para usar em múltiplos lugares
+    const isAndroidDevice = /Android/i.test(navigator.userAgent)
+    const isChromeBrowser = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+    const needsAggressiveFix = isAndroidDevice && isChromeBrowser
+    
+    // MutationObserver para detectar e remover elementos criados dinamicamente com background preto
+    if (blackElementObserverRef.current) {
+      blackElementObserverRef.current.disconnect()
+    }
+    blackElementObserverRef.current = new MutationObserver((mutations) => {
+      if (!needsAggressiveFix) return
+      
+      if (!needsAggressiveFix) return
+      
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element node
+            const el = node
+            // Ignorar canvas e vídeos
+            if (el.tagName === 'CANVAS' || el.tagName === 'VIDEO' || el.id?.includes('video')) {
+              return
+            }
+            
+            const rect = el.getBoundingClientRect()
+            const style = window.getComputedStyle(el)
+            const bgColor = style.backgroundColor
+            
+            // Se o elemento é grande e tem background preto, remover imediatamente
+            if (rect.width > window.innerWidth * 0.3 && 
+                rect.height > window.innerHeight * 0.3 &&
+                bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+              console.error('❌ NOVO ELEMENTO COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
+                tag: el.tagName,
+                id: el.id,
+                className: el.className,
+                width: rect.width,
+                height: rect.height,
+                backgroundColor: bgColor
+              })
+              el.style.setProperty('display', 'none', 'important')
+              el.style.setProperty('visibility', 'hidden', 'important')
+              el.style.setProperty('opacity', '0', 'important')
+              el.style.setProperty('pointer-events', 'none', 'important')
+              try {
+                el.remove()
+              } catch (e) {
+                // Ignorar se não puder remover
+              }
+            }
+          }
+        })
+      })
+    })
+    
+    // Observar mudanças no DOM, especialmente no a-scene
+    if (scene && blackElementObserverRef.current) {
+      blackElementObserverRef.current.observe(scene, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      })
+    }
+    
+    // Observar mudanças no body também
+    if (blackElementObserverRef.current) {
+      blackElementObserverRef.current.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      })
+    }
+    
     // Loop para forçar transparência continuamente e garantir visibilidade do vídeo
     if (transparencyIntervalRef.current) {
       clearInterval(transparencyIntervalRef.current)
@@ -2010,10 +2085,19 @@ const ScanPage = () => {
       forceCanvasTransparency()
       makeRendererTransparent()
       
-      // Detectar Android/Chrome para aplicar correções mais agressivas
-      const isAndroid = /Android/i.test(navigator.userAgent)
-      const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
-      const needsAggressiveFix = isAndroid && isChrome
+      // No Android/Chrome, forçar transparência do canvas a cada frame usando requestAnimationFrame
+      if (needsAggressiveFix) {
+        const canvas = scene?.querySelector('canvas')
+        if (canvas) {
+          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          if (gl) {
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          }
+          // Forçar CSS também
+          canvas.style.setProperty('background-color', 'transparent', 'important')
+          canvas.style.setProperty('background', 'transparent', 'important')
+        }
+      }
       
       // No Android/Chrome, forçar a-scene e seus elementos a serem transparentes
       if (needsAggressiveFix && scene) {
@@ -2211,6 +2295,10 @@ const ScanPage = () => {
         const scene = sceneRef.current
         scene.removeEventListener('loaded', handleSceneLoaded)
         scene.removeEventListener('arReady', handleArReady)
+      }
+      if (blackElementObserverRef.current) {
+        blackElementObserverRef.current.disconnect()
+        blackElementObserverRef.current = null
       }
     }
   }, [cameraPermissionGranted, isArReady])
