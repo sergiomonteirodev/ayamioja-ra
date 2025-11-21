@@ -1799,7 +1799,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 30px 15px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-section {
@@ -1963,7 +1964,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 25px 10px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-text h2 {
@@ -2140,7 +2142,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 20px 8px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-text h2 {
@@ -2333,7 +2336,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 15px 5px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-text h2 {
@@ -2453,6 +2457,11 @@ body.modal-open {
         position: relative;
         margin: 0 !important;
         padding: 0 !important;
+    }
+    
+    .page-content {
+        padding: 120px 20px 100px 20px !important; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px) !important; /* Altura mínima considerando footer */
     }
     
     .circular-text-container {
@@ -2738,6 +2747,11 @@ body.modal-open {
     }
     
     /* Página Sobre */
+    .page-content {
+        padding: 120px 20px 100px 20px !important; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px) !important; /* Altura mínima considerando footer */
+    }
+    
     .page-title {
         font-size: 24px;
         margin-bottom: 15px;
