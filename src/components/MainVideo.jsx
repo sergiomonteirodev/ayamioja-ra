@@ -63,18 +63,34 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     if (!video || !onVideoStateChange) return
 
     const updateVideoState = () => {
-      if (!video.paused) {
-        onVideoStateChange({ 
-          isPlaying: true, 
-          currentTime: video.currentTime 
-        })
-      }
+      // Sempre enviar o estado atual, mesmo quando pausado
+      onVideoStateChange({ 
+        isPlaying: !video.paused && !video.ended, 
+        currentTime: video.currentTime 
+      })
     }
 
-    // Atualizar a cada 100ms
+    // Atualizar a cada 100ms para sincronização precisa
     const interval = setInterval(updateVideoState, 100)
 
-    return () => clearInterval(interval)
+    // Também atualizar em eventos importantes
+    const handlePlay = () => updateVideoState()
+    const handlePause = () => updateVideoState()
+    const handleTimeUpdate = () => updateVideoState()
+    const handleEnded = () => updateVideoState()
+
+    video.addEventListener('play', handlePlay)
+    video.addEventListener('pause', handlePause)
+    video.addEventListener('timeupdate', handleTimeUpdate)
+    video.addEventListener('ended', handleEnded)
+
+    return () => {
+      clearInterval(interval)
+      video.removeEventListener('play', handlePlay)
+      video.removeEventListener('pause', handlePause)
+      video.removeEventListener('timeupdate', handleTimeUpdate)
+      video.removeEventListener('ended', handleEnded)
+    }
   }, [onVideoStateChange])
 
   useEffect(() => {
