@@ -135,7 +135,7 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
         left: '20px',
         width: '300px',
         height: '300px',
-        zIndex: 100000,
+        zIndex: 150,
         visibility: (isVisible || showPausedMessage) ? 'visible' : 'hidden',
         opacity: isVisible ? 1 : 0,
         display: (isVisible || showPausedMessage) ? 'block' : 'none',
