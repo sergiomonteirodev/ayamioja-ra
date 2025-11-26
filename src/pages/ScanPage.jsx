@@ -206,6 +206,30 @@ const ScanPage = () => {
       }
       
       console.log('✅ Permissão concedida. MindAR iniciado, aguardando vídeo aparecer...')
+      
+      // Aplicar correções Android após permissão
+      setTimeout(() => {
+        const scene = sceneRef.current
+        if (scene) {
+          const forceAndroidTransparency = () => {
+            const isAndroid = /Android/i.test(navigator.userAgent)
+            if (!isAndroid) return
+            
+            const canvas = scene.querySelector('canvas')
+            if (!canvas) return
+            
+            console.log('🔧 Aplicando correções Android após permissão...')
+            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+            if (gl) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              canvas.style.setProperty('background-color', 'transparent', 'important')
+              canvas.style.setProperty('background', 'transparent', 'important')
+            }
+          }
+          forceAndroidTransparency()
+        }
+      }, 500)
+      
       clearTimeout(timeoutId)
       setIsRequestingPermission(false)
     } catch (error) {
@@ -803,6 +827,105 @@ const ScanPage = () => {
       }
       
       return rendererFound
+    }
+
+    // Função específica para corrigir transparência no Android
+    const forceAndroidTransparency = () => {
+      const isAndroid = /Android/i.test(navigator.userAgent)
+      if (!isAndroid) return
+      
+      const scene = sceneRef.current
+      if (!scene) return
+      
+      const canvas = scene.querySelector('canvas')
+      if (!canvas) return
+      
+      console.log('🔧 Aplicando correções específicas para Android...')
+      
+      // Forçar transparência via CSS de forma mais agressiva
+      canvas.style.setProperty('background-color', 'transparent', 'important')
+      canvas.style.setProperty('background', 'transparent', 'important')
+      canvas.style.setProperty('opacity', '1', 'important')
+      canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
+      
+      // Acessar WebGL diretamente
+      const gl = canvas.getContext('webgl', { 
+        alpha: true, 
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+        antialias: true
+      }) || canvas.getContext('webgl2', { 
+        alpha: true, 
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+        antialias: true
+      })
+      
+      if (gl) {
+        // Configurar para transparência
+        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+        
+        // Interceptar clear para sempre usar alpha 0
+        if (!gl._androidClearIntercepted) {
+          const originalClear = gl.clear.bind(gl)
+          gl.clear = function(mask) {
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            originalClear(mask)
+            // Forçar novamente após clear
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          }
+          gl._androidClearIntercepted = true
+          console.log('✅ gl.clear interceptado para Android')
+        }
+        
+        // Interceptar render do renderer se disponível
+        try {
+          const rendererSystem = scene.systems?.renderer
+          if (rendererSystem) {
+            const renderer = rendererSystem.renderer || rendererSystem
+            if (renderer && typeof renderer.render === 'function' && !renderer._androidRenderIntercepted) {
+              const originalRender = renderer.render.bind(renderer)
+              renderer.render = function(scene, camera) {
+                const gl = this.getContext()
+                if (gl) {
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                }
+                originalRender(scene, camera)
+                if (gl) {
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                }
+              }
+              renderer._androidRenderIntercepted = true
+              console.log('✅ renderer.render interceptado para Android')
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Erro ao interceptar renderer:', e)
+        }
+        
+        // Intervalo agressivo para Android
+        if (!canvas._androidTransparencyInterval) {
+          canvas._androidTransparencyInterval = setInterval(() => {
+            try {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              canvas.style.setProperty('background-color', 'transparent', 'important')
+              canvas.style.setProperty('background', 'transparent', 'important')
+            } catch (e) {
+              // Contexto pode ter sido perdido
+            }
+          }, 50) // A cada 50ms no Android
+          console.log('✅ Intervalo agressivo de transparência ativado para Android (50ms)')
+        }
+      }
+      
+      // Também forçar no elemento a-scene
+      scene.style.setProperty('background-color', 'transparent', 'important')
+      scene.style.setProperty('background', 'transparent', 'important')
+      
+      console.log('✅ Correções Android aplicadas')
     }
 
     // Primeira interação do usuário (só funciona após permissão concedida)
@@ -1525,6 +1648,32 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto! O MindAR gerencia a câmera completamente.')
       setIsArReady(true)
+      
+      // Aplicar correções Android imediatamente
+      setTimeout(() => {
+        const forceAndroidTransparency = () => {
+          const isAndroid = /Android/i.test(navigator.userAgent)
+          if (!isAndroid) return
+          
+          const scene = sceneRef.current
+          if (!scene) return
+          
+          const canvas = scene.querySelector('canvas')
+          if (!canvas) return
+          
+          console.log('🔧 Aplicando correções Android após arReady...')
+          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          if (gl) {
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            gl.enable(gl.BLEND)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+            canvas.style.setProperty('background-color', 'transparent', 'important')
+            canvas.style.setProperty('background', 'transparent', 'important')
+          }
+        }
+        forceAndroidTransparency()
+        makeRendererTransparent()
+      }, 100)
       
       // Verificar e iniciar o MindAR se necessário
       // Aguardar um pouco mais para garantir que o tracker esteja inicializado
@@ -2420,7 +2569,7 @@ const ScanPage = () => {
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: true"
+        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: ${/Android/i.test(navigator.userAgent) ? 'false' : 'true'}; powerPreference: high-performance;`}
         embedded
         background="color: #000000; opacity: 0"
         style={{

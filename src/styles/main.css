@@ -536,8 +536,8 @@ body {
 
 /* Action Buttons */
 .action-buttons {
-  position: absolute;
-  bottom: 20px;
+  position: fixed;
+  bottom: 72px;
   right: 0px;
   display: flex;
   flex-direction: column;
@@ -598,7 +598,7 @@ body {
 
 /* Interpreter Video */
 .interpreter-container {
-    position: absolute;
+    position: fixed;
   bottom: 72px;
   left: 20px;
   width: 300px;
@@ -609,6 +609,8 @@ body {
   z-index: 150;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  /* Garantir que não sobreponha outros elementos importantes */
+  pointer-events: auto;
 }
 
 /* Interpreter Video na Scan Page - Z-index maior que o rodapé */
@@ -784,6 +786,31 @@ video[id^="mindar"] {
     visibility: visible !important;
     opacity: 1 !important;
     background-color: transparent !important;
+}
+
+/* Correção específica para Android - Canvas transparente */
+@supports (-webkit-appearance: none) {
+    /* Android Chrome */
+    a-scene canvas {
+        background-color: transparent !important;
+        background: transparent !important;
+        opacity: 1 !important;
+        mix-blend-mode: normal !important;
+    }
+    
+    /* Forçar transparência no Android */
+    .scan-page a-scene canvas {
+        background-color: transparent !important;
+        background: transparent !important;
+    }
+}
+
+/* Android específico - garantir que não há fundo preto */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    a-scene canvas {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
 }
 
 /* Esconder UI padrão do MindAR */
@@ -1463,8 +1490,10 @@ body.modal-open {
     .interpreter-container {
         width: 220px;
         height: 220px;
-        bottom: 30px;
+        bottom: 72px;
         left: 30px;
+        z-index: 150;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -1477,8 +1506,10 @@ body.modal-open {
     }
 
     .action-buttons {
-        bottom: 25px;
+        bottom: 72px;
         right: 0px;
+        z-index: 150;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -1577,8 +1608,10 @@ body.modal-open {
     .interpreter-container {
         width: 250px;
         height: 250px;
-        bottom: 20px;
+        bottom: 72px;
         left: 20px;
+        z-index: 150;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -1591,8 +1624,10 @@ body.modal-open {
     }
 
     .action-buttons {
-        bottom: 20px;
+        bottom: 72px;
         right: 0px;
+        z-index: 150;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -1710,10 +1745,12 @@ body.modal-open {
 
     /* Botões */
     .action-buttons {
-        bottom: 20px;
+        bottom: 72px;
         right: 0px;
         flex-direction: column;
         gap: 10px;
+        z-index: 150;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -1730,8 +1767,10 @@ body.modal-open {
     .interpreter-container {
         width: 200px;
         height: 200px;
-        bottom: 20px;
+        bottom: 72px;
         left: 20px;
+        z-index: 150;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -1799,7 +1838,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 30px 15px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-section {
@@ -1914,8 +1954,10 @@ body.modal-open {
     .interpreter-container {
         width: 180px;
         height: 180px;
-        bottom: 15px;
+        bottom: 72px;
         left: 15px;
+        z-index: 150;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -1928,8 +1970,10 @@ body.modal-open {
     }
 
     .action-buttons {
-        bottom: 20px;
+        bottom: 72px;
         right: 0px;
+        z-index: 150;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -1963,7 +2007,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 25px 10px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-text h2 {
@@ -2099,8 +2144,10 @@ body.modal-open {
     .interpreter-container {
         width: 150px;
         height: 150px;
-        bottom: 10px;
+        bottom: 72px;
         left: 10px;
+        z-index: 150;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -2113,8 +2160,10 @@ body.modal-open {
     }
 
     .action-buttons {
-        bottom: 20px;
+        bottom: 72px;
         right: 0px;
+        z-index: 150;
+        position: fixed;
     }
 
     .logo-container img {
@@ -2140,7 +2189,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 20px 8px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-text h2 {
@@ -2250,8 +2300,10 @@ body.modal-open {
     .interpreter-container {
         width: 120px;
         height: 120px;
-        bottom: 8px;
+        bottom: 72px;
         left: 8px;
+        z-index: 150;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -2264,8 +2316,10 @@ body.modal-open {
     }
 
     .action-buttons {
-        bottom: 20px;
+        bottom: 72px;
         right: 0px;
+        z-index: 150;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -2333,7 +2387,8 @@ body.modal-open {
     }
 
     .page-content {
-        padding: 15px 5px;
+        padding: 120px 20px 100px 20px; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px); /* Altura mínima considerando footer */
     }
 
     .content-text h2 {
@@ -2455,6 +2510,11 @@ body.modal-open {
         padding: 0 !important;
     }
     
+    .page-content {
+        padding: 120px 20px 100px 20px !important; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px) !important; /* Altura mínima considerando footer */
+    }
+    
     .circular-text-container {
         width: 300px !important;
         height: 300px !important;
@@ -2514,12 +2574,13 @@ body.modal-open {
     }
     
     .action-buttons {
-        position: absolute !important;
-        bottom: 20px !important;
+        position: fixed !important;
+        bottom: 72px !important;
         right: 0px !important;
         display: flex !important;
         flex-direction: column !important;
         gap: 8px !important;
+        z-index: 150 !important;
     }
     
     .action-buttons .btn-primary,
@@ -2567,6 +2628,16 @@ body.modal-open {
     .toggle-controls .logo-container img {
         max-width: 150px !important;
         height: auto !important;
+    }
+    
+    /* Vídeo de Libras */
+    .interpreter-container {
+        width: 150px !important;
+        height: 150px !important;
+        bottom: 72px !important;
+        left: 10px !important;
+        z-index: 150 !important;
+        position: fixed !important;
     }
 }
 
@@ -2683,9 +2754,11 @@ body.modal-open {
     
     /* Botões de Ação */
     .action-buttons {
-        bottom: 15px;
+        bottom: 72px;
         right: 0px;
         gap: 8px;
+        z-index: 150;
+        position: fixed;
     }
     
     .action-button {
@@ -2704,9 +2777,11 @@ body.modal-open {
     .interpreter-container {
         width: 120px !important;
         height: 120px !important;
-        bottom: 8px !important;
+        bottom: 72px !important;
         left: 8px !important;
         border-width: 2px !important;
+        z-index: 150 !important;
+        position: fixed !important;
     }
     
     .interpreter-video {
@@ -2738,6 +2813,11 @@ body.modal-open {
     }
     
     /* Página Sobre */
+    .page-content {
+        padding: 120px 20px 100px 20px !important; /* padding-top maior para não ficar coberto pelo menu, padding-bottom para footer */
+        min-height: calc(100vh - 200px) !important; /* Altura mínima considerando footer */
+    }
+    
     .page-title {
         font-size: 24px;
         margin-bottom: 15px;
