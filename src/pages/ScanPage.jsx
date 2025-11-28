@@ -311,6 +311,51 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
+  // Forçar transparência Android continuamente
+  useEffect(() => {
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (!isAndroid || !cameraPermissionGranted) return
+
+    const forceAndroidTransparency = () => {
+      const scene = sceneRef.current
+      if (!scene) return
+      
+      const canvas = scene.querySelector('canvas')
+      if (!canvas) return
+      
+      // Forçar transparência via CSS
+      canvas.style.setProperty('background-color', 'transparent', 'important')
+      canvas.style.setProperty('background', 'transparent', 'important')
+      canvas.style.setProperty('opacity', '1', 'important')
+      canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
+      canvas.style.setProperty('pointer-events', 'none', 'important')
+      
+      // Forçar via WebGL
+      const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+      if (gl) {
+        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+      }
+      
+      // Garantir que o vídeo esteja atrás
+      const mindarVideo = document.querySelector('#arVideo') || 
+                          Array.from(document.querySelectorAll('video')).find(v => 
+                            v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
+                            (v.srcObject || v.videoWidth > 0)
+                          )
+      if (mindarVideo) {
+        mindarVideo.style.setProperty('z-index', '-2', 'important')
+      }
+    }
+
+    // Chamar imediatamente
+    forceAndroidTransparency()
+    
+    // Chamar continuamente a cada 100ms no Android
+    const interval = setInterval(forceAndroidTransparency, 100)
+    
+    return () => clearInterval(interval)
+  }, [cameraPermissionGranted])
+
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
 
   // REMOVIDO: Loop duplicado que estava causando conflitos e piscar
@@ -847,6 +892,17 @@ const ScanPage = () => {
       canvas.style.setProperty('background', 'transparent', 'important')
       canvas.style.setProperty('opacity', '1', 'important')
       canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
+      canvas.style.setProperty('pointer-events', 'none', 'important')
+      
+      // Garantir que o canvas não cubra o vídeo - ajustar z-index
+      canvas.style.setProperty('z-index', '1', 'important')
+      
+      // Garantir dimensões corretas
+      canvas.style.setProperty('width', '100vw', 'important')
+      canvas.style.setProperty('height', '100vh', 'important')
+      canvas.style.setProperty('position', 'fixed', 'important')
+      canvas.style.setProperty('top', '0', 'important')
+      canvas.style.setProperty('left', '0', 'important')
       
       // Acessar WebGL diretamente
       const gl = canvas.getContext('webgl', { 
@@ -906,24 +962,66 @@ const ScanPage = () => {
           console.warn('⚠️ Erro ao interceptar renderer:', e)
         }
         
-        // Intervalo agressivo para Android
+        // Intervalo agressivo para Android + requestAnimationFrame
         if (!canvas._androidTransparencyInterval) {
+          // Usar setInterval para CSS
           canvas._androidTransparencyInterval = setInterval(() => {
             try {
               gl.clearColor(0.0, 0.0, 0.0, 0.0)
               canvas.style.setProperty('background-color', 'transparent', 'important')
               canvas.style.setProperty('background', 'transparent', 'important')
+              canvas.style.setProperty('opacity', '1', 'important')
             } catch (e) {
               // Contexto pode ter sido perdido
             }
           }, 50) // A cada 50ms no Android
-          console.log('✅ Intervalo agressivo de transparência ativado para Android (50ms)')
+          
+          // Usar requestAnimationFrame para WebGL (mais suave)
+          let rafId = null
+          const forceTransparencyRAF = () => {
+            try {
+              if (gl) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              }
+              canvas.style.setProperty('background-color', 'transparent', 'important')
+              canvas.style.setProperty('background', 'transparent', 'important')
+              rafId = requestAnimationFrame(forceTransparencyRAF)
+            } catch (e) {
+              // Parar se contexto foi perdido
+              if (rafId) {
+                cancelAnimationFrame(rafId)
+              }
+            }
+          }
+          rafId = requestAnimationFrame(forceTransparencyRAF)
+          canvas._androidRAFId = rafId
+          
+          console.log('✅ Intervalo agressivo de transparência ativado para Android (50ms + RAF)')
         }
       }
       
       // Também forçar no elemento a-scene
       scene.style.setProperty('background-color', 'transparent', 'important')
       scene.style.setProperty('background', 'transparent', 'important')
+      scene.style.setProperty('opacity', '1', 'important')
+      
+      // Garantir que o vídeo da câmera esteja visível e atrás do canvas
+      const mindarVideo = document.querySelector('#arVideo') || 
+                          Array.from(document.querySelectorAll('video')).find(v => 
+                            v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
+                            (v.srcObject || v.videoWidth > 0)
+                          )
+      
+      if (mindarVideo) {
+        mindarVideo.style.setProperty('z-index', '-2', 'important')
+        mindarVideo.style.setProperty('position', 'fixed', 'important')
+        mindarVideo.style.setProperty('top', '0', 'important')
+        mindarVideo.style.setProperty('left', '0', 'important')
+        mindarVideo.style.setProperty('width', '100vw', 'important')
+        mindarVideo.style.setProperty('height', '100vh', 'important')
+        mindarVideo.style.setProperty('object-fit', 'cover', 'important')
+        console.log('✅ Vídeo da câmera reposicionado para Android')
+      }
       
       console.log('✅ Correções Android aplicadas')
     }
