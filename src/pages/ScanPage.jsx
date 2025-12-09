@@ -311,29 +311,79 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // Forçar transparência Android continuamente
+  // Forçar transparência imediatamente ao montar
+  useEffect(() => {
+    // Forçar body e html transparentes imediatamente
+    document.body.style.setProperty('background-color', 'transparent', 'important')
+    document.body.style.setProperty('background', 'transparent', 'important')
+    document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+    document.documentElement.style.setProperty('background', 'transparent', 'important')
+    
+    // Adicionar classe para CSS específico
+    document.body.classList.add('scan-page-active')
+    document.documentElement.classList.add('scan-page-active')
+    
+    // Forçar .scan-page transparente
+    const scanPage = document.querySelector('.scan-page')
+    if (scanPage) {
+      scanPage.style.setProperty('background-color', 'transparent', 'important')
+      scanPage.style.setProperty('background', 'transparent', 'important')
+    }
+    
+    return () => {
+      document.body.classList.remove('scan-page-active')
+      document.documentElement.classList.remove('scan-page-active')
+    }
+  }, [])
+
+  // Forçar transparência Android continuamente - VERSÃO ULTRA AGRESSIVA
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
 
     const forceAndroidTransparency = () => {
+      // Forçar body e html transparentes
+      document.body.style.setProperty('background-color', 'transparent', 'important')
+      document.body.style.setProperty('background', 'transparent', 'important')
+      document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+      document.documentElement.style.setProperty('background', 'transparent', 'important')
+      
+      // Forçar .scan-page transparente
+      const scanPage = document.querySelector('.scan-page')
+      if (scanPage) {
+        scanPage.style.setProperty('background-color', 'transparent', 'important')
+        scanPage.style.setProperty('background', 'transparent', 'important')
+      }
+      
       const scene = sceneRef.current
       if (!scene) return
+      
+      // Forçar a-scene transparente
+      scene.style.setProperty('background-color', 'transparent', 'important')
+      scene.style.setProperty('background', 'transparent', 'important')
+      scene.setAttribute('background', 'color: transparent; opacity: 0')
       
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
       
-      // Forçar transparência via CSS
+      // Forçar canvas totalmente transparente
       canvas.style.setProperty('background-color', 'transparent', 'important')
       canvas.style.setProperty('background', 'transparent', 'important')
       canvas.style.setProperty('opacity', '1', 'important')
       canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
       canvas.style.setProperty('pointer-events', 'none', 'important')
+      canvas.style.setProperty('z-index', '1', 'important')
       
       // Forçar via WebGL
-      const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-      if (gl) {
-        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+      try {
+        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+        if (gl && !gl.isContextLost()) {
+          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          gl.enable(gl.BLEND)
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        }
+      } catch (e) {
+        // Ignorar erros
       }
       
       // Garantir que o vídeo esteja atrás
@@ -344,6 +394,12 @@ const ScanPage = () => {
                           )
       if (mindarVideo) {
         mindarVideo.style.setProperty('z-index', '-2', 'important')
+        mindarVideo.style.setProperty('position', 'fixed', 'important')
+        mindarVideo.style.setProperty('top', '0', 'important')
+        mindarVideo.style.setProperty('left', '0', 'important')
+        mindarVideo.style.setProperty('width', '100vw', 'important')
+        mindarVideo.style.setProperty('height', '100vh', 'important')
+        mindarVideo.style.setProperty('object-fit', 'cover', 'important')
       }
     }
 
