@@ -3081,8 +3081,11 @@ const ScanPage = () => {
               gl.clearColor(0.0, 0.0, 0.0, 0.0)
               // Permitir que a limpeza aconteça normalmente
               gl._originalClear(mask)
-              // No Android/Chrome, forçar clearColor novamente após limpar
+              // No Android/Chrome, forçar clearColor novamente após limpar E limpar novamente
               if (needsAggressiveFix) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                // Limpar novamente para garantir que não há área preta
+                gl.clear(gl.COLOR_BUFFER_BIT)
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
               }
             }
@@ -3204,20 +3207,37 @@ const ScanPage = () => {
           canvas.style.setProperty('background-color', 'transparent', 'important')
           canvas.style.setProperty('background', 'transparent', 'important')
           
-          // Verificar se há algum elemento filho do canvas com background preto
-          const canvasChildren = canvas.parentElement?.querySelectorAll('*')
-          if (canvasChildren) {
-            canvasChildren.forEach(child => {
-              if (child === canvas || child.tagName === 'VIDEO') return
+          // Verificar se há algum elemento filho do canvas ou do a-scene com background preto
+          // ESPECIALMENTE elementos no topo que podem estar cobrindo o vídeo
+          const sceneChildren = scene.querySelectorAll('*')
+          if (sceneChildren) {
+            sceneChildren.forEach(child => {
+              if (child === canvas || child.tagName === 'VIDEO' || child.tagName === 'CANVAS') return
               const childStyle = window.getComputedStyle(child)
               const bgColor = childStyle.backgroundColor
+              const rect = child.getBoundingClientRect()
+              
               if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-                const rect = child.getBoundingClientRect()
-                if (rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5) {
-                  console.warn('⚠️ Elemento filho com background preto detectado no Android/Chrome, removendo:', child)
+                // Verificar se está no topo cobrindo o vídeo OU se cobre grande área
+                const coversTopArea = rect.top < window.innerHeight * 0.4 && 
+                                     rect.width > window.innerWidth * 0.2 && 
+                                     rect.height > window.innerHeight * 0.15
+                const coversLargeArea = rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5
+                
+                if (coversLargeArea || coversTopArea) {
+                  console.warn('⚠️ Elemento filho com background preto detectado no Android/Chrome, removendo:', {
+                    tag: child.tagName,
+                    id: child.id,
+                    className: child.className,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height
+                  })
                   child.style.setProperty('display', 'none', 'important')
                   child.style.setProperty('visibility', 'hidden', 'important')
                   child.style.setProperty('opacity', '0', 'important')
+                  child.style.setProperty('background-color', 'transparent', 'important')
+                  child.style.setProperty('background', 'transparent', 'important')
                   try {
                     child.remove()
                   } catch (e) {
@@ -3327,6 +3347,7 @@ const ScanPage = () => {
         }
         
         // Verificação EXTRA AGRESSIVA: Procurar qualquer elemento grande com background preto e remover
+        // Incluir elementos que cobrem parcialmente, especialmente no topo
         const allSceneElements = scene.querySelectorAll('*')
         allSceneElements.forEach(el => {
           if (el.tagName === 'CANVAS' || el.tagName === 'VIDEO' || el.id.includes('video')) {
@@ -3337,36 +3358,50 @@ const ScanPage = () => {
           const style = window.getComputedStyle(el)
           const bgColor = style.backgroundColor
           
-          // Se o elemento é grande (cobre mais de 50% da tela) e tem background preto
-          if (rect.width > window.innerWidth * 0.5 && 
-              rect.height > window.innerHeight * 0.5 &&
-              bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-            console.error('❌ ELEMENTO GRANDE COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
-              tag: el.tagName,
-              id: el.id,
-              className: el.className,
-              width: rect.width,
-              height: rect.height,
-              backgroundColor: bgColor
-            })
-            el.style.setProperty('display', 'none', 'important')
-            el.style.setProperty('visibility', 'hidden', 'important')
-            el.style.setProperty('opacity', '0', 'important')
-            el.style.setProperty('pointer-events', 'none', 'important')
-            try {
-              el.remove()
-            } catch (e) {
-              console.warn('⚠️ Não foi possível remover elemento:', e)
+          // Verificar se tem background preto
+          if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+            // Verificar se cobre grande área OU se está no topo cobrindo o vídeo
+            const coversLargeArea = rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5
+            const coversTopArea = rect.top < window.innerHeight * 0.3 && rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.2
+            
+            if (coversLargeArea || coversTopArea) {
+              console.error('❌ ELEMENTO COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
+                tag: el.tagName,
+                id: el.id,
+                className: el.className,
+                width: rect.width,
+                height: rect.height,
+                top: rect.top,
+                backgroundColor: bgColor,
+                coversLargeArea,
+                coversTopArea
+              })
+              el.style.setProperty('display', 'none', 'important')
+              el.style.setProperty('visibility', 'hidden', 'important')
+              el.style.setProperty('opacity', '0', 'important')
+              el.style.setProperty('pointer-events', 'none', 'important')
+              el.style.setProperty('background-color', 'transparent', 'important')
+              el.style.setProperty('background', 'transparent', 'important')
+              try {
+                el.remove()
+              } catch (e) {
+                console.warn('⚠️ Não foi possível remover elemento:', e)
+              }
             }
           }
         })
       }
       
       // Verificar e corrigir elementos com background preto que possam estar cobrindo os vídeos
+      // VERSÃO ULTRA AGRESSIVA: Verificar TODOS os elementos, incluindo os que cobrem parcialmente
+      // ESPECIALMENTE elementos no topo da tela que podem estar cobrindo o vídeo
       const allElements = document.querySelectorAll('*')
       allElements.forEach(el => {
         const style = window.getComputedStyle(el)
         const bgColor = style.backgroundColor
+        const rect = el.getBoundingClientRect()
+        const zIndex = parseInt(style.zIndex) || 0
+        
         // Verificar se tem background preto ou quase preto
         if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
           // Ignorar elementos que devem ter background preto (como botões, etc)
@@ -3374,22 +3409,52 @@ const ScanPage = () => {
           const className = el.className || ''
           const id = el.id || ''
           
-          // Se não for um elemento de UI conhecido e estiver cobrindo a tela
+          // Se não for um elemento de UI conhecido
           if (!['button', 'input', 'select', 'textarea'].includes(tagName) &&
               !className.includes('back-button') &&
               !className.includes('toggle') &&
               !className.includes('nav') &&
               !id.includes('ui-') &&
-              !id.includes('loading')) {
-            const rect = el.getBoundingClientRect()
-            // Se o elemento está cobrindo uma grande parte da tela
-            if (rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5) {
-              const zIndex = parseInt(style.zIndex) || 0
-              // Se está na frente do canvas (z-index > 1) mas não é um elemento de UI
-              if (zIndex > 1 && zIndex < 100000) {
-                console.warn('⚠️ Elemento com background preto detectado, forçando transparência:', el)
-                el.style.setProperty('background-color', 'transparent', 'important')
-                el.style.setProperty('background', 'transparent', 'important')
+              !id.includes('loading') &&
+              el.tagName !== 'CANVAS' &&
+              el.tagName !== 'VIDEO') {
+            
+            // Verificar se está cobrindo uma grande parte da tela OU se está no topo cobrindo o vídeo
+            const coversLargeArea = rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5
+            // Verificar se está no topo (primeiros 40% da altura) e cobre uma área significativa
+            const coversTopArea = rect.top < window.innerHeight * 0.4 && 
+                                 rect.width > window.innerWidth * 0.2 && 
+                                 rect.height > window.innerHeight * 0.15 &&
+                                 rect.bottom > window.innerHeight * 0.1
+            
+            // Se está na frente do vídeo (z-index > -2) mas não é um elemento de UI
+            if ((coversLargeArea || coversTopArea) && zIndex > -2 && zIndex < 100000) {
+              console.warn('⚠️ Elemento com background preto detectado cobrindo vídeo, forçando transparência:', {
+                tag: el.tagName,
+                id: el.id,
+                className: el.className,
+                zIndex: zIndex,
+                top: rect.top,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+                backgroundColor: bgColor,
+                coversLargeArea,
+                coversTopArea
+              })
+              el.style.setProperty('background-color', 'transparent', 'important')
+              el.style.setProperty('background', 'transparent', 'important')
+              el.style.setProperty('opacity', '1', 'important')
+              
+              // Se ainda estiver cobrindo, tentar remover ou esconder
+              if (coversLargeArea || coversTopArea) {
+                el.style.setProperty('display', 'none', 'important')
+                el.style.setProperty('visibility', 'hidden', 'important')
+                try {
+                  el.remove()
+                } catch (e) {
+                  // Ignorar se não puder remover
+                }
               }
             }
           }
