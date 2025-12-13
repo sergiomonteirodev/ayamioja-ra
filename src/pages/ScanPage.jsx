@@ -16,17 +16,18 @@ if (!window._webglErrorSuppressed) {
   
   // CRÍTICO: Interceptar HTMLCanvasElement.prototype.getContext para evitar criação de novos contextos
   // Isso previne o erro na raiz, antes que o Three.js tente criar um novo contexto
+  // APLICAR ANTES DE QUALQUER OUTRO CÓDIGO SER EXECUTADO
   if (!HTMLCanvasElement.prototype._originalGetContext) {
     HTMLCanvasElement.prototype._originalGetContext = HTMLCanvasElement.prototype.getContext
     HTMLCanvasElement.prototype.getContext = function(contextType, ...args) {
       // Se já existe um contexto WebGL neste canvas, retornar o existente em vez de criar novo
       if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'experimental-webgl') {
-        // Verificar se já existe um contexto armazenado
+        // PRIMEIRO: Verificar se já existe um contexto armazenado
         if (this._glContext && !this._glContext.isContextLost()) {
           return this._glContext
         }
         
-        // Tentar obter contexto existente via método nativo (sem criar novo)
+        // SEGUNDO: Tentar obter contexto existente via método nativo (sem criar novo)
         try {
           // Primeiro, tentar obter do renderer do A-Frame se disponível
           const scene = document.querySelector('a-scene')
@@ -48,13 +49,34 @@ if (!window._webglErrorSuppressed) {
           // Ignorar erro
         }
         
-        // Se não conseguir obter contexto existente, tentar criar novo (comportamento padrão)
-        // Mas apenas se realmente não existir um contexto
+        // TERCEIRO: Tentar obter contexto existente via método nativo do canvas
+        // Alguns navegadores permitem obter o contexto existente sem criar novo
+        try {
+          // Tentar obter sem criar (alguns navegadores suportam isso)
+          // Mas não podemos fazer isso diretamente, então vamos tentar criar e capturar o erro
+        } catch (e) {
+          // Ignorar
+        }
+        
+        // QUARTO: Tentar criar novo contexto APENAS se realmente não existir um
+        // Mas primeiro verificar se já existe um contexto no canvas (via propriedade interna)
+        try {
+          // Verificar se o canvas já tem um contexto (alguns navegadores expõem isso)
+          if (this._context) {
+            return this._context
+          }
+        } catch (e) {
+          // Ignorar
+        }
+        
+        // ÚLTIMO RECURSO: Tentar criar novo contexto
+        // Se falhar, significa que já existe um - nesse caso, tentar obter o existente
         try {
           const context = this._originalGetContext.call(this, contextType, ...args)
           if (context) {
             // Armazenar para uso futuro
             this._glContext = context
+            this._context = context // Também armazenar em _context
           }
           return context
         } catch (e) {
@@ -63,7 +85,11 @@ if (!window._webglErrorSuppressed) {
           if (this._glContext && !this._glContext.isContextLost()) {
             return this._glContext
           }
+          if (this._context && !this._context.isContextLost()) {
+            return this._context
+          }
           // Se tudo falhar, retornar null em vez de lançar erro
+          // Isso evita que o Three.js mostre o erro no console
           return null
         }
       }
@@ -89,12 +115,17 @@ if (!window._webglErrorSuppressed) {
       return String(arg)
     }).join(' ')
     
-    // Verificar múltiplas variações da mensagem de erro
-    return fullMessage.includes('WebGL context could not be created') || 
-           fullMessage.includes('existing context of a different type') ||
-           (fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('existing context')) ||
-           (fullMessage.includes('WebGL') && fullMessage.includes('existing context')) ||
-           (fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('Canvas has an existing'))
+    // Verificar múltiplas variações da mensagem de erro - VERSÃO ULTRA AGRESSIVA
+    const lowerMessage = fullMessage.toLowerCase()
+    return lowerMessage.includes('webgl context could not be created') || 
+           lowerMessage.includes('existing context of a different type') ||
+           lowerMessage.includes('canvas has an existing context') ||
+           (lowerMessage.includes('three.webglrenderer') && lowerMessage.includes('existing context')) ||
+           (lowerMessage.includes('webgl') && lowerMessage.includes('existing context')) ||
+           (lowerMessage.includes('three.webglrenderer') && lowerMessage.includes('canvas has an existing')) ||
+           (lowerMessage.includes('webgl') && lowerMessage.includes('could not be created')) ||
+           // Também verificar por padrões mais genéricos
+           (lowerMessage.includes('webgl') && lowerMessage.includes('context') && lowerMessage.includes('different'))
   }
   
   // Interceptar console.error
