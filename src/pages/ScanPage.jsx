@@ -358,16 +358,49 @@ const ScanPage = () => {
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
             
-            // Interceptar clear ANTES de qualquer uso
+            // Interceptar clear ANTES de qualquer uso - VERSÃO ULTRA AGRESSIVA
+            // CRÍTICO: Garantir que TODA a área do canvas seja limpa com alpha 0
             if (!gl._androidClearIntercepted) {
               const originalClear = gl.clear.bind(gl)
               gl.clear = function(mask) {
+                // SEMPRE garantir alpha 0 antes de limpar
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
                 originalClear(mask)
+                // E novamente após limpar
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                // CRÍTICO: Limpar TODA a área do canvas com alpha 0 (não apenas parcialmente)
+                // Isso garante que não haja retângulo preto no meio
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
               }
               gl._androidClearIntercepted = true
-              console.log('✅ gl.clear interceptado ANTES de qualquer renderização')
+              
+              // Limpar canvas IMEDIATAMENTE após interceptar - TODA a área
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              
+              // Loop contínuo via requestAnimationFrame para garantir transparência em TODA a área
+              let rafId = null
+              const forceTransparency = () => {
+                try {
+                  if (gl && !gl.isContextLost()) {
+                    // Garantir clearColor sempre em 0,0,0,0
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    // Limpar TODA a área do canvas periodicamente para evitar retângulo preto
+                    // Isso força transparência completa em toda a tela
+                    gl.clear(gl.COLOR_BUFFER_BIT)
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                  }
+                  rafId = requestAnimationFrame(forceTransparency)
+                } catch (e) {
+                  if (rafId) cancelAnimationFrame(rafId)
+                }
+              }
+              rafId = requestAnimationFrame(forceTransparency)
+              canvas._androidTransparencyRAF = rafId
+              
+              console.log('✅ gl.clear interceptado + loop RAF para limpar TODA a área do canvas com alpha 0')
             }
           }
         } catch (e) {
@@ -382,20 +415,59 @@ const ScanPage = () => {
       subtree: true 
     })
 
-    // Também verificar se o canvas já existe
-    const existingCanvas = document.querySelector('a-scene canvas')
-    if (existingCanvas && !existingCanvas._androidFixed) {
-      existingCanvas._androidFixed = true
-      const gl = existingCanvas.getContext('webgl') || existingCanvas.getContext('webgl2')
-      if (gl) {
-        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+    // Também verificar se o canvas já existe e aplicar correções completas
+    const checkExistingCanvas = () => {
+      const existingCanvas = document.querySelector('a-scene canvas')
+      if (existingCanvas && !existingCanvas._androidFixed) {
+        existingCanvas._androidFixed = true
+        console.log('✅ Canvas existente detectado - aplicando correções imediatas')
+        
+        // Forçar CSS transparente
         existingCanvas.style.setProperty('background-color', 'transparent', 'important')
         existingCanvas.style.setProperty('background', 'transparent', 'important')
+        existingCanvas.style.setProperty('opacity', '1', 'important')
+        existingCanvas.style.setProperty('width', '100vw', 'important')
+        existingCanvas.style.setProperty('height', '100vh', 'important')
+        existingCanvas.style.setProperty('position', 'fixed', 'important')
+        existingCanvas.style.setProperty('top', '0', 'important')
+        existingCanvas.style.setProperty('left', '0', 'important')
+        
+        // Forçar WebGL transparente e LIMPAR TODO O CANVAS
+        const gl = existingCanvas.getContext('webgl') || existingCanvas.getContext('webgl2')
+        if (gl && !gl.isContextLost()) {
+          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          // LIMPAR TODO O CANVAS imediatamente
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          
+          // Interceptar clear se ainda não foi interceptado
+          if (!gl._androidClearIntercepted) {
+            const originalClear = gl.clear.bind(gl)
+            gl.clear = function(mask) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              originalClear(mask)
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              gl.clear(gl.COLOR_BUFFER_BIT)
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            }
+            gl._androidClearIntercepted = true
+          }
+        }
       }
     }
 
+    // Verificar imediatamente e depois periodicamente
+    checkExistingCanvas()
+    const checkInterval = setInterval(checkExistingCanvas, 500)
+
     return () => {
       observer.disconnect()
+      clearInterval(checkInterval)
+      // Limpar RAF se existir
+      const canvas = document.querySelector('a-scene canvas')
+      if (canvas && canvas._androidTransparencyRAF) {
+        cancelAnimationFrame(canvas._androidTransparencyRAF)
+      }
     }
   }, [])
 
@@ -462,16 +534,39 @@ const ScanPage = () => {
       canvas.style.setProperty('pointer-events', 'none', 'important')
       canvas.style.setProperty('z-index', '1', 'important')
       
-      // Forçar via WebGL
+      // Forçar via WebGL - LIMPAR CANVAS COMPLETO COM ALPHA 0
       try {
         const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
         if (gl && !gl.isContextLost()) {
+          // Configurar para transparência
           gl.clearColor(0.0, 0.0, 0.0, 0.0)
           gl.enable(gl.BLEND)
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+          
+          // LIMPAR TODO O CANVAS com alpha 0 imediatamente
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          
+          // Interceptar clear se ainda não foi interceptado
+          if (!gl._androidClearIntercepted) {
+            const originalClear = gl.clear.bind(gl)
+            gl.clear = function(mask) {
+              // SEMPRE garantir alpha 0 antes de limpar
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              originalClear(mask)
+              // E novamente após limpar
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              // CRÍTICO: Limpar TODA a área do canvas com alpha 0 (não apenas parcialmente)
+              // Isso garante que não haja retângulo preto no meio cobrindo o vídeo
+              gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            }
+            gl._androidClearIntercepted = true
+            console.log('✅ gl.clear interceptado no forceAndroidTransparency')
+          }
         }
       } catch (e) {
-        // Ignorar erros
+        console.warn('⚠️ Erro ao configurar WebGL:', e)
       }
       
       // Verificar e garantir que o vídeo da câmera existe e está visível
