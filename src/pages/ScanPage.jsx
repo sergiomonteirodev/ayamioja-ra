@@ -313,44 +313,86 @@ const ScanPage = () => {
 
   // SOLUÇÃO RADICAL ANDROID: Ocultar canvas completamente quando não há targets ativos
   // Isso evita o retângulo preto no meio cobrindo o vídeo
+  // VERSÃO ULTRA AGRESSIVA: Verificar e forçar continuamente
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
 
-    const scene = sceneRef.current
-    if (!scene) return
+    const forceCanvasVisibility = () => {
+      const scene = sceneRef.current
+      if (!scene) return
 
-    const canvas = scene.querySelector('canvas')
-    if (!canvas) return
+      const canvas = scene.querySelector('canvas')
+      if (!canvas) return
 
-    if (activeTargetIndex === null) {
-      // Nenhum target ativo: OCULTAR canvas completamente para mostrar apenas o vídeo
-      console.log('🔴 Nenhum target ativo - OCULTANDO canvas completamente no Android')
-      canvas.style.setProperty('display', 'none', 'important')
-      canvas.style.setProperty('visibility', 'hidden', 'important')
-      canvas.style.setProperty('opacity', '0', 'important')
-      canvas.style.setProperty('pointer-events', 'none', 'important')
-    } else {
-      // Target ativo: Mostrar canvas mas garantir que esteja completamente transparente
-      console.log('🟢 Target ativo - MOSTRANDO canvas transparente no Android')
-      canvas.style.setProperty('display', 'block', 'important')
-      canvas.style.setProperty('visibility', 'visible', 'important')
-      canvas.style.setProperty('opacity', '1', 'important')
-      canvas.style.setProperty('background-color', 'transparent', 'important')
-      canvas.style.setProperty('background', 'transparent', 'important')
-      
-      // Forçar transparência via WebGL
-      try {
-        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-        if (gl && !gl.isContextLost()) {
-          gl.clearColor(0.0, 0.0, 0.0, 0.0)
-          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+      // Verificar estilo computado para garantir que está realmente oculto
+      const computedStyle = window.getComputedStyle(canvas)
+      const isCurrentlyVisible = computedStyle.display !== 'none' && 
+                                  computedStyle.visibility !== 'hidden' &&
+                                  parseFloat(computedStyle.opacity) > 0
+
+      if (activeTargetIndex === null) {
+        // Nenhum target ativo: OCULTAR canvas completamente para mostrar apenas o vídeo
+        if (isCurrentlyVisible) {
+          console.log('🔴 Forçando ocultação do canvas no Android (sem targets)')
+          // Múltiplas formas de ocultar para garantir
+          canvas.style.setProperty('display', 'none', 'important')
+          canvas.style.setProperty('visibility', 'hidden', 'important')
+          canvas.style.setProperty('opacity', '0', 'important')
+          canvas.style.setProperty('pointer-events', 'none', 'important')
+          canvas.style.setProperty('position', 'absolute', 'important')
+          canvas.style.setProperty('left', '-9999px', 'important')
+          canvas.style.setProperty('top', '-9999px', 'important')
+          canvas.style.setProperty('width', '0', 'important')
+          canvas.style.setProperty('height', '0', 'important')
+          
+          // Também ocultar o a-scene
+          scene.style.setProperty('display', 'none', 'important')
+          scene.style.setProperty('visibility', 'hidden', 'important')
+          scene.style.setProperty('opacity', '0', 'important')
         }
-      } catch (e) {
-        // Ignorar
+      } else {
+        // Target ativo: Mostrar canvas mas garantir que esteja completamente transparente
+        if (!isCurrentlyVisible) {
+          console.log('🟢 Mostrando canvas transparente no Android (com target)')
+          canvas.style.setProperty('display', 'block', 'important')
+          canvas.style.setProperty('visibility', 'visible', 'important')
+          canvas.style.setProperty('opacity', '1', 'important')
+          canvas.style.setProperty('background-color', 'transparent', 'important')
+          canvas.style.setProperty('background', 'transparent', 'important')
+          canvas.style.setProperty('position', 'fixed', 'important')
+          canvas.style.setProperty('width', '100vw', 'important')
+          canvas.style.setProperty('height', '100vh', 'important')
+          canvas.style.setProperty('top', '0', 'important')
+          canvas.style.setProperty('left', '0', 'important')
+          
+          // Mostrar a-scene
+          scene.style.setProperty('display', 'block', 'important')
+          scene.style.setProperty('visibility', 'visible', 'important')
+          scene.style.setProperty('opacity', '1', 'important')
+        }
+        
+        // Forçar transparência via WebGL
+        try {
+          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          if (gl && !gl.isContextLost()) {
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          }
+        } catch (e) {
+          // Ignorar
+        }
       }
     }
+
+    // Executar imediatamente
+    forceCanvasVisibility()
+    
+    // Executar continuamente a cada 100ms para garantir que o canvas permaneça oculto
+    const interval = setInterval(forceCanvasVisibility, 100)
+
+    return () => clearInterval(interval)
   }, [activeTargetIndex, cameraPermissionGranted])
 
   // CRÍTICO: Interceptar criação do canvas ANTES do A-Frame renderizar (Android)
