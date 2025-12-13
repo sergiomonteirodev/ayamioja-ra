@@ -3063,10 +3063,11 @@ const ScanPage = () => {
           left: 0,
           width: '100vw',
           height: '100vh',
-          zIndex: 1, // Acima do vídeo da câmera (-1), mas transparente
+          zIndex: /Android/i.test(navigator.userAgent) && activeTargetIndex === null ? -1 : 1, // No Android sem targets, colocar atrás do vídeo
           pointerEvents: 'none',
           backgroundColor: 'transparent',
-          opacity: 1
+          opacity: 1,
+          display: /Android/i.test(navigator.userAgent) && activeTargetIndex === null ? 'none' : 'block' // No Android sem targets, ocultar completamente
         }}
       >
         {/* Assets - Vídeos */}
