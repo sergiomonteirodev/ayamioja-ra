@@ -11,35 +11,26 @@ import AudioDescriptionAR from '../components/AudioDescriptionAR'
 // Aplicar supressão GLOBALMENTE antes de qualquer código que possa gerar erros
 if (!window._webglErrorSuppressed) {
   const originalError = console.error.bind(console)
+  const originalWarn = console.warn.bind(console)
+  
+  // Interceptar console.error
   console.error = function(...args) {
-    // Verificar se algum argumento contém a mensagem de erro do Three.js
-    let shouldSuppress = false
-    
-    for (const arg of args) {
-      let message = ''
-      if (typeof arg === 'string') {
-        message = arg
-      } else if (arg && typeof arg === 'object') {
-        // Verificar propriedades do objeto
-        if (arg.message) message += arg.message + ' '
-        if (arg.toString) message += arg.toString() + ' '
-        // Verificar se é um Error object
-        if (arg.stack) message += arg.stack + ' '
-      } else if (arg && arg.toString) {
-        message = arg.toString()
+    // Converter todos os argumentos para string para verificação
+    const fullMessage = args.map(arg => {
+      if (typeof arg === 'string') return arg
+      if (arg && typeof arg === 'object') {
+        if (arg.message) return arg.message
+        if (arg.toString) return arg.toString()
+        return JSON.stringify(arg)
       }
-      
-      // Suprimir erros conhecidos do Three.js sobre contexto WebGL
-      if (message.includes('WebGL context could not be created') || 
-          message.includes('existing context of a different type') ||
-          (message.includes('THREE.WebGLRenderer') && message.includes('existing context')) ||
-          (message.includes('WebGL') && message.includes('existing context'))) {
-        shouldSuppress = true
-        break
-      }
-    }
+      return String(arg)
+    }).join(' ')
     
-    if (shouldSuppress) {
+    // Suprimir erros conhecidos do Three.js sobre contexto WebGL
+    if (fullMessage.includes('WebGL context could not be created') || 
+        fullMessage.includes('existing context of a different type') ||
+        fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('existing context') ||
+        (fullMessage.includes('WebGL') && fullMessage.includes('existing context'))) {
       // Não mostrar no console - é um erro esperado e não afeta funcionalidade
       return
     }
@@ -47,8 +38,32 @@ if (!window._webglErrorSuppressed) {
     // Mostrar outros erros normalmente
     originalError.apply(console, args)
   }
+  
+  // Interceptar console.warn também (alguns navegadores usam warn para esses erros)
+  console.warn = function(...args) {
+    const fullMessage = args.map(arg => {
+      if (typeof arg === 'string') return arg
+      if (arg && typeof arg === 'object') {
+        if (arg.message) return arg.message
+        if (arg.toString) return arg.toString()
+        return JSON.stringify(arg)
+      }
+      return String(arg)
+    }).join(' ')
+    
+    // Suprimir warnings sobre contexto WebGL
+    if (fullMessage.includes('WebGL context could not be created') || 
+        fullMessage.includes('existing context of a different type') ||
+        (fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('existing context'))) {
+      return
+    }
+    
+    originalWarn.apply(console, args)
+  }
+  
   window._webglErrorSuppressed = true
   window._originalConsoleError = originalError
+  window._originalConsoleWarn = originalWarn
 }
 
 const ScanPage = () => {
