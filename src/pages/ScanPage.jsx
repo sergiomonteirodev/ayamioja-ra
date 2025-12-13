@@ -361,7 +361,32 @@ const ScanPage = () => {
 
       setCameraPermissionGranted(true)
       
-      // REMOVIDO: Deixar o MindAR gerenciar completamente o vídeo da câmera
+      // CRÍTICO: Aguardar o vídeo receber o stream da câmera
+      // O MindAR pode demorar um pouco para atribuir o stream ao vídeo
+      console.log('⏳ Aguardando vídeo receber stream da câmera...')
+      let videoWithStream = null
+      for (let i = 0; i < 50; i++) { // Aguardar até 5 segundos (50 * 100ms)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        const video = document.querySelector('#arVideo') || 
+                     Array.from(document.querySelectorAll('video')).find(v => 
+                       v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3'
+                     )
+        if (video && (video.srcObject || video.videoWidth > 0)) {
+          videoWithStream = video
+          console.log('✅ Vídeo recebeu stream da câmera:', {
+            id: video.id,
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+            hasSrcObject: !!video.srcObject,
+            readyState: video.readyState
+          })
+          break
+        }
+      }
+      
+      if (!videoWithStream) {
+        console.warn('⚠️ Vídeo não recebeu stream após 5 segundos - pode haver problema com MindAR')
+      }
       
       // Garantir que o canvas seja transparente
       if (sceneRef.current) {
