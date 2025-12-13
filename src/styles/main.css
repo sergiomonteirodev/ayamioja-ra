@@ -867,6 +867,33 @@ video[id^="mindar"] {
     }
 }
 
+/* Android/Chrome - Correção ULTRA AGRESSIVA para área preta */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    /* Forçar que NENHUM elemento dentro do a-scene tenha background preto */
+    a-scene *:not(canvas):not(video) {
+        background-color: transparent !important;
+        background: transparent !important;
+    }
+    
+    /* Garantir que o canvas seja sempre transparente */
+    a-scene canvas {
+        background-color: transparent !important;
+        background: transparent !important;
+        opacity: 1 !important;
+        mix-blend-mode: normal !important;
+        pointer-events: none !important;
+    }
+    
+    /* Remover qualquer elemento de background do A-Frame */
+    a-scene [data-aframe-background],
+    a-scene .a-background,
+    a-scene a-sky {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+}
+
 /* Esconder UI padrão do MindAR */
 .mindar-ui-overlay,
 .mindar-ui-loading,

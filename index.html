@@ -10,6 +10,24 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- Eruda - Console Mobile (adicione ?debug=true na URL para ativar) -->
+    <script>
+      // Carregar Eruda apenas se houver ?debug=true na URL ou em desenvolvimento
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDebug = urlParams.get('debug') === 'true' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+      
+      if (isDebug) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+        script.onload = function() {
+          eruda.init();
+          console.log('✅ Eruda carregado - Console mobile ativo');
+        };
+        document.head.appendChild(script);
+      }
+    </script>
   </body>
 </html>
 
