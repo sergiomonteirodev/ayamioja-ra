@@ -2167,15 +2167,37 @@ const ScanPage = () => {
         }, 100)
       }
       
-      // Garantir que o vídeo esteja reproduzindo
-      if (mindarVideo.paused && mindarVideo.readyState >= 2) {
-        const hasStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
-        if (hasStream) {
-          console.log('▶️ Tentando reproduzir vídeo da câmera')
-          mindarVideo.play().catch(e => {
-            console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
-          })
-        }
+      // CRÍTICO: Garantir que o vídeo tenha stream e esteja reproduzindo
+      const hasStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
+      
+      if (!hasStream) {
+        console.warn('⚠️ Vídeo não tem stream - tentando aguardar MindAR atribuir stream...')
+        // Aguardar um pouco mais para o MindAR atribuir o stream
+        let attempts = 0
+        const checkStream = setInterval(() => {
+          attempts++
+          const currentStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
+          if (currentStream) {
+            console.log('✅ Vídeo recebeu stream após', attempts * 100, 'ms')
+            clearInterval(checkStream)
+            // Tentar reproduzir agora que tem stream
+            if (mindarVideo.paused && mindarVideo.readyState >= 2) {
+              console.log('▶️ Tentando reproduzir vídeo da câmera')
+              mindarVideo.play().catch(e => {
+                console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
+              })
+            }
+          } else if (attempts >= 50) { // Aguardar até 5 segundos
+            console.warn('⚠️ Vídeo ainda não tem stream após 5 segundos - pode haver problema com MindAR')
+            clearInterval(checkStream)
+          }
+        }, 100)
+      } else if (mindarVideo.paused && mindarVideo.readyState >= 2) {
+        // Tem stream mas está pausado - tentar reproduzir
+        console.log('▶️ Tentando reproduzir vídeo da câmera')
+        mindarVideo.play().catch(e => {
+          console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
+        })
       }
       
       // DIAGNÓSTICO FINAL: Verificar se o vídeo está realmente visível
