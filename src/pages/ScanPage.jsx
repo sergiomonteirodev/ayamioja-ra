@@ -1212,18 +1212,26 @@ const ScanPage = () => {
                 gl.clearColor(0.0, 0.0, 0.0, 0.0) // Forçar transparente
                 
                 // CRÍTICO: Interceptar o método render para sempre limpar com alpha 0
+                // VERSÃO ULTRA AGRESSIVA: Limpar ANTES e DEPOIS de renderizar
                 if (!renderer._originalRender) {
                   renderer._originalRender = renderer.render.bind(renderer)
                   renderer.render = function(scene, camera) {
-                    // Antes de renderizar, garantir que o clearColor está com alpha 0
                     const gl = this.getContext()
-                    if (gl) {
+                    if (gl && !gl.isContextLost()) {
+                      // ANTES de renderizar: garantir clearColor com alpha 0
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                      // Limpar TODO o canvas com alpha 0 antes de renderizar
+                      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
                       gl.clearColor(0.0, 0.0, 0.0, 0.0)
                     }
                     // Chamar o render original
                     renderer._originalRender(scene, camera)
+                    // DEPOIS de renderizar: garantir clearColor novamente
+                    if (gl && !gl.isContextLost()) {
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    }
                   }
-                  console.log('✅ Método render interceptado para garantir transparência')
+                  console.log('✅ Método render interceptado - limpando canvas ANTES e DEPOIS de renderizar')
                 }
               }
             }
