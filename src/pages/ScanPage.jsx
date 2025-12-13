@@ -414,6 +414,33 @@ const ScanPage = () => {
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
               }
               gl._androidClearIntercepted = true
+              console.log('✅ gl.clear interceptado no forceCanvasVisibility')
+            }
+            
+            // CRÍTICO: Loop contínuo via requestAnimationFrame para limpar canvas a cada frame
+            // Isso garante que o canvas seja sempre transparente, mesmo após renderização
+            if (!canvas._androidContinuousClearRAF) {
+              let rafId = null
+              const continuousClear = () => {
+                try {
+                  if (gl && !gl.isContextLost() && activeTargetIndex !== null) {
+                    // Limpar TODO o canvas com alpha 0 a cada frame
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    // Limpar apenas a área que não tem conteúdo AR (mas garantir que está transparente)
+                    // Não limpar depth buffer aqui para não interferir com AR
+                    gl.clear(gl.COLOR_BUFFER_BIT)
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                  }
+                  rafId = requestAnimationFrame(continuousClear)
+                  canvas._androidContinuousClearRAF = rafId
+                } catch (e) {
+                  if (rafId) cancelAnimationFrame(rafId)
+                  canvas._androidContinuousClearRAF = null
+                }
+              }
+              rafId = requestAnimationFrame(continuousClear)
+              canvas._androidContinuousClearRAF = rafId
+              console.log('✅ Loop contínuo RAF ativado para limpar canvas a cada frame no Android')
             }
           }
         } catch (e) {
