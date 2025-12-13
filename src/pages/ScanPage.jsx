@@ -6,6 +6,51 @@ import ToggleControls from '../components/ToggleControls'
 import SafeImage from '../components/SafeImage'
 import AudioDescriptionAR from '../components/AudioDescriptionAR'
 
+// Suprimir erros do Three.js sobre contexto WebGL (não afetam funcionalidade)
+// Esses erros aparecem porque o Three.js tenta criar um contexto, mas já existe um do A-Frame
+// Aplicar supressão GLOBALMENTE antes de qualquer código que possa gerar erros
+if (!window._webglErrorSuppressed) {
+  const originalError = console.error.bind(console)
+  console.error = function(...args) {
+    // Verificar se algum argumento contém a mensagem de erro do Three.js
+    let shouldSuppress = false
+    
+    for (const arg of args) {
+      let message = ''
+      if (typeof arg === 'string') {
+        message = arg
+      } else if (arg && typeof arg === 'object') {
+        // Verificar propriedades do objeto
+        if (arg.message) message += arg.message + ' '
+        if (arg.toString) message += arg.toString() + ' '
+        // Verificar se é um Error object
+        if (arg.stack) message += arg.stack + ' '
+      } else if (arg && arg.toString) {
+        message = arg.toString()
+      }
+      
+      // Suprimir erros conhecidos do Three.js sobre contexto WebGL
+      if (message.includes('WebGL context could not be created') || 
+          message.includes('existing context of a different type') ||
+          (message.includes('THREE.WebGLRenderer') && message.includes('existing context')) ||
+          (message.includes('WebGL') && message.includes('existing context'))) {
+        shouldSuppress = true
+        break
+      }
+    }
+    
+    if (shouldSuppress) {
+      // Não mostrar no console - é um erro esperado e não afeta funcionalidade
+      return
+    }
+    
+    // Mostrar outros erros normalmente
+    originalError.apply(console, args)
+  }
+  window._webglErrorSuppressed = true
+  window._originalConsoleError = originalError
+}
+
 const ScanPage = () => {
   const [librasActive, setLibrasActive] = useState(true) // ✅ Iniciar com Libras ativado
   const [audioActive, setAudioActive] = useState(false)
@@ -188,13 +233,23 @@ const ScanPage = () => {
         const scene = sceneRef.current
         const canvas = scene.querySelector('canvas')
         if (canvas) {
-          // Forçar transparência via WebGL
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-          if (gl) {
-            gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: transparente
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-            console.log('✅ Canvas WebGL configurado para transparência após permissão')
+          // Forçar transparência via WebGL - usar contexto existente do renderer
+          try {
+            const rendererSystem = scene.systems?.renderer
+            if (rendererSystem) {
+              const renderer = rendererSystem.renderer || rendererSystem
+              if (renderer && typeof renderer.getContext === 'function') {
+                const gl = renderer.getContext()
+                if (gl && !gl.isContextLost()) {
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: transparente
+                  gl.enable(gl.BLEND)
+                  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+                  console.log('✅ Canvas WebGL configurado para transparência após permissão')
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️ Não foi possível acessar contexto WebGL:', e.message)
           }
           
           // Forçar transparência via CSS
@@ -219,11 +274,22 @@ const ScanPage = () => {
             if (!canvas) return
             
             console.log('🔧 Aplicando correções Android após permissão...')
-            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-            if (gl) {
-              gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              canvas.style.setProperty('background-color', 'transparent', 'important')
-              canvas.style.setProperty('background', 'transparent', 'important')
+            // Usar contexto existente do renderer, não criar novo
+            try {
+              const rendererSystem = scene.systems?.renderer
+              if (rendererSystem) {
+                const renderer = rendererSystem.renderer || rendererSystem
+                if (renderer && typeof renderer.getContext === 'function') {
+                  const gl = renderer.getContext()
+                  if (gl && !gl.isContextLost()) {
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    canvas.style.setProperty('background-color', 'transparent', 'important')
+                    canvas.style.setProperty('background', 'transparent', 'important')
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('⚠️ Não foi possível acessar contexto WebGL:', e.message)
             }
           }
           forceAndroidTransparency()
@@ -383,7 +449,7 @@ const ScanPage = () => {
         // CRÍTICO: Mesmo oculto, garantir que o loop RAF continue limpando
         // Isso evita que o canvas apareça com fundo preto se for mostrado
         try {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          const gl = getWebGLContext(canvas)
           if (gl && !gl.isContextLost() && !canvas._androidContinuousClearRAF) {
             let rafId = null
             const continuousClear = () => {
@@ -471,7 +537,7 @@ const ScanPage = () => {
         
         // Forçar transparência via WebGL - SEMPRE, mesmo se já foi feito
         try {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          const gl = getWebGLContext(canvas)
           if (gl && !gl.isContextLost()) {
             // Configurar viewport para cobrir toda a tela
             gl.viewport(0, 0, viewportWidth, viewportHeight)
@@ -564,23 +630,25 @@ const ScanPage = () => {
         
         // Forçar transparência via WebGL ANTES de qualquer renderização
         try {
-          const gl = canvas.getContext('webgl', { 
-            alpha: true,
-            premultipliedAlpha: false,
-            preserveDrawingBuffer: false,
-            antialias: false, // Desabilitar no Android para performance
-            depth: true,
-            stencil: false,
-            powerPreference: 'low-power'
-          }) || canvas.getContext('webgl2', { 
-            alpha: true,
-            premultipliedAlpha: false,
-            preserveDrawingBuffer: false,
-            antialias: false,
-            depth: true,
-            stencil: false,
-            powerPreference: 'low-power'
-          })
+          // NÃO criar novo contexto - usar contexto existente do renderer
+          let gl = null
+          try {
+            const rendererSystem = scene.systems?.renderer
+            if (rendererSystem) {
+              const renderer = rendererSystem.renderer || rendererSystem
+              if (renderer && typeof renderer.getContext === 'function') {
+                gl = renderer.getContext()
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️ Não foi possível obter contexto do renderer:', e.message)
+          }
+          
+          // NÃO tentar criar novo contexto - se não conseguir do renderer, não fazer nada
+          // Criar novo contexto causa erro "Canvas has an existing context of a different type"
+          if (!gl || (gl && gl.isContextLost())) {
+            console.warn('⚠️ Não foi possível obter contexto WebGL do renderer - canvas já tem contexto criado pelo A-Frame')
+          }
           
           if (gl && !gl.isContextLost()) {
             // Configurar ANTES de qualquer renderização
@@ -663,7 +731,19 @@ const ScanPage = () => {
         existingCanvas.style.setProperty('left', '0', 'important')
         
         // Forçar WebGL transparente e LIMPAR TODO O CANVAS
-        const gl = existingCanvas.getContext('webgl') || existingCanvas.getContext('webgl2')
+        // NÃO criar novo contexto - usar contexto existente do renderer
+        let gl = null
+        try {
+          const rendererSystem = scene.systems?.renderer
+          if (rendererSystem) {
+            const renderer = rendererSystem.renderer || rendererSystem
+            if (renderer && typeof renderer.getContext === 'function') {
+              gl = renderer.getContext()
+            }
+          }
+        } catch (e) {
+          // Ignorar erro
+        }
         if (gl && !gl.isContextLost()) {
           gl.clearColor(0.0, 0.0, 0.0, 0.0)
           // LIMPAR TODO O CANVAS imediatamente
@@ -751,7 +831,7 @@ const ScanPage = () => {
       // Forçar a-scene transparente
       scene.style.setProperty('background-color', 'transparent', 'important')
       scene.style.setProperty('background', 'transparent', 'important')
-      scene.setAttribute('background', 'color: transparent; opacity: 0')
+      scene.setAttribute('background', 'color: transparent')
       
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
@@ -765,8 +845,21 @@ const ScanPage = () => {
       canvas.style.setProperty('z-index', '1', 'important')
       
       // Forçar via WebGL - LIMPAR CANVAS COMPLETO COM ALPHA 0
+      // NÃO criar novo contexto - usar contexto existente do renderer
       try {
-        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+        let gl = null
+        try {
+          const rendererSystem = scene.systems?.renderer
+          if (rendererSystem) {
+            const renderer = rendererSystem.renderer || rendererSystem
+            if (renderer && typeof renderer.getContext === 'function') {
+              gl = renderer.getContext()
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Não foi possível obter contexto do renderer:', e.message)
+        }
+        
         if (gl && !gl.isContextLost()) {
           // Configurar para transparência
           gl.clearColor(0.0, 0.0, 0.0, 0.0)
@@ -895,7 +988,7 @@ const ScanPage = () => {
           
           // Forçar transparência via WebGL
           try {
-            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+            const gl = getWebGLContext(canvas)
             if (gl && !gl.isContextLost()) {
               gl.clearColor(0.0, 0.0, 0.0, 0.0)
               gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -912,7 +1005,7 @@ const ScanPage = () => {
             
             // Forçar novamente via WebGL
             try {
-              const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+              const gl = getWebGLContext(canvas)
               if (gl && !gl.isContextLost()) {
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
               }
@@ -1025,6 +1118,7 @@ const ScanPage = () => {
 
   // Configurar MindAR quando o componente montar
   useEffect(() => {
+    // Supressão de erros já está aplicada no topo do arquivo
     console.log('🎯 Iniciando configuração do AR...')
     
     // NOTA: A permissão da câmera agora é solicitada através do botão inicial
@@ -1275,6 +1369,42 @@ const ScanPage = () => {
       }
     }, 10000)
 
+    // Função helper para obter o contexto WebGL existente (sem criar novo)
+    // CRÍTICO: Não usar canvas.getContext() diretamente - isso tenta criar um novo contexto
+    // e causa erro "Canvas has an existing context of a different type"
+    const getWebGLContext = (canvas) => {
+      if (!canvas) return null
+      
+      // Primeiro, tentar obter do renderer do A-Frame (contexto existente)
+      try {
+        const rendererSystem = scene.systems?.renderer
+        if (rendererSystem) {
+          const renderer = rendererSystem.renderer || rendererSystem
+          if (renderer && typeof renderer.getContext === 'function') {
+            const gl = renderer.getContext()
+            if (gl && !gl.isContextLost()) {
+              return gl
+            }
+          }
+        }
+      } catch (e) {
+        // Ignorar erro
+      }
+      
+      // Se não conseguir do renderer, verificar se o canvas já tem um contexto armazenado
+      try {
+        if (canvas._glContext && !canvas._glContext.isContextLost()) {
+          return canvas._glContext
+        }
+      } catch (e) {
+        // Ignorar erro
+      }
+      
+      // NÃO tentar criar novo contexto - isso causa erro
+      // Se não conseguir do renderer, retornar null
+      return null
+    }
+
     // Função global para garantir que o renderer seja transparente
     const makeRendererTransparent = () => {
       const canvas = scene.querySelector('canvas')
@@ -1314,6 +1444,7 @@ const ScanPage = () => {
             renderer.setPixelRatio(window.devicePixelRatio || 1)
             
             // Garantir que o renderer está configurado para alpha
+            // Usar getContext() do renderer, não criar novo contexto
             if (renderer.domElement) {
               const gl = renderer.getContext()
               if (gl) {
@@ -1321,9 +1452,22 @@ const ScanPage = () => {
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
                 gl.clearColor(0.0, 0.0, 0.0, 0.0) // Forçar transparente
                 
-                // CRÍTICO: Interceptar o método render para sempre limpar com alpha 0
-                // VERSÃO ULTRA AGRESSIVA: Limpar ANTES e DEPOIS de renderizar
+                // CRÍTICO: Interceptar o método render e clear do WebGL para sempre limpar com alpha 0
+                // VERSÃO ULTRA AGRESSIVA: Interceptar clear() diretamente
                 if (!renderer._originalRender) {
+                  const gl = renderer.getContext()
+                  if (gl && !gl._clearIntercepted) {
+                    // Interceptar o método clear() do WebGL para sempre usar alpha 0
+                    gl._originalClear = gl.clear.bind(gl)
+                    gl.clear = function(mask) {
+                      // Sempre garantir clearColor transparente antes de limpar
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                      gl._originalClear(mask)
+                    }
+                    gl._clearIntercepted = true
+                    console.log('✅ WebGL clear() interceptado - sempre usando alpha 0')
+                  }
+                  
                   renderer._originalRender = renderer.render.bind(renderer)
                   renderer.render = function(scene, camera) {
                     const gl = this.getContext()
@@ -1413,7 +1557,7 @@ const ScanPage = () => {
       // Tentar acessar diretamente via THREE.js se disponível
       if (window.THREE && canvas) {
         try {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          const gl = getWebGLContext(canvas)
           if (gl) {
             // Detectar Android/Chrome para aplicar correções mais agressivas
             const isAndroid = /Android/i.test(navigator.userAgent)
@@ -1496,19 +1640,21 @@ const ScanPage = () => {
       canvas.style.setProperty('left', '0', 'important')
       
       // Acessar WebGL diretamente
-      const gl = canvas.getContext('webgl', { 
-        alpha: true, 
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: false,
-        antialias: true
-      }) || canvas.getContext('webgl2', { 
-        alpha: true, 
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: false,
-        antialias: true
-      })
+      // NÃO criar novo contexto - usar contexto existente do renderer
+      let gl = null
+      try {
+        const rendererSystem = scene.systems?.renderer
+        if (rendererSystem) {
+          const renderer = rendererSystem.renderer || rendererSystem
+          if (renderer && typeof renderer.getContext === 'function') {
+            gl = renderer.getContext()
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Não foi possível obter contexto do renderer:', e.message)
+      }
       
-      if (gl) {
+      if (gl && !gl.isContextLost()) {
         // Configurar para transparência
         gl.clearColor(0.0, 0.0, 0.0, 0.0)
         gl.enable(gl.BLEND)
@@ -1968,7 +2114,7 @@ const ScanPage = () => {
               
               // Interceptar gl.clear() de forma inteligente: apenas garantir clearColor 0 antes de limpar
               // Mas permitir que a limpeza aconteça normalmente (incluindo depth buffer para AR)
-              const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+              const gl = getWebGLContext(canvas)
               if (gl) {
                 // Detectar Android/Chrome para aplicar correções mais agressivas
                 const isAndroid = /Android/i.test(navigator.userAgent)
@@ -2054,7 +2200,7 @@ const ScanPage = () => {
             // Configurar WebGL context APENAS uma vez
             if (renderer.domElement) {
               const canvas = renderer.domElement
-              const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+              const gl = getWebGLContext(canvas)
               if (gl) {
                 // Configurar clear color transparente APENAS uma vez
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
@@ -2355,7 +2501,7 @@ const ScanPage = () => {
           if (!canvas) return
           
           console.log('🔧 Aplicando correções Android após arReady...')
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          const gl = getWebGLContext(canvas)
           if (gl) {
             gl.clearColor(0.0, 0.0, 0.0, 0.0)
             gl.enable(gl.BLEND)
@@ -2525,6 +2671,47 @@ const ScanPage = () => {
       forceCanvasTransparency()
       makeRendererTransparent()
       
+      // Interceptar requestAnimationFrame para garantir transparência a cada frame
+      // VERSÃO ULTRA AGRESSIVA para Android/Chrome
+      const isAndroid = /Android/i.test(navigator.userAgent)
+      const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+      const needsAggressiveRAF = isAndroid && isChrome
+      
+      if (!window._rafIntercepted) {
+        const originalRAF = window.requestAnimationFrame
+        window.requestAnimationFrame = function(callback) {
+          return originalRAF(function(time) {
+            // Antes de cada frame, garantir que o canvas seja transparente
+            const canvas = scene.querySelector('canvas')
+            if (canvas) {
+              try {
+                const gl = getWebGLContext(canvas)
+                if (gl && !gl.isContextLost()) {
+                  // No Android/Chrome, forçar clearColor ANTES de qualquer renderização
+                  if (needsAggressiveRAF) {
+                    // Limpar TODO o canvas com alpha 0 antes de renderizar
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                  } else {
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                  }
+                }
+                
+                // Forçar CSS transparente também
+                canvas.style.setProperty('background-color', 'transparent', 'important')
+                canvas.style.setProperty('background', 'transparent', 'important')
+              } catch (e) {
+                // Ignorar erro
+              }
+            }
+            callback(time)
+          })
+        }
+        window._rafIntercepted = true
+        console.log('✅ requestAnimationFrame interceptado para garantir transparência a cada frame', needsAggressiveRAF ? '[Android/Chrome: modo ultra agressivo]' : '')
+      }
+      
       // GARANTIR que o a-scene esteja visível e transparente
       if (scene) {
         // Detectar Android/Chrome para aplicar correções mais agressivas
@@ -2543,8 +2730,9 @@ const ScanPage = () => {
         scene.style.setProperty('height', '100vh', 'important')
         
         // No Android/Chrome, forçar background transparente no atributo também
+        // NÃO usar opacity no background - A-Frame não suporta
         if (needsAggressiveFix) {
-          scene.setAttribute('background', 'color: #000000; opacity: 0')
+          scene.setAttribute('background', 'color: transparent')
           
           // Interceptar e DESABILITAR completamente o sistema de background do A-Frame
           if (scene.systems && scene.systems.background) {
@@ -2758,10 +2946,35 @@ const ScanPage = () => {
                 }
                 // CRÍTICO: Garantir WebGL clearColor transparente diretamente
                 try {
-                  const gl = renderer.getContext && renderer.getContext() || 
-                            renderer.domElement && (renderer.domElement.getContext('webgl') || renderer.domElement.getContext('webgl2'))
-                  if (gl) {
-                    gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: totalmente transparente
+                  // NÃO criar novo contexto via domElement - usar apenas renderer.getContext()
+                  const gl = renderer.getContext && renderer.getContext()
+                  if (gl && !gl.isContextLost()) {
+                    // Interceptar clear() se ainda não foi interceptado
+                    if (!gl._clearIntercepted) {
+                      gl._originalClear = gl.clear.bind(gl)
+                      gl.clear = function(mask) {
+                        // Sempre garantir clearColor transparente antes de limpar
+                        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                        gl._originalClear(mask)
+                        // No Android/Chrome, limpar novamente após a limpeza original
+                        if (needsAggressiveFix) {
+                          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                          gl.clear(gl.COLOR_BUFFER_BIT)
+                          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                        }
+                      }
+                      gl._clearIntercepted = true
+                      console.log('✅ WebGL clear() interceptado na função forceCanvasTransparency', needsAggressiveFix ? '[Android/Chrome: modo ultra agressivo]' : '')
+                    }
+                    
+                    // No Android/Chrome, limpar TODO o canvas ANTES de renderizar
+                    if (needsAggressiveFix) {
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    } else {
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: totalmente transparente
+                    }
                     gl.enable(gl.BLEND)
                     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
                   }
@@ -2771,12 +2984,15 @@ const ScanPage = () => {
                 // Chamar render original
                 renderer._originalRender(scene, camera)
                 
-                // No Android/Chrome, forçar clearColor novamente após renderizar
+                // No Android/Chrome, forçar clearColor novamente após renderizar E limpar canvas
                 if (needsAggressiveFix) {
                   try {
-                    const gl = renderer.getContext && renderer.getContext() || 
-                              renderer.domElement && (renderer.domElement.getContext('webgl') || renderer.domElement.getContext('webgl2'))
-                    if (gl) {
+                    // NÃO criar novo contexto via domElement - usar apenas renderer.getContext()
+                    const gl = renderer.getContext && renderer.getContext()
+                    if (gl && !gl.isContextLost()) {
+                      // ULTRA AGRESSIVO: Limpar TODO o canvas novamente após renderizar
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
                       gl.clearColor(0.0, 0.0, 0.0, 0.0)
                     }
                   } catch (e) {
@@ -2802,7 +3018,19 @@ const ScanPage = () => {
         }
         
         // Também configurar via WebGL diretamente
-        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+        // NÃO criar novo contexto - usar contexto existente do renderer
+        let gl = null
+        try {
+          const rendererSystem = scene.systems?.renderer
+          if (rendererSystem) {
+            const renderer = rendererSystem.renderer || rendererSystem
+            if (renderer && typeof renderer.getContext === 'function') {
+              gl = renderer.getContext()
+            }
+          }
+        } catch (e) {
+          // Ignorar erro
+        }
         if (gl) {
           // Detectar Android/Chrome para aplicar correções mais agressivas
           const isAndroid = /Android/i.test(navigator.userAgent)
@@ -2919,9 +3147,11 @@ const ScanPage = () => {
     }
     
     // Loop para forçar transparência continuamente e garantir visibilidade do vídeo
+    // No Android/Chrome, usar frequência ainda maior (50ms) para garantir transparência mais rapidamente
     if (transparencyIntervalRef.current) {
       clearInterval(transparencyIntervalRef.current)
     }
+    const intervalTime = needsAggressiveFix ? 50 : 100 // 50ms no Android/Chrome, 100ms em outros
     transparencyIntervalRef.current = setInterval(() => {
       // Sempre garantir transparência do canvas
       forceCanvasTransparency()
@@ -2931,13 +3161,40 @@ const ScanPage = () => {
       if (needsAggressiveFix) {
         const canvas = scene?.querySelector('canvas')
         if (canvas) {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-          if (gl) {
+          const gl = getWebGLContext(canvas)
+          if (gl && !gl.isContextLost()) {
+            // ULTRA AGRESSIVO: Limpar TODO o canvas com alpha 0 a cada verificação
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
             gl.clearColor(0.0, 0.0, 0.0, 0.0)
           }
           // Forçar CSS também
           canvas.style.setProperty('background-color', 'transparent', 'important')
           canvas.style.setProperty('background', 'transparent', 'important')
+          
+          // Verificar se há algum elemento filho do canvas com background preto
+          const canvasChildren = canvas.parentElement?.querySelectorAll('*')
+          if (canvasChildren) {
+            canvasChildren.forEach(child => {
+              if (child === canvas || child.tagName === 'VIDEO') return
+              const childStyle = window.getComputedStyle(child)
+              const bgColor = childStyle.backgroundColor
+              if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+                const rect = child.getBoundingClientRect()
+                if (rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5) {
+                  console.warn('⚠️ Elemento filho com background preto detectado no Android/Chrome, removendo:', child)
+                  child.style.setProperty('display', 'none', 'important')
+                  child.style.setProperty('visibility', 'hidden', 'important')
+                  child.style.setProperty('opacity', '0', 'important')
+                  try {
+                    child.remove()
+                  } catch (e) {
+                    // Ignorar erro
+                  }
+                }
+              }
+            })
+          }
         }
       }
       
@@ -2946,7 +3203,7 @@ const ScanPage = () => {
         // Forçar a-scene transparente
         scene.style.setProperty('background-color', 'transparent', 'important')
         scene.style.setProperty('background', 'transparent', 'important')
-        scene.setAttribute('background', 'color: #000000; opacity: 0')
+        scene.setAttribute('background', 'color: transparent')
         
         // Interceptar e DESABILITAR completamente o sistema de background do A-Frame
         if (scene.systems && scene.systems.background) {
@@ -3111,7 +3368,7 @@ const ScanPage = () => {
       if (ensureCameraVideoVisibleRef.current) {
         ensureCameraVideoVisibleRef.current()
       }
-    }, 500) // Verificar a cada 500ms
+    }, intervalTime) // Verificar a cada 50ms no Android/Chrome, 100ms em outros
 
     return () => {
       // Cleanup: remover listeners e intervalos quando componente desmontar
@@ -3144,6 +3401,103 @@ const ScanPage = () => {
       }
     }
   }, [cameraPermissionGranted, isArReady])
+
+  // Garantir que body e html sejam transparentes quando a scan page estiver montada
+  useEffect(() => {
+    document.body.classList.add('scan-page-active')
+    document.documentElement.classList.add('scan-page-active')
+    document.body.style.setProperty('background-color', 'transparent', 'important')
+    document.body.style.setProperty('background', 'transparent', 'important')
+    document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+    document.documentElement.style.setProperty('background', 'transparent', 'important')
+    
+    // Função de debug global para inspecionar elementos no mobile
+    window.debugScanPage = () => {
+      const scene = sceneRef.current
+      const canvas = scene?.querySelector('canvas')
+      const video = document.querySelector('#arVideo') || document.querySelector('video[id^="mindar"]')
+      
+      const report = {
+        canvas: canvas ? {
+          exists: true,
+          width: canvas.width,
+          height: canvas.height,
+          display: window.getComputedStyle(canvas).display,
+          visibility: window.getComputedStyle(canvas).visibility,
+          opacity: window.getComputedStyle(canvas).opacity,
+          backgroundColor: window.getComputedStyle(canvas).backgroundColor,
+          zIndex: window.getComputedStyle(canvas).zIndex,
+          position: window.getComputedStyle(canvas).position,
+          hasWebGL: (() => {
+            try {
+              const rendererSystem = scene.systems?.renderer
+              if (rendererSystem) {
+                const renderer = rendererSystem.renderer || rendererSystem
+                if (renderer && typeof renderer.getContext === 'function') {
+                  const gl = renderer.getContext()
+                  return !!(gl && !gl.isContextLost())
+                }
+              }
+            } catch (e) {
+              // Ignorar erro
+            }
+            return false
+          })()
+        } : { exists: false },
+        video: video ? {
+          exists: true,
+          width: video.videoWidth,
+          height: video.videoHeight,
+          display: window.getComputedStyle(video).display,
+          visibility: window.getComputedStyle(video).visibility,
+          opacity: window.getComputedStyle(video).opacity,
+          zIndex: window.getComputedStyle(video).zIndex,
+          position: window.getComputedStyle(video).position,
+          isPlaying: !video.paused && !video.ended
+        } : { exists: false },
+        blackElements: []
+      }
+      
+      // Procurar elementos com background preto
+      document.querySelectorAll('*').forEach(el => {
+        if (el === canvas || el === video || el.tagName === 'VIDEO' || el.tagName === 'CANVAS') return
+        const style = window.getComputedStyle(el)
+        const bgColor = style.backgroundColor
+        const rect = el.getBoundingClientRect()
+        
+        if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+          if (rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3) {
+            report.blackElements.push({
+              tag: el.tagName,
+              id: el.id,
+              className: el.className,
+              width: rect.width,
+              height: rect.height,
+              backgroundColor: bgColor,
+              zIndex: style.zIndex,
+              position: style.position
+            })
+          }
+        }
+      })
+      
+      console.log('📊 ScanPage Debug Report:', report)
+      return report
+    }
+    
+    console.log('✅ Função debugScanPage() disponível - chame window.debugScanPage() no console')
+    
+    return () => {
+      document.body.classList.remove('scan-page-active')
+      document.documentElement.classList.remove('scan-page-active')
+      delete window.debugScanPage
+      
+      // Restaurar console.error original
+      if (console.error._originalError) {
+        console.error = console.error._originalError
+      }
+    }
+  }, [])
 
   return (
     <div 
@@ -3264,7 +3618,7 @@ const ScanPage = () => {
         device-orientation-permission-ui="enabled: false"
         renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: ${/Android/i.test(navigator.userAgent) ? 'false' : 'true'}; powerPreference: high-performance;`}
         embedded
-        background="color: #000000; opacity: 0"
+        background="color: transparent"
         style={{
           position: 'fixed',
           top: 0,
