@@ -428,7 +428,15 @@ const ScanPage = () => {
     // Executar continuamente a cada 100ms para garantir que o canvas permaneça oculto
     const interval = setInterval(forceCanvasVisibility, 100)
 
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      // Limpar RAF se existir
+      const canvas = sceneRef.current?.querySelector('canvas')
+      if (canvas && canvas._androidContinuousClearRAF) {
+        cancelAnimationFrame(canvas._androidContinuousClearRAF)
+        canvas._androidContinuousClearRAF = null
+      }
+    }
   }, [activeTargetIndex, cameraPermissionGranted])
 
   // CRÍTICO: Interceptar criação do canvas ANTES do A-Frame renderizar (Android)
