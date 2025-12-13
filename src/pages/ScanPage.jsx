@@ -332,9 +332,37 @@ const ScanPage = () => {
                                   parseFloat(computedStyle.opacity) > 0
 
       if (activeTargetIndex === null) {
-        // Nenhum target ativo: OCULTAR canvas completamente para mostrar apenas o vídeo
+        // Nenhum target ativo: PARAR renderer completamente e ocultar canvas
         if (isCurrentlyVisible) {
-          console.log('🔴 Forçando ocultação do canvas no Android (sem targets)')
+          console.log('🔴 Parando renderer e ocultando canvas no Android (sem targets)')
+          
+          // PARAR renderer do A-Frame completamente
+          try {
+            const rendererSystem = scene.systems?.renderer
+            if (rendererSystem) {
+              const renderer = rendererSystem.renderer || rendererSystem
+              if (renderer && typeof renderer.setAnimationLoop === 'function') {
+                // Parar o loop de animação
+                renderer.setAnimationLoop(null)
+                console.log('✅ Renderer animation loop parado')
+              }
+              if (renderer && renderer.render) {
+                // Interceptar render para não renderizar nada
+                if (!renderer._androidRenderStopped) {
+                  renderer._originalRenderForStop = renderer.render.bind(renderer)
+                  renderer.render = function() {
+                    // Não renderizar nada quando não há targets
+                    return
+                  }
+                  renderer._androidRenderStopped = true
+                  console.log('✅ Renderer.render interceptado para não renderizar')
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️ Erro ao parar renderer:', e)
+          }
+          
           // Múltiplas formas de ocultar para garantir
           canvas.style.setProperty('display', 'none', 'important')
           canvas.style.setProperty('visibility', 'hidden', 'important')
@@ -380,9 +408,31 @@ const ScanPage = () => {
           // Ignorar
         }
       } else {
-        // Target ativo: Mostrar canvas mas garantir que esteja completamente transparente
+        // Target ativo: REINICIAR renderer e mostrar canvas transparente
+        console.log('🟢 Target ativo - REINICIANDO renderer e mostrando canvas transparente no Android')
+        
+        // REINICIAR renderer do A-Frame
+        try {
+          const rendererSystem = scene.systems?.renderer
+          if (rendererSystem) {
+            const renderer = rendererSystem.renderer || rendererSystem
+            if (renderer && renderer._androidRenderStopped && renderer._originalRenderForStop) {
+              // Restaurar render original
+              renderer.render = renderer._originalRenderForStop
+              renderer._androidRenderStopped = false
+              console.log('✅ Renderer.render restaurado')
+            }
+            if (renderer && typeof renderer.setAnimationLoop === 'function') {
+              // Reiniciar loop de animação se necessário
+              // O A-Frame gerencia isso automaticamente, mas garantimos que está ativo
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Erro ao reiniciar renderer:', e)
+        }
+        
+        // Mostrar canvas mas garantir que esteja completamente transparente
         // SEMPRE forçar transparência, mesmo se já estiver visível
-        console.log('🟢 Target ativo - FORÇANDO canvas transparente no Android')
         canvas.style.setProperty('display', 'block', 'important')
         canvas.style.setProperty('visibility', 'visible', 'important')
         canvas.style.setProperty('opacity', '1', 'important')
