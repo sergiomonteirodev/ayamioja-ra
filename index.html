@@ -4,6 +4,118 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AYÀ MI O JÁ - Eu não tenho medo</title>
+    <!-- CRÍTICO: Interceptar erros WebGL ANTES de qualquer biblioteca ser carregada -->
+    <script>
+      // Interceptar HTMLCanvasElement.getContext ANTES de qualquer código ser executado
+      (function() {
+        if (HTMLCanvasElement && !HTMLCanvasElement.prototype._originalGetContext) {
+          HTMLCanvasElement.prototype._originalGetContext = HTMLCanvasElement.prototype.getContext;
+          HTMLCanvasElement.prototype.getContext = function(contextType, ...args) {
+            if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'experimental-webgl') {
+              // Verificar se já existe um contexto armazenado
+              if (this._glContext && !this._glContext.isContextLost()) {
+                return this._glContext;
+              }
+              
+              // Tentar obter contexto existente do A-Frame se disponível
+              try {
+                const scene = document.querySelector('a-scene');
+                if (scene && scene.systems && scene.systems.renderer) {
+                  const renderer = scene.systems.renderer.renderer || scene.systems.renderer;
+                  if (renderer && typeof renderer.getContext === 'function') {
+                    const existingGl = renderer.getContext();
+                    if (existingGl && !existingGl.isContextLost()) {
+                      this._glContext = existingGl;
+                      return existingGl;
+                    }
+                  }
+                }
+              } catch (e) {
+                // Ignorar
+              }
+              
+              // Tentar criar novo contexto
+              try {
+                const context = this._originalGetContext.call(this, contextType, ...args);
+                if (context) {
+                  this._glContext = context;
+                }
+                return context;
+              } catch (e) {
+                // Se falhar, retornar null em vez de lançar erro
+                if (this._glContext && !this._glContext.isContextLost()) {
+                  return this._glContext;
+                }
+                return null;
+              }
+            }
+            return this._originalGetContext.call(this, contextType, ...args);
+          };
+        }
+        
+        // Interceptar console.error e console.warn ANTES de qualquer código
+        if (!window._webglErrorSuppressed) {
+          const originalError = console.error.bind(console);
+          const originalWarn = console.warn.bind(console);
+          
+          const shouldSuppress = (...args) => {
+            const fullMessage = args.map(arg => {
+              if (typeof arg === 'string') return arg;
+              if (arg && typeof arg === 'object') {
+                if (arg.message) return arg.message;
+                if (arg.toString) return arg.toString();
+                try {
+                  return JSON.stringify(arg);
+                } catch (e) {
+                  return String(arg);
+                }
+              }
+              return String(arg);
+            }).join(' ');
+            
+            const lowerMessage = fullMessage.toLowerCase();
+            return lowerMessage.includes('webgl context could not be created') || 
+                   lowerMessage.includes('existing context of a different type') ||
+                   lowerMessage.includes('canvas has an existing context') ||
+                   (lowerMessage.includes('three.webglrenderer') && lowerMessage.includes('existing context')) ||
+                   (lowerMessage.includes('webgl') && lowerMessage.includes('existing context')) ||
+                   (lowerMessage.includes('three.webglrenderer') && lowerMessage.includes('canvas has an existing')) ||
+                   (lowerMessage.includes('webgl') && lowerMessage.includes('could not be created')) ||
+                   (lowerMessage.includes('webgl') && lowerMessage.includes('context') && lowerMessage.includes('different'));
+          };
+          
+          console.error = function(...args) {
+            if (shouldSuppress(...args)) {
+              return;
+            }
+            originalError.apply(console, args);
+          };
+          
+          console.warn = function(...args) {
+            if (shouldSuppress(...args)) {
+              return;
+            }
+            originalWarn.apply(console, args);
+          };
+          
+          window.onerror = function(message, source, lineno, colno, error) {
+            if (shouldSuppress(message || '', error?.message || '', error?.stack || '')) {
+              return true;
+            }
+            return false;
+          };
+          
+          window.addEventListener('unhandledrejection', function(event) {
+            const reason = event.reason;
+            if (shouldSuppress(String(reason), reason?.message || '', reason?.stack || '')) {
+              event.preventDefault();
+            }
+          });
+          
+          window._webglErrorSuppressed = true;
+        }
+      })();
+    </script>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
