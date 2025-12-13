@@ -9,61 +9,78 @@ import AudioDescriptionAR from '../components/AudioDescriptionAR'
 // Suprimir erros do Three.js sobre contexto WebGL (não afetam funcionalidade)
 // Esses erros aparecem porque o Three.js tenta criar um contexto, mas já existe um do A-Frame
 // Aplicar supressão GLOBALMENTE antes de qualquer código que possa gerar erros
+// VERSÃO ULTRA AGRESSIVA: Interceptar no nível mais baixo possível
 if (!window._webglErrorSuppressed) {
   const originalError = console.error.bind(console)
   const originalWarn = console.warn.bind(console)
   
-  // Interceptar console.error
-  console.error = function(...args) {
-    // Converter todos os argumentos para string para verificação
+  // Função helper para verificar se deve suprimir
+  const shouldSuppress = (...args) => {
     const fullMessage = args.map(arg => {
       if (typeof arg === 'string') return arg
       if (arg && typeof arg === 'object') {
         if (arg.message) return arg.message
         if (arg.toString) return arg.toString()
-        return JSON.stringify(arg)
+        try {
+          return JSON.stringify(arg)
+        } catch (e) {
+          return String(arg)
+        }
       }
       return String(arg)
     }).join(' ')
     
-    // Suprimir erros conhecidos do Three.js sobre contexto WebGL
-    if (fullMessage.includes('WebGL context could not be created') || 
-        fullMessage.includes('existing context of a different type') ||
-        fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('existing context') ||
-        (fullMessage.includes('WebGL') && fullMessage.includes('existing context'))) {
+    // Verificar múltiplas variações da mensagem de erro
+    return fullMessage.includes('WebGL context could not be created') || 
+           fullMessage.includes('existing context of a different type') ||
+           (fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('existing context')) ||
+           (fullMessage.includes('WebGL') && fullMessage.includes('existing context')) ||
+           (fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('Canvas has an existing'))
+  }
+  
+  // Interceptar console.error
+  console.error = function(...args) {
+    if (shouldSuppress(...args)) {
       // Não mostrar no console - é um erro esperado e não afeta funcionalidade
       return
     }
-    
     // Mostrar outros erros normalmente
     originalError.apply(console, args)
   }
   
   // Interceptar console.warn também (alguns navegadores usam warn para esses erros)
   console.warn = function(...args) {
-    const fullMessage = args.map(arg => {
-      if (typeof arg === 'string') return arg
-      if (arg && typeof arg === 'object') {
-        if (arg.message) return arg.message
-        if (arg.toString) return arg.toString()
-        return JSON.stringify(arg)
-      }
-      return String(arg)
-    }).join(' ')
-    
-    // Suprimir warnings sobre contexto WebGL
-    if (fullMessage.includes('WebGL context could not be created') || 
-        fullMessage.includes('existing context of a different type') ||
-        (fullMessage.includes('THREE.WebGLRenderer') && fullMessage.includes('existing context'))) {
+    if (shouldSuppress(...args)) {
       return
     }
-    
     originalWarn.apply(console, args)
   }
+  
+  // Interceptar também window.onerror para capturar erros não tratados
+  const originalOnError = window.onerror
+  window.onerror = function(message, source, lineno, colno, error) {
+    if (shouldSuppress(message || '', error?.message || '', error?.stack || '')) {
+      return true // Suprimir o erro
+    }
+    if (originalOnError) {
+      return originalOnError.call(window, message, source, lineno, colno, error)
+    }
+    return false
+  }
+  
+  // Interceptar unhandledrejection também
+  const originalUnhandledRejection = window.onunhandledrejection
+  window.addEventListener('unhandledrejection', function(event) {
+    const reason = event.reason
+    if (shouldSuppress(String(reason), reason?.message || '', reason?.stack || '')) {
+      event.preventDefault() // Suprimir o erro
+    }
+  })
   
   window._webglErrorSuppressed = true
   window._originalConsoleError = originalError
   window._originalConsoleWarn = originalWarn
+  window._originalOnError = originalOnError
 }
 
 const ScanPage = () => {
