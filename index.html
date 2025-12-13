@@ -74,6 +74,25 @@
             }).join(' ');
             
             const lowerMessage = fullMessage.toLowerCase();
+            // Verificação ULTRA AGRESSIVA - capturar qualquer coisa relacionada a WebGL context
+            const hasWebGL = lowerMessage.includes('webgl');
+            const hasContext = lowerMessage.includes('context');
+            const hasExisting = lowerMessage.includes('existing') || lowerMessage.includes('already');
+            const hasDifferent = lowerMessage.includes('different') || lowerMessage.includes('type');
+            const hasCouldNot = lowerMessage.includes('could not') || lowerMessage.includes('cannot');
+            const hasThree = lowerMessage.includes('three') || lowerMessage.includes('webglrenderer');
+            
+            // Se tem WebGL + context + (existing/different/could not), suprimir
+            if (hasWebGL && hasContext && (hasExisting || hasDifferent || hasCouldNot)) {
+              return true;
+            }
+            
+            // Se tem THREE + WebGLRenderer + context, suprimir
+            if (hasThree && hasWebGL && hasContext) {
+              return true;
+            }
+            
+            // Verificações específicas
             return lowerMessage.includes('webgl context could not be created') || 
                    lowerMessage.includes('existing context of a different type') ||
                    lowerMessage.includes('canvas has an existing context') ||
@@ -81,7 +100,8 @@
                    (lowerMessage.includes('webgl') && lowerMessage.includes('existing context')) ||
                    (lowerMessage.includes('three.webglrenderer') && lowerMessage.includes('canvas has an existing')) ||
                    (lowerMessage.includes('webgl') && lowerMessage.includes('could not be created')) ||
-                   (lowerMessage.includes('webgl') && lowerMessage.includes('context') && lowerMessage.includes('different'));
+                   (lowerMessage.includes('webgl') && lowerMessage.includes('context') && lowerMessage.includes('different')) ||
+                   lowerMessage.includes('webgl context') && (lowerMessage.includes('error') || lowerMessage.includes('failed'));
           };
           
           console.error = function(...args) {
