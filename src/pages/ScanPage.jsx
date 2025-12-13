@@ -495,23 +495,15 @@ const ScanPage = () => {
               console.log('✅ gl.clear interceptado no forceCanvasVisibility')
             }
             
-            // CRÍTICO: Loop contínuo via requestAnimationFrame para limpar canvas DEPOIS de cada frame
-            // Isso garante que o canvas seja sempre transparente, mesmo após renderização do A-Frame
-            // IMPORTANTE: Limpar DEPOIS que o A-Frame renderiza, para remover qualquer fundo preto
+            // CRÍTICO: Loop contínuo via requestAnimationFrame para garantir clearColor sempre em alpha 0
+            // NÃO limpar o canvas completo (isso apagaria o AR), apenas garantir que clearColor está correto
             if (!canvas._androidContinuousClearRAF) {
               let rafId = null
               const continuousClear = () => {
                 try {
                   if (gl && !gl.isContextLost()) {
-                    // Limpar canvas DEPOIS que o A-Frame renderizou
-                    // Isso remove qualquer fundo preto que o A-Frame possa ter desenhado
-                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    // Usar scissor test para limpar apenas áreas sem conteúdo AR
-                    // Mas primeiro, limpar tudo para garantir transparência
-                    const currentScissor = gl.getParameter(gl.SCISSOR_TEST)
-                    gl.disable(gl.SCISSOR_TEST)
-                    gl.clear(gl.COLOR_BUFFER_BIT)
-                    if (currentScissor) gl.enable(gl.SCISSOR_TEST)
+                    // Apenas garantir que clearColor está sempre em alpha 0
+                    // NÃO limpar o canvas (isso apagaria o conteúdo AR)
                     gl.clearColor(0.0, 0.0, 0.0, 0.0)
                   }
                   rafId = requestAnimationFrame(continuousClear)
@@ -523,7 +515,7 @@ const ScanPage = () => {
               }
               rafId = requestAnimationFrame(continuousClear)
               canvas._androidContinuousClearRAF = rafId
-              console.log('✅ Loop contínuo RAF ativado - limpando canvas DEPOIS de cada frame')
+              console.log('✅ Loop contínuo RAF ativado - garantindo clearColor sempre em alpha 0 (sem limpar AR)')
             }
           }
         } catch (e) {
