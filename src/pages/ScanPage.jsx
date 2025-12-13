@@ -353,35 +353,71 @@ const ScanPage = () => {
         }
       } else {
         // Target ativo: Mostrar canvas mas garantir que esteja completamente transparente
-        if (!isCurrentlyVisible) {
-          console.log('🟢 Mostrando canvas transparente no Android (com target)')
-          canvas.style.setProperty('display', 'block', 'important')
-          canvas.style.setProperty('visibility', 'visible', 'important')
-          canvas.style.setProperty('opacity', '1', 'important')
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-          canvas.style.setProperty('position', 'fixed', 'important')
-          canvas.style.setProperty('width', '100vw', 'important')
-          canvas.style.setProperty('height', '100vh', 'important')
-          canvas.style.setProperty('top', '0', 'important')
-          canvas.style.setProperty('left', '0', 'important')
-          
-          // Mostrar a-scene
-          scene.style.setProperty('display', 'block', 'important')
-          scene.style.setProperty('visibility', 'visible', 'important')
-          scene.style.setProperty('opacity', '1', 'important')
+        // SEMPRE forçar transparência, mesmo se já estiver visível
+        console.log('🟢 Target ativo - FORÇANDO canvas transparente no Android')
+        canvas.style.setProperty('display', 'block', 'important')
+        canvas.style.setProperty('visibility', 'visible', 'important')
+        canvas.style.setProperty('opacity', '1', 'important')
+        canvas.style.setProperty('background-color', 'transparent', 'important')
+        canvas.style.setProperty('background', 'transparent', 'important')
+        canvas.style.setProperty('position', 'fixed', 'important')
+        canvas.style.setProperty('width', '100vw', 'important')
+        canvas.style.setProperty('height', '100vh', 'important')
+        canvas.style.setProperty('top', '0', 'important')
+        canvas.style.setProperty('left', '0', 'important')
+        canvas.style.setProperty('z-index', '1', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
+        
+        // Verificar dimensões reais do canvas
+        const rect = canvas.getBoundingClientRect()
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        
+        // Se o canvas não está cobrindo toda a tela, forçar dimensões
+        if (Math.abs(rect.width - viewportWidth) > 10 || Math.abs(rect.height - viewportHeight) > 10) {
+          console.warn('⚠️ Canvas não está cobrindo toda a tela, forçando dimensões:', {
+            canvasWidth: rect.width,
+            canvasHeight: rect.height,
+            viewportWidth,
+            viewportHeight
+          })
+          // Forçar dimensões via atributos também
+          canvas.setAttribute('width', viewportWidth)
+          canvas.setAttribute('height', viewportHeight)
         }
         
-        // Forçar transparência via WebGL
+        // Mostrar a-scene
+        scene.style.setProperty('display', 'block', 'important')
+        scene.style.setProperty('visibility', 'visible', 'important')
+        scene.style.setProperty('opacity', '1', 'important')
+        
+        // Forçar transparência via WebGL - SEMPRE, mesmo se já foi feito
         try {
           const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
           if (gl && !gl.isContextLost()) {
+            // Configurar viewport para cobrir toda a tela
+            gl.viewport(0, 0, viewportWidth, viewportHeight)
+            // Forçar transparência
             gl.clearColor(0.0, 0.0, 0.0, 0.0)
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
             gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            
+            // Interceptar clear se ainda não foi interceptado
+            if (!gl._androidClearIntercepted) {
+              const originalClear = gl.clear.bind(gl)
+              gl.clear = function(mask) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                originalClear(mask)
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                // Limpar novamente para garantir transparência em TODA a área
+                gl.clear(gl.COLOR_BUFFER_BIT)
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              }
+              gl._androidClearIntercepted = true
+            }
           }
         } catch (e) {
-          // Ignorar
+          console.warn('⚠️ Erro ao configurar WebGL:', e)
         }
       }
     }
