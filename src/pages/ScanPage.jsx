@@ -311,6 +311,48 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
+  // SOLUÇÃO RADICAL ANDROID: Ocultar canvas completamente quando não há targets ativos
+  // Isso evita o retângulo preto no meio cobrindo o vídeo
+  useEffect(() => {
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (!isAndroid || !cameraPermissionGranted) return
+
+    const scene = sceneRef.current
+    if (!scene) return
+
+    const canvas = scene.querySelector('canvas')
+    if (!canvas) return
+
+    if (activeTargetIndex === null) {
+      // Nenhum target ativo: OCULTAR canvas completamente para mostrar apenas o vídeo
+      console.log('🔴 Nenhum target ativo - OCULTANDO canvas completamente no Android')
+      canvas.style.setProperty('display', 'none', 'important')
+      canvas.style.setProperty('visibility', 'hidden', 'important')
+      canvas.style.setProperty('opacity', '0', 'important')
+      canvas.style.setProperty('pointer-events', 'none', 'important')
+    } else {
+      // Target ativo: Mostrar canvas mas garantir que esteja completamente transparente
+      console.log('🟢 Target ativo - MOSTRANDO canvas transparente no Android')
+      canvas.style.setProperty('display', 'block', 'important')
+      canvas.style.setProperty('visibility', 'visible', 'important')
+      canvas.style.setProperty('opacity', '1', 'important')
+      canvas.style.setProperty('background-color', 'transparent', 'important')
+      canvas.style.setProperty('background', 'transparent', 'important')
+      
+      // Forçar transparência via WebGL
+      try {
+        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+        if (gl && !gl.isContextLost()) {
+          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+          gl.clearColor(0.0, 0.0, 0.0, 0.0)
+        }
+      } catch (e) {
+        // Ignorar
+      }
+    }
+  }, [activeTargetIndex, cameraPermissionGranted])
+
   // CRÍTICO: Interceptar criação do canvas ANTES do A-Frame renderizar (Android)
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
