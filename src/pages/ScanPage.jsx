@@ -419,16 +419,17 @@ const ScanPage = () => {
             
             // CRÍTICO: Loop contínuo via requestAnimationFrame para limpar canvas a cada frame
             // Isso garante que o canvas seja sempre transparente, mesmo após renderização
+            // IMPORTANTE: Limpar SEMPRE, mesmo quando não há targets, para evitar fundo preto
             if (!canvas._androidContinuousClearRAF) {
               let rafId = null
               const continuousClear = () => {
                 try {
-                  if (gl && !gl.isContextLost() && activeTargetIndex !== null) {
-                    // Limpar TODO o canvas com alpha 0 a cada frame
+                  if (gl && !gl.isContextLost()) {
+                    // SEMPRE limpar canvas com alpha 0, independente de ter target ou não
                     gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    // Limpar apenas a área que não tem conteúdo AR (mas garantir que está transparente)
-                    // Não limpar depth buffer aqui para não interferir com AR
-                    gl.clear(gl.COLOR_BUFFER_BIT)
+                    // Limpar TODO o canvas - isso garante que não haja fundo preto
+                    // Se há target ativo, o AR será renderizado depois, mas o fundo permanece transparente
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
                     gl.clearColor(0.0, 0.0, 0.0, 0.0)
                   }
                   rafId = requestAnimationFrame(continuousClear)
@@ -440,7 +441,7 @@ const ScanPage = () => {
               }
               rafId = requestAnimationFrame(continuousClear)
               canvas._androidContinuousClearRAF = rafId
-              console.log('✅ Loop contínuo RAF ativado para limpar canvas a cada frame no Android')
+              console.log('✅ Loop contínuo RAF ativado - limpando canvas SEMPRE (com ou sem targets)')
             }
           }
         } catch (e) {
