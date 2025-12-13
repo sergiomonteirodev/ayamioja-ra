@@ -14,6 +14,65 @@ if (!window._webglErrorSuppressed) {
   const originalError = console.error.bind(console)
   const originalWarn = console.warn.bind(console)
   
+  // CRÍTICO: Interceptar HTMLCanvasElement.prototype.getContext para evitar criação de novos contextos
+  // Isso previne o erro na raiz, antes que o Three.js tente criar um novo contexto
+  if (!HTMLCanvasElement.prototype._originalGetContext) {
+    HTMLCanvasElement.prototype._originalGetContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function(contextType, ...args) {
+      // Se já existe um contexto WebGL neste canvas, retornar o existente em vez de criar novo
+      if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'experimental-webgl') {
+        // Verificar se já existe um contexto armazenado
+        if (this._glContext && !this._glContext.isContextLost()) {
+          return this._glContext
+        }
+        
+        // Tentar obter contexto existente via método nativo (sem criar novo)
+        try {
+          // Primeiro, tentar obter do renderer do A-Frame se disponível
+          const scene = document.querySelector('a-scene')
+          if (scene) {
+            const rendererSystem = scene.systems?.renderer
+            if (rendererSystem) {
+              const renderer = rendererSystem.renderer || rendererSystem
+              if (renderer && typeof renderer.getContext === 'function') {
+                const existingGl = renderer.getContext()
+                if (existingGl && !existingGl.isContextLost()) {
+                  // Armazenar para uso futuro
+                  this._glContext = existingGl
+                  return existingGl
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Ignorar erro
+        }
+        
+        // Se não conseguir obter contexto existente, tentar criar novo (comportamento padrão)
+        // Mas apenas se realmente não existir um contexto
+        try {
+          const context = this._originalGetContext.call(this, contextType, ...args)
+          if (context) {
+            // Armazenar para uso futuro
+            this._glContext = context
+          }
+          return context
+        } catch (e) {
+          // Se falhar ao criar (porque já existe), tentar obter o existente
+          // Alguns navegadores armazenam o contexto internamente
+          if (this._glContext && !this._glContext.isContextLost()) {
+            return this._glContext
+          }
+          // Se tudo falhar, retornar null em vez de lançar erro
+          return null
+        }
+      }
+      
+      // Para outros tipos de contexto, usar comportamento padrão
+      return this._originalGetContext.call(this, contextType, ...args)
+    }
+  }
+  
   // Função helper para verificar se deve suprimir
   const shouldSuppress = (...args) => {
     const fullMessage = args.map(arg => {
@@ -76,6 +135,19 @@ if (!window._webglErrorSuppressed) {
       event.preventDefault() // Suprimir o erro
     }
   })
+  
+  // Interceptar Error.prototype.toString para capturar erros lançados diretamente
+  if (!Error.prototype._originalToString) {
+    Error.prototype._originalToString = Error.prototype.toString
+    Error.prototype.toString = function() {
+      const message = this._originalToString.call(this)
+      if (shouldSuppress(message, this.message || '', this.stack || '')) {
+        // Retornar mensagem vazia para erros suprimidos
+        return ''
+      }
+      return message
+    }
+  }
   
   window._webglErrorSuppressed = true
   window._originalConsoleError = originalError
