@@ -311,6 +311,94 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
+  // CRÍTICO: Interceptar criação do canvas ANTES do A-Frame renderizar (Android)
+  useEffect(() => {
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (!isAndroid) return
+
+    console.log('🔍 Configurando MutationObserver para interceptar criação do canvas no Android...')
+
+    // Observar quando o canvas é criado
+    const observer = new MutationObserver((mutations) => {
+      const canvas = document.querySelector('a-scene canvas')
+      if (canvas && !canvas._androidFixed) {
+        canvas._androidFixed = true
+        console.log('✅ Canvas detectado - aplicando transparência IMEDIATAMENTE')
+        
+        // Forçar transparência IMEDIATAMENTE via CSS
+        canvas.style.setProperty('background-color', 'transparent', 'important')
+        canvas.style.setProperty('background', 'transparent', 'important')
+        canvas.style.setProperty('opacity', '1', 'important')
+        canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
+        
+        // Forçar transparência via WebGL ANTES de qualquer renderização
+        try {
+          const gl = canvas.getContext('webgl', { 
+            alpha: true,
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: false,
+            antialias: false, // Desabilitar no Android para performance
+            depth: true,
+            stencil: false,
+            powerPreference: 'low-power'
+          }) || canvas.getContext('webgl2', { 
+            alpha: true,
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: false,
+            antialias: false,
+            depth: true,
+            stencil: false,
+            powerPreference: 'low-power'
+          })
+          
+          if (gl && !gl.isContextLost()) {
+            // Configurar ANTES de qualquer renderização
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            gl.enable(gl.BLEND)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+            
+            // Interceptar clear ANTES de qualquer uso
+            if (!gl._androidClearIntercepted) {
+              const originalClear = gl.clear.bind(gl)
+              gl.clear = function(mask) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                originalClear(mask)
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              }
+              gl._androidClearIntercepted = true
+              console.log('✅ gl.clear interceptado ANTES de qualquer renderização')
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Erro ao configurar WebGL no canvas recém-criado:', e)
+        }
+      }
+    })
+
+    // Observar mudanças no DOM
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    })
+
+    // Também verificar se o canvas já existe
+    const existingCanvas = document.querySelector('a-scene canvas')
+    if (existingCanvas && !existingCanvas._androidFixed) {
+      existingCanvas._androidFixed = true
+      const gl = existingCanvas.getContext('webgl') || existingCanvas.getContext('webgl2')
+      if (gl) {
+        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+        existingCanvas.style.setProperty('background-color', 'transparent', 'important')
+        existingCanvas.style.setProperty('background', 'transparent', 'important')
+      }
+    }
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
   // Forçar transparência imediatamente ao montar
   useEffect(() => {
     // Forçar body e html transparentes imediatamente
@@ -386,13 +474,38 @@ const ScanPage = () => {
         // Ignorar erros
       }
       
-      // Garantir que o vídeo esteja atrás
+      // Verificar e garantir que o vídeo da câmera existe e está visível
       const mindarVideo = document.querySelector('#arVideo') || 
                           Array.from(document.querySelectorAll('video')).find(v => 
                             v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
                             (v.srcObject || v.videoWidth > 0)
                           )
+      
       if (mindarVideo) {
+        const computedStyle = window.getComputedStyle(mindarVideo)
+        const isVisible = 
+          computedStyle.display !== 'none' &&
+          computedStyle.visibility !== 'hidden' &&
+          computedStyle.opacity !== '0' &&
+          mindarVideo.videoWidth > 0 &&
+          mindarVideo.videoHeight > 0
+        
+        // Log apenas se houver problema (para não poluir console)
+        if (!isVisible && !mindarVideo._visibilityLogged) {
+          console.warn('⚠️ Vídeo da câmera existe mas não está visível ou não tem stream:', {
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            opacity: computedStyle.opacity,
+            videoWidth: mindarVideo.videoWidth,
+            videoHeight: mindarVideo.videoHeight,
+            hasSrcObject: !!mindarVideo.srcObject,
+            paused: mindarVideo.paused,
+            readyState: mindarVideo.readyState
+          })
+          mindarVideo._visibilityLogged = true
+        }
+        
+        // Garantir posicionamento correto sempre
         mindarVideo.style.setProperty('z-index', '-2', 'important')
         mindarVideo.style.setProperty('position', 'fixed', 'important')
         mindarVideo.style.setProperty('top', '0', 'important')
@@ -400,6 +513,23 @@ const ScanPage = () => {
         mindarVideo.style.setProperty('width', '100vw', 'important')
         mindarVideo.style.setProperty('height', '100vh', 'important')
         mindarVideo.style.setProperty('object-fit', 'cover', 'important')
+        mindarVideo.style.setProperty('display', 'block', 'important')
+        mindarVideo.style.setProperty('visibility', 'visible', 'important')
+        mindarVideo.style.setProperty('opacity', '1', 'important')
+        
+        // Garantir que está reproduzindo
+        if (mindarVideo.paused && mindarVideo.readyState >= 2 && mindarVideo.srcObject) {
+          mindarVideo.play().catch(e => {
+            console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
+          })
+        }
+      } else {
+        // Log apenas ocasionalmente para não poluir o console
+        if (!window._videoNotFoundCount) window._videoNotFoundCount = 0
+        window._videoNotFoundCount++
+        if (window._videoNotFoundCount <= 3) {
+          console.warn('⚠️ Vídeo #arVideo não encontrado - MindAR pode não ter criado ainda (tentativa', window._videoNotFoundCount, ')')
+        }
       }
     }
 
@@ -410,6 +540,70 @@ const ScanPage = () => {
     const interval = setInterval(forceAndroidTransparency, 100)
     
     return () => clearInterval(interval)
+  }, [cameraPermissionGranted])
+
+  // Fallback de segurança: se canvas não estiver transparente após 2s, aplicar correção agressiva
+  useEffect(() => {
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (!isAndroid || !cameraPermissionGranted) return
+
+    const timeout = setTimeout(() => {
+      const canvas = document.querySelector('a-scene canvas')
+      if (canvas) {
+        const style = window.getComputedStyle(canvas)
+        const bgColor = style.backgroundColor
+        
+        // Verificar se canvas está realmente transparente
+        const isTransparent = bgColor === 'rgba(0, 0, 0, 0)' || 
+                             bgColor === 'transparent' ||
+                             bgColor.includes('rgba(0, 0, 0, 0)')
+        
+        if (!isTransparent) {
+          console.error('❌ Canvas ainda não transparente após 2s - aplicando correção agressiva:', {
+            backgroundColor: bgColor,
+            opacity: style.opacity,
+            display: style.display
+          })
+          
+          // Correção agressiva: ocultar temporariamente
+          canvas.style.setProperty('opacity', '0', 'important')
+          
+          // Forçar transparência via WebGL
+          try {
+            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+            if (gl && !gl.isContextLost()) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+            }
+          } catch (e) {
+            console.warn('⚠️ Erro ao limpar canvas:', e)
+          }
+          
+          // Tentar novamente após 500ms
+          setTimeout(() => {
+            canvas.style.setProperty('background-color', 'transparent', 'important')
+            canvas.style.setProperty('background', 'transparent', 'important')
+            canvas.style.setProperty('opacity', '1', 'important')
+            
+            // Forçar novamente via WebGL
+            try {
+              const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+              if (gl && !gl.isContextLost()) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              }
+            } catch (e) {
+              // Ignorar
+            }
+            
+            console.log('✅ Correção agressiva aplicada - canvas deve estar transparente agora')
+          }, 500)
+        } else {
+          console.log('✅ Canvas está transparente após 2s')
+        }
+      }
+    }, 2000)
+
+    return () => clearTimeout(timeout)
   }, [cameraPermissionGranted])
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
