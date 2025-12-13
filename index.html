@@ -105,6 +105,31 @@
           };
           
           console.error = function(...args) {
+            // Verificar se deve suprimir ANTES de processar
+            const fullMessage = args.map(arg => {
+              if (typeof arg === 'string') return arg;
+              if (arg && typeof arg === 'object') {
+                if (arg.message) return arg.message;
+                if (arg.toString) return arg.toString();
+                try {
+                  return JSON.stringify(arg);
+                } catch (e) {
+                  return String(arg);
+                }
+              }
+              return String(arg);
+            }).join(' ');
+            
+            // Verificação direta e rápida
+            const lowerMessage = fullMessage.toLowerCase();
+            if (lowerMessage.includes('webgl') && lowerMessage.includes('context') && 
+                (lowerMessage.includes('existing') || lowerMessage.includes('different') || 
+                 lowerMessage.includes('could not') || lowerMessage.includes('cannot'))) {
+              // Suprimir completamente - não mostrar no console
+              return;
+            }
+            
+            // Verificar com função completa
             if (shouldSuppress(...args)) {
               return;
             }
@@ -112,6 +137,28 @@
           };
           
           console.warn = function(...args) {
+            // Mesma verificação para warn
+            const fullMessage = args.map(arg => {
+              if (typeof arg === 'string') return arg;
+              if (arg && typeof arg === 'object') {
+                if (arg.message) return arg.message;
+                if (arg.toString) return arg.toString();
+                try {
+                  return JSON.stringify(arg);
+                } catch (e) {
+                  return String(arg);
+                }
+              }
+              return String(arg);
+            }).join(' ');
+            
+            const lowerMessage = fullMessage.toLowerCase();
+            if (lowerMessage.includes('webgl') && lowerMessage.includes('context') && 
+                (lowerMessage.includes('existing') || lowerMessage.includes('different') || 
+                 lowerMessage.includes('could not') || lowerMessage.includes('cannot'))) {
+              return;
+            }
+            
             if (shouldSuppress(...args)) {
               return;
             }
