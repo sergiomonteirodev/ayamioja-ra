@@ -2031,6 +2031,7 @@ const ScanPage = () => {
       const computedStyle = window.getComputedStyle(mindarVideo)
       
       // Verificar tamanho atual vs viewport
+      // Usar window.innerWidth/innerHeight diretamente para evitar problemas com padding/margin
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
       const currentWidth = parseInt(computedStyle.width) || 0
@@ -2038,12 +2039,15 @@ const ScanPage = () => {
       const widthDiff = Math.abs(currentWidth - viewportWidth)
       const heightDiff = Math.abs(currentHeight - viewportHeight)
       
+      // Tolerância maior para altura (alguns navegadores têm barra de endereço que muda o viewport)
+      const heightTolerance = 20 // 20px de tolerância para altura
+      
       // Verificar se precisa ajustar
       const needsAdjustment = 
         computedStyle.position !== 'fixed' ||
         computedStyle.zIndex !== '-2' ||
-        widthDiff > 10 || // Mais de 10px de diferença
-        heightDiff > 10 ||
+        widthDiff > 10 || // Mais de 10px de diferença na largura
+        heightDiff > heightTolerance || // Mais de 20px de diferença na altura
         computedStyle.display === 'none' ||
         computedStyle.visibility === 'hidden' ||
         computedStyle.opacity === '0'
@@ -2085,10 +2089,16 @@ const ScanPage = () => {
         mindarVideo.style.setProperty('left', '0', 'important')
         mindarVideo.style.setProperty('width', '100vw', 'important')
         mindarVideo.style.setProperty('height', '100vh', 'important')
+        mindarVideo.style.setProperty('min-width', '100vw', 'important')
+        mindarVideo.style.setProperty('min-height', '100vh', 'important')
+        mindarVideo.style.setProperty('max-width', '100vw', 'important')
+        mindarVideo.style.setProperty('max-height', '100vh', 'important')
         mindarVideo.style.setProperty('object-fit', 'cover', 'important')
         mindarVideo.style.setProperty('z-index', '-2', 'important')
         mindarVideo.style.setProperty('margin', '0', 'important')
         mindarVideo.style.setProperty('padding', '0', 'important')
+        mindarVideo.style.setProperty('border', 'none', 'important')
+        mindarVideo.style.setProperty('outline', 'none', 'important')
         mindarVideo.style.setProperty('background-color', 'transparent', 'important')
         mindarVideo.style.setProperty('display', 'block', 'important')
         mindarVideo.style.setProperty('visibility', 'visible', 'important')
@@ -2099,17 +2109,32 @@ const ScanPage = () => {
           const newComputedStyle = window.getComputedStyle(mindarVideo)
           const actualWidth = parseInt(newComputedStyle.width) || 0
           const actualHeight = parseInt(newComputedStyle.height) || 0
+          const currentViewportWidth = window.innerWidth
+          const currentViewportHeight = window.innerHeight
           
-          if (Math.abs(actualWidth - viewportWidth) > 10 || Math.abs(actualHeight - viewportHeight) > 10) {
+          // Tolerância maior para altura (alguns navegadores têm barra de endereço que muda o viewport)
+          const heightTolerance = 20
+          
+          if (Math.abs(actualWidth - currentViewportWidth) > 10 || Math.abs(actualHeight - currentViewportHeight) > heightTolerance) {
+            // Tentar corrigir novamente se ainda não estiver correto
+            mindarVideo.style.setProperty('width', '100vw', 'important')
+            mindarVideo.style.setProperty('height', '100vh', 'important')
+            mindarVideo.style.setProperty('max-width', '100vw', 'important')
+            mindarVideo.style.setProperty('max-height', '100vh', 'important')
+            mindarVideo.style.setProperty('min-width', '100vw', 'important')
+            mindarVideo.style.setProperty('min-height', '100vh', 'important')
+            
             console.warn('⚠️ Vídeo não está cobrindo toda a tela:', {
-              expectedWidth: viewportWidth,
+              expectedWidth: currentViewportWidth,
               actualWidth,
-              expectedHeight: viewportHeight,
+              expectedHeight: currentViewportHeight,
               actualHeight,
               computedWidth: newComputedStyle.width,
               computedHeight: newComputedStyle.height,
               inlineWidth: mindarVideo.style.width,
-              inlineHeight: mindarVideo.style.height
+              inlineHeight: mindarVideo.style.height,
+              viewportWidth: window.innerWidth,
+              viewportHeight: window.innerHeight
             })
           } else {
             console.log('✅ Vídeo está cobrindo toda a tela corretamente')
