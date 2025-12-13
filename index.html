@@ -120,11 +120,17 @@
               return String(arg);
             }).join(' ');
             
-            // Verificação direta e rápida
+            // Verificação direta e rápida - ULTRA AGRESSIVA
             const lowerMessage = fullMessage.toLowerCase();
+            // Capturar qualquer coisa com THREE.WebGLRenderer e context
+            if (lowerMessage.includes('three') && lowerMessage.includes('webglrenderer') && lowerMessage.includes('context')) {
+              return;
+            }
+            // Capturar qualquer coisa com webgl + context + existing/different/could not
             if (lowerMessage.includes('webgl') && lowerMessage.includes('context') && 
                 (lowerMessage.includes('existing') || lowerMessage.includes('different') || 
-                 lowerMessage.includes('could not') || lowerMessage.includes('cannot'))) {
+                 lowerMessage.includes('could not') || lowerMessage.includes('cannot') ||
+                 lowerMessage.includes('reason'))) {
               // Suprimir completamente - não mostrar no console
               return;
             }
@@ -153,9 +159,15 @@
             }).join(' ');
             
             const lowerMessage = fullMessage.toLowerCase();
+            // Capturar qualquer coisa com THREE.WebGLRenderer e context
+            if (lowerMessage.includes('three') && lowerMessage.includes('webglrenderer') && lowerMessage.includes('context')) {
+              return;
+            }
+            // Capturar qualquer coisa com webgl + context + existing/different/could not
             if (lowerMessage.includes('webgl') && lowerMessage.includes('context') && 
                 (lowerMessage.includes('existing') || lowerMessage.includes('different') || 
-                 lowerMessage.includes('could not') || lowerMessage.includes('cannot'))) {
+                 lowerMessage.includes('could not') || lowerMessage.includes('cannot') ||
+                 lowerMessage.includes('reason'))) {
               return;
             }
             
