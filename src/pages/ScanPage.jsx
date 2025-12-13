@@ -351,6 +351,34 @@ const ScanPage = () => {
           scene.style.setProperty('visibility', 'hidden', 'important')
           scene.style.setProperty('opacity', '0', 'important')
         }
+        
+        // CRÍTICO: Mesmo oculto, garantir que o loop RAF continue limpando
+        // Isso evita que o canvas apareça com fundo preto se for mostrado
+        try {
+          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+          if (gl && !gl.isContextLost() && !canvas._androidContinuousClearRAF) {
+            let rafId = null
+            const continuousClear = () => {
+              try {
+                if (gl && !gl.isContextLost()) {
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                }
+                rafId = requestAnimationFrame(continuousClear)
+                canvas._androidContinuousClearRAF = rafId
+              } catch (e) {
+                if (rafId) cancelAnimationFrame(rafId)
+                canvas._androidContinuousClearRAF = null
+              }
+            }
+            rafId = requestAnimationFrame(continuousClear)
+            canvas._androidContinuousClearRAF = rafId
+            console.log('✅ Loop RAF ativado mesmo sem targets para evitar fundo preto')
+          }
+        } catch (e) {
+          // Ignorar
+        }
       } else {
         // Target ativo: Mostrar canvas mas garantir que esteja completamente transparente
         // SEMPRE forçar transparência, mesmo se já estiver visível
