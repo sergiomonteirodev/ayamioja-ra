@@ -2888,23 +2888,31 @@ const ScanPage = () => {
         const originalRAF = window.requestAnimationFrame
         window.requestAnimationFrame = function(callback) {
           return originalRAF(function(time) {
-            // ANTES de cada frame, limpar TODO o canvas com alpha 0
+            // ANTES de cada frame, garantir transparência mas NÃO limpar se houver target ativo
             const canvas = scene.querySelector('canvas')
+            const hasActiveTarget = activeTargetIndex !== null
+            
             if (canvas) {
               try {
                 const gl = getWebGLContext(canvas)
                 if (gl && !gl.isContextLost()) {
-                  // SEMPRE limpar TODO o canvas com alpha 0 antes de renderizar
-                  // Isso previne área preta aparecendo
-                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+                  // Sempre garantir clearColor está em alpha 0
                   gl.clearColor(0.0, 0.0, 0.0, 0.0)
                   
-                  // No Android/Chrome, limpar novamente para garantir
-                  if (needsAggressiveRAF) {
-                    gl.clear(gl.COLOR_BUFFER_BIT)
+                  // CRÍTICO: Só limpar canvas completamente se NÃO houver target ativo
+                  // Se houver target, NÃO limpar - isso apagaria o conteúdo AR
+                  if (!hasActiveTarget) {
+                    // Sem target: limpar canvas para evitar área preta
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
                     gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    
+                    // No Android/Chrome, limpar novamente para garantir
+                    if (needsAggressiveRAF) {
+                      gl.clear(gl.COLOR_BUFFER_BIT)
+                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    }
                   }
+                  // Se houver target ativo, NÃO limpar - apenas garantir clearColor está correto
                 }
                 
                 // Forçar CSS transparente também
@@ -2919,8 +2927,8 @@ const ScanPage = () => {
             // Executar callback original (renderização do AR)
             callback(time)
             
-            // DEPOIS de renderizar, garantir clearColor novamente
-            if (canvas) {
+            // DEPOIS de renderizar, garantir clearColor novamente (mas NÃO limpar se houver target)
+            if (canvas && !hasActiveTarget) {
               try {
                 const gl = getWebGLContext(canvas)
                 if (gl && !gl.isContextLost()) {
@@ -2933,7 +2941,7 @@ const ScanPage = () => {
           })
         }
         window._rafIntercepted = true
-        console.log('✅ requestAnimationFrame interceptado - limpando canvas com alpha 0 ANTES e DEPOIS de cada frame', needsAggressiveRAF ? '[Android/Chrome: modo ultra agressivo]' : '')
+        console.log('✅ requestAnimationFrame interceptado - limpando canvas apenas quando NÃO há targets ativos', needsAggressiveRAF ? '[Android/Chrome: modo ultra agressivo]' : '')
       }
       
       // GARANTIR que o a-scene esteja visível e transparente
