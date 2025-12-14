@@ -3546,14 +3546,35 @@ const ScanPage = () => {
               })
               
               if ((coversLargeArea || coversTopArea || coversSignificantArea)) {
-              el.style.setProperty('display', 'none', 'important')
-              el.style.setProperty('visibility', 'hidden', 'important')
-              el.style.setProperty('opacity', '0', 'important')
-              el.style.setProperty('pointer-events', 'none', 'important')
-              try {
-                el.remove()
-              } catch (e) {
-                // Ignorar se não puder remover
+                console.error(`❌ REMOVENDO elemento criado por ${createdBy}:`, {
+                  tag: el.tagName,
+                  id: id,
+                  className: className,
+                  createdBy: createdBy
+                })
+                el.style.setProperty('display', 'none', 'important')
+                el.style.setProperty('visibility', 'hidden', 'important')
+                el.style.setProperty('opacity', '0', 'important')
+                el.style.setProperty('pointer-events', 'none', 'important')
+                el.style.setProperty('background-color', 'transparent', 'important')
+                el.style.setProperty('background', 'transparent', 'important')
+                try {
+                  el.remove()
+                } catch (e) {
+                  console.warn('⚠️ Não foi possível remover elemento:', e)
+                }
+              } else {
+                // Mesmo que não cubra área grande, se tem background preto e está no topo, forçar transparência
+                if (rect.top <= window.innerHeight * 0.3) {
+                  console.warn(`⚠️ Elemento criado por ${createdBy} com background preto no topo, forçando transparência:`, {
+                    tag: el.tagName,
+                    id: id,
+                    className: className,
+                    createdBy: createdBy
+                  })
+                  el.style.setProperty('background-color', 'transparent', 'important')
+                  el.style.setProperty('background', 'transparent', 'important')
+                }
               }
             }
           }
