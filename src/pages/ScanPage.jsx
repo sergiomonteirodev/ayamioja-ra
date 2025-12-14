@@ -2488,15 +2488,23 @@ const ScanPage = () => {
                   gl.clear = function(mask) {
                     // SEMPRE garantir clearColor com alpha 0 antes de limpar
                     gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    // Permitir que a limpeza aconteça normalmente
+                    // Permitir que a limpeza aconteça normalmente (incluindo depth buffer)
                     gl._originalClear(mask)
-                    // No Android/Chrome, forçar clearColor novamente após limpar
+                    // SEMPRE forçar clearColor novamente após limpar (não apenas no Android/Chrome)
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                    // No Android/Chrome, limpar novamente para garantir transparência completa
                     if (needsAggressiveFix) {
+                      gl.clear(gl.COLOR_BUFFER_BIT)
                       gl.clearColor(0.0, 0.0, 0.0, 0.0)
                     }
                   }
-                  console.log('✅ gl.clear interceptado no diagnóstico (permitindo limpeza normal)', needsAggressiveFix ? '[Android/Chrome: modo agressivo]' : '')
+                  console.log('✅ gl.clear interceptado ULTRA AGRESSIVO - sempre forçando alpha 0', needsAggressiveFix ? '[Android/Chrome: modo ultra agressivo]' : '')
                 }
+                
+                // Limpar canvas imediatamente com alpha 0
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
                 
                 // No Android/Chrome, adicionar um intervalo que força clearColor a 0 continuamente
                 if (needsAggressiveFix && !gl._androidClearColorInterval) {
