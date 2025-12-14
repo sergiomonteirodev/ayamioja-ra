@@ -3951,7 +3951,9 @@ const ScanPage = () => {
     document.documentElement.style.setProperty('background', 'transparent', 'important')
     
     // Função de debug global para inspecionar elementos no mobile
-    window.debugScanPage = () => {
+    // Garantir que a função esteja sempre disponível, mesmo após re-renderizações
+    if (!window.debugScanPage || typeof window.debugScanPage !== 'function') {
+      window.debugScanPage = () => {
       const scene = sceneRef.current
       const canvas = scene?.querySelector('canvas')
       const video = document.querySelector('#arVideo') || document.querySelector('video[id^="mindar"]')
