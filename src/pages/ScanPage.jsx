@@ -4207,7 +4207,68 @@ const ScanPage = () => {
         })
       }
       
+      // Adicionar informações sobre elementos criados por cada biblioteca
+      report.libraryElements = {
+        aFrame: [],
+        mindAR: [],
+        threeJS: [],
+        unknown: []
+      }
+      
+      document.querySelectorAll('*').forEach(el => {
+        if (el === canvas || el === video || el.tagName === 'VIDEO' || el.tagName === 'CANVAS') return
+        
+        const tagName = el.tagName.toLowerCase()
+        const className = el.className || ''
+        const id = el.id || ''
+        const style = window.getComputedStyle(el)
+        const bgColor = style.backgroundColor
+        const rect = el.getBoundingClientRect()
+        
+        let library = 'unknown'
+        if (tagName.startsWith('a-') || className.includes('a-') || el.hasAttribute('data-aframe')) {
+          library = 'aFrame'
+        } else if (el.hasAttribute('mindar-image-target') || el.hasAttribute('mindar') || 
+                   className.includes('mindar') || id.includes('mindar')) {
+          library = 'mindAR'
+        } else if (el.hasAttribute('data-three') || className.includes('three') || 
+                  (el.style && el.style.transform && el.style.transform.includes('matrix3d'))) {
+          library = 'threeJS'
+        }
+        
+        const elementInfo = {
+          tag: el.tagName,
+          id: id || '(sem id)',
+          className: className || '(sem classe)',
+          backgroundColor: bgColor,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          zIndex: style.zIndex,
+          position: style.position,
+          display: style.display,
+          visibility: style.visibility,
+          opacity: style.opacity,
+          attributes: Array.from(el.attributes || []).map(attr => `${attr.name}="${attr.value}"`).join(', ')
+        }
+        
+        report.libraryElements[library].push(elementInfo)
+        
+        // Se tem background preto, destacar
+        if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+          console.error(`❌ Elemento criado por ${library.toUpperCase()} com background preto:`, elementInfo)
+        }
+      })
+      
       console.log('📊 ScanPage Debug Report:', report)
+      console.log('📚 Elementos por biblioteca:', {
+        aFrame: report.libraryElements.aFrame.length,
+        mindAR: report.libraryElements.mindAR.length,
+        threeJS: report.libraryElements.threeJS.length,
+        unknown: report.libraryElements.unknown.length
+      })
+      
       return report
     }
     
