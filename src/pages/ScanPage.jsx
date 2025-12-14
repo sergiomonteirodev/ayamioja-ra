@@ -4061,14 +4061,21 @@ const ScanPage = () => {
       
       console.log('📊 ScanPage Debug Report:', report)
       return report
+      }
     }
     
     console.log('✅ Função debugScanPage() disponível - chame window.debugScanPage() no console')
     
+    // Garantir que a função esteja disponível imediatamente
+    if (typeof window.debugScanPage === 'function') {
+      console.log('✅ debugScanPage está disponível e pode ser chamada')
+    }
+    
     return () => {
       document.body.classList.remove('scan-page-active')
       document.documentElement.classList.remove('scan-page-active')
-      delete window.debugScanPage
+      // NÃO deletar a função no cleanup para que ela permaneça disponível durante a sessão
+      // delete window.debugScanPage
       
       // Restaurar console.error original
       if (console.error._originalError) {
