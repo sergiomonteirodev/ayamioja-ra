@@ -7,48 +7,82 @@
     <!-- CRÍTICO: Interceptar erros WebGL ANTES de qualquer biblioteca ser carregada -->
     <script>
       // Interceptar HTMLCanvasElement.getContext ANTES de qualquer código ser executado
+      // VERSÃO MELHORADA: Detectar contexto existente antes de tentar criar novo
       (function() {
         if (HTMLCanvasElement && !HTMLCanvasElement.prototype._originalGetContext) {
           HTMLCanvasElement.prototype._originalGetContext = HTMLCanvasElement.prototype.getContext;
-          HTMLCanvasElement.prototype.getContext = function(contextType, ...args) {
-            if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'experimental-webgl') {
-              // Verificar se já existe um contexto armazenado
-              if (this._glContext && !this._glContext.isContextLost()) {
-                return this._glContext;
-              }
-              
-              // Tentar obter contexto existente do A-Frame se disponível
-              try {
-                const scene = document.querySelector('a-scene');
-                if (scene && scene.systems && scene.systems.renderer) {
-                  const renderer = scene.systems.renderer.renderer || scene.systems.renderer;
-                  if (renderer && typeof renderer.getContext === 'function') {
-                    const existingGl = renderer.getContext();
-                    if (existingGl && !existingGl.isContextLost()) {
-                      this._glContext = existingGl;
-                      return existingGl;
-                    }
+          
+          // Função helper para detectar se canvas já tem contexto
+          const hasExistingContext = function(canvas) {
+            // Verificar se já armazenamos um contexto
+            if (canvas._glContext && !canvas._glContext.isContextLost()) {
+              return canvas._glContext;
+            }
+            
+            // Tentar obter do A-Frame renderer
+            try {
+              const scene = document.querySelector('a-scene');
+              if (scene && scene.systems && scene.systems.renderer) {
+                const renderer = scene.systems.renderer.renderer || scene.systems.renderer;
+                if (renderer && typeof renderer.getContext === 'function') {
+                  const existingGl = renderer.getContext();
+                  if (existingGl && !existingGl.isContextLost()) {
+                    canvas._glContext = existingGl;
+                    return existingGl;
                   }
                 }
-              } catch (e) {
-                // Ignorar
+              }
+            } catch (e) {
+              // Ignorar
+            }
+            
+            // Verificar propriedades internas do canvas (alguns navegadores expõem)
+            try {
+              if (canvas._context && !canvas._context.isContextLost()) {
+                canvas._glContext = canvas._context;
+                return canvas._context;
+              }
+            } catch (e) {
+              // Ignorar
+            }
+            
+            return null;
+          };
+          
+          HTMLCanvasElement.prototype.getContext = function(contextType, ...args) {
+            if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'experimental-webgl') {
+              // PRIMEIRO: Verificar se já existe um contexto
+              const existingContext = hasExistingContext(this);
+              if (existingContext) {
+                // Já existe contexto - retornar o existente SEM tentar criar novo
+                return existingContext;
               }
               
-              // Tentar criar novo contexto
+              // SEGUNDO: Tentar criar novo contexto APENAS se realmente não existir
               try {
                 const context = this._originalGetContext.call(this, contextType, ...args);
                 if (context) {
+                  // Armazenar para uso futuro
                   this._glContext = context;
+                  this._context = context;
                 }
                 return context;
               } catch (e) {
-                // Se falhar, retornar null em vez de lançar erro
-                if (this._glContext && !this._glContext.isContextLost()) {
-                  return this._glContext;
+                // Se falhar ao criar, pode ser porque já existe contexto
+                // Tentar obter o existente novamente
+                const existingContext = hasExistingContext(this);
+                if (existingContext) {
+                  return existingContext;
                 }
+                
+                // Se não conseguir obter existente, retornar null em vez de lançar erro
+                // Isso previne que o Three.js mostre o erro no console
+                console.warn('⚠️ Não foi possível criar ou obter contexto WebGL - retornando null silenciosamente');
                 return null;
               }
             }
+            
+            // Para outros tipos de contexto, usar comportamento padrão
             return this._originalGetContext.call(this, contextType, ...args);
           };
         }
