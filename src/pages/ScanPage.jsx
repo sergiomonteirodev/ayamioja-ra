@@ -3762,11 +3762,16 @@ const ScanPage = () => {
               
               // Verificar se tem background preto e está cobrindo área grande
               // Também verificar elementos que cobrem PARTE da tela (não apenas grande área)
+              // ESPECIALMENTE elementos no topo que cobrem mesmo pequenas áreas
               if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
                 const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
-                const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.2
-                // Verificar se cobre qualquer parte significativa da tela (20% ou mais)
-                const coversSignificantArea = rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2
+                // CRÍTICO: Detectar elementos no topo que cobrem QUALQUER parte significativa (10% ou mais)
+                const coversTopArea = rect.top <= window.innerHeight * 0.2 && 
+                                     rect.width > window.innerWidth * 0.1 && 
+                                     rect.height > window.innerHeight * 0.05
+                // Verificar se cobre qualquer parte significativa da tela (15% ou mais)
+                const coversSignificantArea = (rect.width > window.innerWidth * 0.15 || rect.height > window.innerHeight * 0.15) &&
+                                            (rect.width > 50 || rect.height > 50) // Pelo menos 50px
                 
                 if ((coversLargeArea || coversTopArea || coversSignificantArea) && zIndex > -2 && zIndex < 100000) {
                   console.warn('⚠️ Elemento com background preto detectado no loop de limpeza, removendo:', {
@@ -3832,13 +3837,14 @@ const ScanPage = () => {
             
             // Verificar se está cobrindo uma grande parte da tela OU se está no topo cobrindo o vídeo
             const coversLargeArea = rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5
-            // Verificar se está no topo (primeiros 50% da altura) e cobre uma área significativa
-            const coversTopArea = rect.top < window.innerHeight * 0.5 && 
-                                 rect.width > window.innerWidth * 0.15 && 
-                                 rect.height > window.innerHeight * 0.1
-            // Verificar se cobre qualquer parte significativa (20% ou mais em qualquer dimensão)
-            const coversSignificantArea = (rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2) &&
-                                        (rect.width > 100 || rect.height > 100) // Pelo menos 100px
+            // CRÍTICO: Detectar elementos no topo que cobrem QUALQUER parte (10% ou mais)
+            // Especialmente importante para detectar áreas pretas no topo do vídeo
+            const coversTopArea = rect.top <= window.innerHeight * 0.2 && 
+                                 rect.width > window.innerWidth * 0.1 && 
+                                 rect.height > window.innerHeight * 0.05
+            // Verificar se cobre qualquer parte significativa (15% ou mais em qualquer dimensão)
+            const coversSignificantArea = (rect.width > window.innerWidth * 0.15 || rect.height > window.innerHeight * 0.15) &&
+                                        (rect.width > 50 || rect.height > 50) // Pelo menos 50px
             
             // Se está na frente do vídeo (z-index > -2) mas não é um elemento de UI
             if ((coversLargeArea || coversTopArea || coversSignificantArea) && zIndex > -2 && zIndex < 100000) {
