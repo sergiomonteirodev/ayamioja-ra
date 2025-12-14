@@ -3856,28 +3856,65 @@ const ScanPage = () => {
         blackElements: []
       }
       
-      // Procurar elementos com background preto
+      // Procurar elementos com background preto - VERSÃO MELHORADA
       document.querySelectorAll('*').forEach(el => {
         if (el === canvas || el === video || el.tagName === 'VIDEO' || el.tagName === 'CANVAS') return
         const style = window.getComputedStyle(el)
         const bgColor = style.backgroundColor
         const rect = el.getBoundingClientRect()
+        const zIndex = parseInt(style.zIndex) || 0
         
+        // Verificar se tem background preto
         if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-          if (rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3) {
+          // Verificar se cobre área significativa (20% ou mais) OU está no topo
+          const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
+          const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.15
+          const coversSignificantArea = (rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2) &&
+                                      (rect.width > 100 || rect.height > 100)
+          
+          // Se está na frente do vídeo (z-index > -2)
+          if ((coversLargeArea || coversTopArea || coversSignificantArea) && zIndex > -2 && zIndex < 100000) {
             report.blackElements.push({
               tag: el.tagName,
-              id: el.id,
-              className: el.className,
+              id: el.id || '(sem id)',
+              className: el.className || '(sem classe)',
               width: rect.width,
               height: rect.height,
+              top: rect.top,
+              left: rect.left,
               backgroundColor: bgColor,
               zIndex: style.zIndex,
-              position: style.position
+              position: style.position,
+              display: style.display,
+              visibility: style.visibility,
+              opacity: style.opacity,
+              coversLargeArea,
+              coversTopArea,
+              coversSignificantArea,
+              element: el // Referência ao elemento para fácil acesso
             })
           }
         }
       })
+      
+      // Se encontrou elementos pretos, tentar removê-los automaticamente
+      if (report.blackElements.length > 0) {
+        console.error('❌ ELEMENTOS COM BACKGROUND PRETO DETECTADOS:', report.blackElements)
+        report.blackElements.forEach(item => {
+          if (item.element) {
+            console.warn('🔧 Tentando remover elemento preto:', item)
+            item.element.style.setProperty('display', 'none', 'important')
+            item.element.style.setProperty('visibility', 'hidden', 'important')
+            item.element.style.setProperty('opacity', '0', 'important')
+            item.element.style.setProperty('background-color', 'transparent', 'important')
+            try {
+              item.element.remove()
+            } catch (e) {
+              console.warn('⚠️ Não foi possível remover elemento:', e)
+            }
+          }
+        })
+      }
       
       console.log('📊 ScanPage Debug Report:', report)
       return report
