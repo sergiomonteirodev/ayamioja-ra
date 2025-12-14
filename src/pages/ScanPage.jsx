@@ -4376,7 +4376,9 @@ const ScanPage = () => {
   // Definir debugAFrame também fora do useEffect
   if (typeof window.debugAFrame !== 'function') {
     window.debugAFrame = function() {
-      const scene = sceneRef.current
+      const scene = (window._scanPageSceneRef?.current) || 
+                   document.querySelector('a-scene') ||
+                   null
       if (!scene) {
         console.error('❌ a-scene não encontrado')
         return null
