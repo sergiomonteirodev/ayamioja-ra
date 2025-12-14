@@ -3494,23 +3494,58 @@ const ScanPage = () => {
             const style = window.getComputedStyle(el)
             const bgColor = style.backgroundColor
             
-            // Se o elemento é grande e tem background preto, remover imediatamente
-            // Também verificar elementos que cobrem parte significativa (20% ou mais)
-            const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
-            const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.15
-            const coversSignificantArea = (rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2) &&
-                                        (rect.width > 100 || rect.height > 100)
+            // Detectar qual biblioteca criou o elemento
+            let createdBy = 'unknown'
+            const tagName = el.tagName.toLowerCase()
+            const className = el.className || ''
+            const id = el.id || ''
+            const attributes = Array.from(el.attributes || []).map(attr => attr.name).join(', ')
             
-            if ((coversLargeArea || coversTopArea || coversSignificantArea) &&
-                bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-              console.error('❌ NOVO ELEMENTO COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
+            // Verificar se é elemento do A-Frame
+            if (tagName.startsWith('a-') || className.includes('a-') || el.hasAttribute('data-aframe')) {
+              createdBy = 'A-Frame'
+            }
+            // Verificar se é elemento do MindAR
+            else if (el.hasAttribute('mindar-image-target') || el.hasAttribute('mindar') || 
+                     className.includes('mindar') || id.includes('mindar')) {
+              createdBy = 'MindAR'
+            }
+            // Verificar se é elemento do Three.js (geralmente elementos criados dinamicamente)
+            else if (el.hasAttribute('data-three') || className.includes('three') || 
+                     (el.style && el.style.transform && el.style.transform.includes('matrix3d'))) {
+              createdBy = 'Three.js'
+            }
+            
+            // Verificar se tem background preto (mesmo que não cubra área grande)
+            if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+              // Se o elemento é grande e tem background preto, remover imediatamente
+              // Também verificar elementos que cobrem parte significativa (20% ou mais)
+              const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
+              const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.15
+              const coversSignificantArea = (rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2) &&
+                                          (rect.width > 100 || rect.height > 100)
+              
+              // Log detalhado para identificar origem
+              console.error('❌ NOVO ELEMENTO COM BACKGROUND PRETO DETECTADO:', {
                 tag: el.tagName,
-                id: el.id,
-                className: el.className,
+                id: id || '(sem id)',
+                className: className || '(sem classe)',
+                createdBy: createdBy,
+                attributes: attributes,
                 width: rect.width,
                 height: rect.height,
-                backgroundColor: bgColor
+                top: rect.top,
+                left: rect.left,
+                backgroundColor: bgColor,
+                parent: el.parentElement?.tagName || 'null',
+                parentId: el.parentElement?.id || '(sem id)',
+                coversLargeArea,
+                coversTopArea,
+                coversSignificantArea,
+                stack: new Error().stack?.split('\n').slice(0, 5).join('\n') // Stack trace para identificar origem
               })
+              
+              if ((coversLargeArea || coversTopArea || coversSignificantArea)) {
               el.style.setProperty('display', 'none', 'important')
               el.style.setProperty('visibility', 'hidden', 'important')
               el.style.setProperty('opacity', '0', 'important')
