@@ -3819,11 +3819,17 @@ const ScanPage = () => {
                 const coversSignificantArea = (rect.width > window.innerWidth * 0.15 || rect.height > window.innerHeight * 0.15) &&
                                             (rect.width > 50 || rect.height > 50) // Pelo menos 50px
                 
-                if ((coversLargeArea || coversTopArea || coversSignificantArea) && zIndex > -2 && zIndex < 100000) {
+                // CRÍTICO: Remover elementos no topo mesmo com z-index baixo ou sem z-index definido
+                // Se está no topo cobrindo o vídeo, remover independente de z-index
+                const isInTopArea = rect.top <= window.innerHeight * 0.3 && rect.height > window.innerHeight * 0.05
+                const shouldRemove = (coversLargeArea || coversTopArea || coversSignificantArea || isInTopArea) && 
+                                   (zIndex > -2 || zIndex === 0) && zIndex < 100000
+                
+                if (shouldRemove) {
                   console.warn('⚠️ Elemento com background preto detectado no loop de limpeza, removendo:', {
                     tag: el.tagName,
-                    id: el.id,
-                    className: el.className,
+                    id: el.id || '(sem id)',
+                    className: el.className || '(sem classe)',
                     zIndex: zIndex,
                     top: rect.top,
                     left: rect.left,
@@ -3832,17 +3838,19 @@ const ScanPage = () => {
                     backgroundColor: bgColor,
                     coversLargeArea,
                     coversTopArea,
-                    coversSignificantArea
+                    coversSignificantArea,
+                    isInTopArea
                   })
                   el.style.setProperty('display', 'none', 'important')
                   el.style.setProperty('visibility', 'hidden', 'important')
                   el.style.setProperty('opacity', '0', 'important')
                   el.style.setProperty('background-color', 'transparent', 'important')
                   el.style.setProperty('background', 'transparent', 'important')
+                  el.style.setProperty('pointer-events', 'none', 'important')
                   try {
                     el.remove()
                   } catch (e) {
-                    // Ignorar
+                    console.warn('⚠️ Não foi possível remover elemento:', e)
                   }
                 }
               }
