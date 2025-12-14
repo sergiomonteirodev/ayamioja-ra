@@ -2898,7 +2898,8 @@ const ScanPage = () => {
           return originalRAF(function(time) {
             // ANTES de cada frame, garantir transparência mas NÃO limpar se houver target ativo
             const canvas = scene.querySelector('canvas')
-            const hasActiveTarget = activeTargetIndex !== null
+            // Usar ref para acessar valor atual de activeTargetIndex dentro do closure
+            const hasActiveTarget = activeTargetIndexRef.current !== null
             
             if (canvas) {
               try {
