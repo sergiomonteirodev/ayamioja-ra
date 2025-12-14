@@ -3608,7 +3608,7 @@ const ScanPage = () => {
         window._canvasCleanupInterval = setInterval(() => {
           try {
             // Verificar se há target ativo (usar ref para acessar valor atual)
-            const currentActiveTarget = activeTargetIndex !== null
+            const currentActiveTarget = activeTargetIndexRef.current !== null
             
             const canvas = scene.querySelector('canvas')
             if (canvas) {
