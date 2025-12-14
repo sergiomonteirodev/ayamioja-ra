@@ -3729,6 +3729,20 @@ const ScanPage = () => {
               canvas.style.setProperty('background', 'transparent', 'important')
               canvas.style.setProperty('opacity', '1', 'important')
               
+              // CRÍTICO: Verificar se o canvas está cobrindo parte do vídeo (especialmente no topo)
+              const canvasRect = canvas.getBoundingClientRect()
+              const canvasStyle = window.getComputedStyle(canvas)
+              const canvasBgColor = canvasStyle.backgroundColor
+              
+              // Se o canvas tem background preto e está no topo, forçar transparência mais agressiva
+              if (canvasRect.top <= window.innerHeight * 0.2 && 
+                  (canvasBgColor.includes('rgb(0, 0, 0)') || canvasBgColor.includes('rgba(0, 0, 0, 1)'))) {
+                console.warn('⚠️ Canvas detectado com background preto no topo, forçando transparência')
+                canvas.style.setProperty('background-color', 'transparent', 'important')
+                canvas.style.setProperty('background', 'transparent', 'important')
+                canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
+              }
+              
               // CRÍTICO: Só limpar canvas se NÃO houver targets ativos
               // Se houver target ativo, apenas garantir clearColor está em alpha 0, mas NÃO limpar
               // Limpar o canvas apagaria o conteúdo AR renderizado
@@ -3743,8 +3757,17 @@ const ScanPage = () => {
                 // Só limpar canvas completamente se NÃO houver target ativo
                 if (!hasActiveTarget) {
                   // Sem target: limpar canvas completamente para evitar área preta
+                  // ESPECIALMENTE importante limpar o topo do canvas
                   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
                   gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                  
+                  // No Android/Chrome, limpar novamente para garantir que não há área preta no topo
+                  const isAndroid = /Android/i.test(navigator.userAgent)
+                  const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+                  if (isAndroid && isChrome) {
+                    gl.clear(gl.COLOR_BUFFER_BIT)
+                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                  }
                 }
                 // Se houver target ativo, NÃO limpar - apenas garantir clearColor está correto
               }
