@@ -3951,9 +3951,8 @@ const ScanPage = () => {
     document.documentElement.style.setProperty('background', 'transparent', 'important')
     
     // Função de debug global para inspecionar elementos no mobile
-    // Garantir que a função esteja sempre disponível, mesmo após re-renderizações
-    if (!window.debugScanPage || typeof window.debugScanPage !== 'function') {
-      window.debugScanPage = () => {
+    // Criar função diretamente sem verificação condicional para garantir disponibilidade
+    window.debugScanPage = function() {
       const scene = sceneRef.current
       const canvas = scene?.querySelector('canvas')
       const video = document.querySelector('#arVideo') || document.querySelector('video[id^="mindar"]')
@@ -4061,7 +4060,6 @@ const ScanPage = () => {
       
       console.log('📊 ScanPage Debug Report:', report)
       return report
-      }
     }
     
     console.log('✅ Função debugScanPage() disponível - chame window.debugScanPage() no console')
