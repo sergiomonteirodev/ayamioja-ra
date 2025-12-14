@@ -3720,14 +3720,16 @@ const ScanPage = () => {
             
             // Verificar se está cobrindo uma grande parte da tela OU se está no topo cobrindo o vídeo
             const coversLargeArea = rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5
-            // Verificar se está no topo (primeiros 40% da altura) e cobre uma área significativa
-            const coversTopArea = rect.top < window.innerHeight * 0.4 && 
-                                 rect.width > window.innerWidth * 0.2 && 
-                                 rect.height > window.innerHeight * 0.15 &&
-                                 rect.bottom > window.innerHeight * 0.1
+            // Verificar se está no topo (primeiros 50% da altura) e cobre uma área significativa
+            const coversTopArea = rect.top < window.innerHeight * 0.5 && 
+                                 rect.width > window.innerWidth * 0.15 && 
+                                 rect.height > window.innerHeight * 0.1
+            // Verificar se cobre qualquer parte significativa (20% ou mais em qualquer dimensão)
+            const coversSignificantArea = (rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2) &&
+                                        (rect.width > 100 || rect.height > 100) // Pelo menos 100px
             
             // Se está na frente do vídeo (z-index > -2) mas não é um elemento de UI
-            if ((coversLargeArea || coversTopArea) && zIndex > -2 && zIndex < 100000) {
+            if ((coversLargeArea || coversTopArea || coversSignificantArea) && zIndex > -2 && zIndex < 100000) {
               console.warn('⚠️ Elemento com background preto detectado cobrindo vídeo, forçando transparência:', {
                 tag: el.tagName,
                 id: el.id,
