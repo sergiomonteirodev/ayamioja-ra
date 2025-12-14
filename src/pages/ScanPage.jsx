@@ -3584,6 +3584,62 @@ const ScanPage = () => {
         })
       }
       
+      // CRÍTICO: Loop contínuo para limpar canvas e remover elementos pretos
+      // Executar a cada 50ms para garantir que o canvas seja sempre transparente
+      if (!window._canvasCleanupInterval) {
+        window._canvasCleanupInterval = setInterval(() => {
+          try {
+            const canvas = scene.querySelector('canvas')
+            if (canvas) {
+              // Forçar CSS transparente
+              canvas.style.setProperty('background-color', 'transparent', 'important')
+              canvas.style.setProperty('background', 'transparent', 'important')
+              canvas.style.setProperty('opacity', '1', 'important')
+              
+              // Limpar canvas WebGL completamente
+              const gl = getWebGLContext(canvas)
+              if (gl && !gl.isContextLost()) {
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              }
+            }
+            
+            // Remover elementos com background preto que cobrem o vídeo
+            const allElements = document.querySelectorAll('*')
+            allElements.forEach(el => {
+              if (el === canvas || el.tagName === 'VIDEO' || el.tagName === 'CANVAS' || el === scene) return
+              
+              const rect = el.getBoundingClientRect()
+              const style = window.getComputedStyle(el)
+              const bgColor = style.backgroundColor
+              const zIndex = parseInt(style.zIndex) || 0
+              
+              // Verificar se tem background preto e está cobrindo área grande
+              if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+                const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
+                const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.2
+                
+                if ((coversLargeArea || coversTopArea) && zIndex > -2 && zIndex < 100000) {
+                  el.style.setProperty('display', 'none', 'important')
+                  el.style.setProperty('visibility', 'hidden', 'important')
+                  el.style.setProperty('opacity', '0', 'important')
+                  el.style.setProperty('background-color', 'transparent', 'important')
+                  try {
+                    el.remove()
+                  } catch (e) {
+                    // Ignorar
+                  }
+                }
+              }
+            })
+          } catch (e) {
+            // Ignorar erros
+          }
+        }, 50) // A cada 50ms
+        console.log('✅ Loop contínuo de limpeza de canvas ativado (a cada 50ms)')
+      }
+      
       // Verificar e corrigir elementos com background preto que possam estar cobrindo os vídeos
       // VERSÃO ULTRA AGRESSIVA: Verificar TODOS os elementos, incluindo os que cobrem parcialmente
       // ESPECIALMENTE elementos no topo da tela que podem estar cobrindo o vídeo
