@@ -4102,6 +4102,7 @@ const ScanPage = () => {
     // Função de debug global para inspecionar elementos no mobile
     // Criar função diretamente sem verificação condicional para garantir disponibilidade
     window.debugScanPage = function() {
+      console.log('🔍 Iniciando análise profunda de elementos...')
       const scene = sceneRef.current
       const canvas = scene?.querySelector('canvas')
       const video = document.querySelector('#arVideo') || document.querySelector('video[id^="mindar"]')
@@ -4261,6 +4262,47 @@ const ScanPage = () => {
         }
       })
       
+      // Análise específica de elementos problemáticos
+      const problematicElements = []
+      
+      // Verificar elementos do A-Frame
+      report.libraryElements.aFrame.forEach(el => {
+        if (el.backgroundColor && (el.backgroundColor.includes('rgb(0, 0, 0)') || el.backgroundColor.includes('rgba(0, 0, 0, 1)'))) {
+          problematicElements.push({...el, library: 'A-Frame'})
+        }
+      })
+      
+      // Verificar elementos do MindAR
+      report.libraryElements.mindAR.forEach(el => {
+        if (el.backgroundColor && (el.backgroundColor.includes('rgb(0, 0, 0)') || el.backgroundColor.includes('rgba(0, 0, 0, 1)'))) {
+          problematicElements.push({...el, library: 'MindAR'})
+        }
+      })
+      
+      // Verificar elementos do Three.js
+      report.libraryElements.threeJS.forEach(el => {
+        if (el.backgroundColor && (el.backgroundColor.includes('rgb(0, 0, 0)') || el.backgroundColor.includes('rgba(0, 0, 0, 1)'))) {
+          problematicElements.push({...el, library: 'Three.js'})
+        }
+      })
+      
+      // Verificar elementos desconhecidos
+      report.libraryElements.unknown.forEach(el => {
+        if (el.backgroundColor && (el.backgroundColor.includes('rgb(0, 0, 0)') || el.backgroundColor.includes('rgba(0, 0, 0, 1)'))) {
+          problematicElements.push({...el, library: 'unknown'})
+        }
+      })
+      
+      if (problematicElements.length > 0) {
+        console.error('❌ ELEMENTOS PROBLEMÁTICOS ENCONTRADOS:', problematicElements)
+        console.error('📊 Resumo por biblioteca:', {
+          aFrame: problematicElements.filter(e => e.library === 'A-Frame').length,
+          mindAR: problematicElements.filter(e => e.library === 'MindAR').length,
+          threeJS: problematicElements.filter(e => e.library === 'Three.js').length,
+          unknown: problematicElements.filter(e => e.library === 'unknown').length
+        })
+      }
+      
       console.log('📊 ScanPage Debug Report:', report)
       console.log('📚 Elementos por biblioteca:', {
         aFrame: report.libraryElements.aFrame.length,
@@ -4269,6 +4311,110 @@ const ScanPage = () => {
         unknown: report.libraryElements.unknown.length
       })
       
+      return report
+    }
+    
+    // Função adicional para análise específica do MindAR
+    window.debugMindAR = function() {
+      const scene = sceneRef.current
+      if (!scene) {
+        console.error('❌ a-scene não encontrado')
+        return null
+      }
+      
+      const mindarSystem = scene.systems?.mindar || 
+                          scene.systems?.['mindar-image-system'] ||
+                          scene.systems?.['mindar-image']
+      
+      if (!mindarSystem) {
+        console.error('❌ Sistema MindAR não encontrado')
+        return null
+      }
+      
+      const report = {
+        hasTracker: !!mindarSystem.tracker,
+        isTracking: mindarSystem.isTracking,
+        isReady: mindarSystem.isReady,
+        trackerState: mindarSystem.tracker?.state || 'unknown',
+        trackerVideo: mindarSystem.tracker?.video ? {
+          exists: true,
+          videoWidth: mindarSystem.tracker.video.videoWidth,
+          videoHeight: mindarSystem.tracker.video.videoHeight,
+          hasSrcObject: !!mindarSystem.tracker.video.srcObject,
+          paused: mindarSystem.tracker.video.paused
+        } : { exists: false },
+        trackerStream: !!mindarSystem.tracker?.stream,
+        elements: []
+      }
+      
+      // Verificar elementos criados pelo MindAR
+      const mindarElements = scene.querySelectorAll('[mindar-image-target], [mindar], [class*="mindar"], [id*="mindar"]')
+      mindarElements.forEach(el => {
+        const style = window.getComputedStyle(el)
+        const rect = el.getBoundingClientRect()
+        report.elements.push({
+          tag: el.tagName,
+          id: el.id || '(sem id)',
+          className: el.className || '(sem classe)',
+          backgroundColor: style.backgroundColor,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          zIndex: style.zIndex,
+          attributes: Array.from(el.attributes || []).map(attr => `${attr.name}="${attr.value}"`).join(', ')
+        })
+      })
+      
+      console.log('📊 MindAR Debug Report:', report)
+      return report
+    }
+    
+    // Função adicional para análise específica do A-Frame
+    window.debugAFrame = function() {
+      const scene = sceneRef.current
+      if (!scene) {
+        console.error('❌ a-scene não encontrado')
+        return null
+      }
+      
+      const report = {
+        systems: Object.keys(scene.systems || {}),
+        backgroundSystem: scene.systems?.background ? {
+          hasEl: !!scene.systems.background.el,
+          elDisplay: scene.systems.background.el ? window.getComputedStyle(scene.systems.background.el).display : 'N/A',
+          elVisibility: scene.systems.background.el ? window.getComputedStyle(scene.systems.background.el).visibility : 'N/A',
+          elBackgroundColor: scene.systems.background.el ? window.getComputedStyle(scene.systems.background.el).backgroundColor : 'N/A'
+        } : null,
+        aFrameElements: [],
+        sceneStyle: {
+          backgroundColor: window.getComputedStyle(scene).backgroundColor,
+          background: window.getComputedStyle(scene).background,
+          display: window.getComputedStyle(scene).display,
+          visibility: window.getComputedStyle(scene).visibility
+        }
+      }
+      
+      // Verificar elementos do A-Frame
+      const aFrameElements = scene.querySelectorAll('[class*="a-"], [data-aframe], a-*')
+      aFrameElements.forEach(el => {
+        const style = window.getComputedStyle(el)
+        const rect = el.getBoundingClientRect()
+        report.aFrameElements.push({
+          tag: el.tagName,
+          id: el.id || '(sem id)',
+          className: el.className || '(sem classe)',
+          backgroundColor: style.backgroundColor,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          zIndex: style.zIndex,
+          attributes: Array.from(el.attributes || []).map(attr => `${attr.name}="${attr.value}"`).join(', ')
+        })
+      })
+      
+      console.log('📊 A-Frame Debug Report:', report)
       return report
     }
     
