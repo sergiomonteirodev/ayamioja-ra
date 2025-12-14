@@ -3344,8 +3344,13 @@ const ScanPage = () => {
             const bgColor = style.backgroundColor
             
             // Se o elemento é grande e tem background preto, remover imediatamente
-            if (rect.width > window.innerWidth * 0.3 && 
-                rect.height > window.innerHeight * 0.3 &&
+            // Também verificar elementos que cobrem parte significativa (20% ou mais)
+            const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
+            const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.15
+            const coversSignificantArea = (rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2) &&
+                                        (rect.width > 100 || rect.height > 100)
+            
+            if ((coversLargeArea || coversTopArea || coversSignificantArea) &&
                 bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
               console.error('❌ NOVO ELEMENTO COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
                 tag: el.tagName,
