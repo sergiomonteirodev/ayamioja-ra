@@ -3649,15 +3649,33 @@ const ScanPage = () => {
               const zIndex = parseInt(style.zIndex) || 0
               
               // Verificar se tem background preto e está cobrindo área grande
+              // Também verificar elementos que cobrem PARTE da tela (não apenas grande área)
               if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
                 const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
                 const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.2
+                // Verificar se cobre qualquer parte significativa da tela (20% ou mais)
+                const coversSignificantArea = rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2
                 
-                if ((coversLargeArea || coversTopArea) && zIndex > -2 && zIndex < 100000) {
+                if ((coversLargeArea || coversTopArea || coversSignificantArea) && zIndex > -2 && zIndex < 100000) {
+                  console.warn('⚠️ Elemento com background preto detectado no loop de limpeza, removendo:', {
+                    tag: el.tagName,
+                    id: el.id,
+                    className: el.className,
+                    zIndex: zIndex,
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height,
+                    backgroundColor: bgColor,
+                    coversLargeArea,
+                    coversTopArea,
+                    coversSignificantArea
+                  })
                   el.style.setProperty('display', 'none', 'important')
                   el.style.setProperty('visibility', 'hidden', 'important')
                   el.style.setProperty('opacity', '0', 'important')
                   el.style.setProperty('background-color', 'transparent', 'important')
+                  el.style.setProperty('background', 'transparent', 'important')
                   try {
                     el.remove()
                   } catch (e) {
