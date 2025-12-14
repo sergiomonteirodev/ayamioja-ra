@@ -4090,9 +4090,12 @@ const ScanPage = () => {
     }
   }, [cameraPermissionGranted, isArReady])
 
-  // CRÍTICO: Definir funções de debug ANTES do useEffect para garantir disponibilidade imediata
-  // Isso garante que as funções estejam disponíveis mesmo se o useEffect não executar ainda
-  if (typeof window.debugScanPage !== 'function') {
+  // CRÍTICO: Definir funções de debug GLOBALMENTE para garantir disponibilidade imediata
+  // Definir fora do componente para garantir que estejam sempre disponíveis
+  if (typeof window._debugScanPageDefined === 'undefined') {
+    window._debugScanPageDefined = true
+    
+    // Função de debug geral
     window.debugScanPage = function() {
       console.log('🔍 Iniciando análise profunda de elementos...')
       const scene = sceneRef.current
@@ -4313,7 +4316,9 @@ const ScanPage = () => {
     
     // Função adicional para análise específica do MindAR
     window.debugMindAR = function() {
-      const scene = sceneRef.current
+      const scene = (window._scanPageSceneRef?.current) || 
+                   document.querySelector('a-scene') ||
+                   null
       if (!scene) {
         console.error('❌ a-scene não encontrado')
         return null
@@ -4428,13 +4433,19 @@ const ScanPage = () => {
     document.documentElement.style.setProperty('background', 'transparent', 'important')
     
     // Log de confirmação das funções de debug
-    if (typeof window.debugScanPage === 'function' && typeof window.debugMindAR === 'function' && typeof window.debugAFrame === 'function') {
-      console.log('✅ Funções de debug disponíveis:')
-      console.log('  - window.debugScanPage() - Análise geral')
-      console.log('  - window.debugMindAR() - Análise específica do MindAR')
-      console.log('  - window.debugAFrame() - Análise específica do A-Frame')
-    } else {
-      console.warn('⚠️ Algumas funções de debug não estão disponíveis. Recarregue a página.')
+    console.log('✅ Funções de debug disponíveis:')
+    console.log('  - window.debugScanPage() - Análise geral')
+    console.log('  - window.debugMindAR() - Análise específica do MindAR')
+    console.log('  - window.debugAFrame() - Análise específica do A-Frame')
+    console.log('  - window.autoDebugScanPage() - Debug automático em runtime')
+    
+    // Executar debug automático a cada 5 segundos
+    if (!window._autoDebugInterval) {
+      window._autoDebugInterval = setInterval(() => {
+        if (typeof window.autoDebugScanPage === 'function') {
+          window.autoDebugScanPage()
+        }
+      }, 5000) // A cada 5 segundos
     }
     
     return () => {
