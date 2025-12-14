@@ -3645,14 +3645,32 @@ const ScanPage = () => {
                                      rect.height > window.innerHeight * 0.15
                 const coversLargeArea = rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5
                 
+                // Detectar qual biblioteca criou o elemento
+                let createdBy = 'unknown'
+                const childTagName = child.tagName.toLowerCase()
+                const childClassName = child.className || ''
+                const childId = child.id || ''
+                
+                if (childTagName.startsWith('a-') || childClassName.includes('a-') || child.hasAttribute('data-aframe')) {
+                  createdBy = 'A-Frame'
+                } else if (child.hasAttribute('mindar-image-target') || child.hasAttribute('mindar') || 
+                           childClassName.includes('mindar') || childId.includes('mindar')) {
+                  createdBy = 'MindAR'
+                } else if (child.hasAttribute('data-three') || childClassName.includes('three') || 
+                          (child.style && child.style.transform && child.style.transform.includes('matrix3d'))) {
+                  createdBy = 'Three.js'
+                }
+                
                 if (coversLargeArea || coversTopArea) {
-                  console.warn('⚠️ Elemento filho com background preto detectado no Android/Chrome, removendo:', {
+                  console.warn(`⚠️ Elemento criado por ${createdBy} com background preto detectado no Android/Chrome, removendo:`, {
                     tag: child.tagName,
-                    id: child.id,
-                    className: child.className,
+                    id: childId || '(sem id)',
+                    className: childClassName || '(sem classe)',
+                    createdBy: createdBy,
                     top: rect.top,
                     width: rect.width,
-                    height: rect.height
+                    height: rect.height,
+                    attributes: Array.from(child.attributes || []).map(attr => attr.name).join(', ')
                   })
                   child.style.setProperty('display', 'none', 'important')
                   child.style.setProperty('visibility', 'hidden', 'important')
