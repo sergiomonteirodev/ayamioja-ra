@@ -3586,6 +3586,7 @@ const ScanPage = () => {
       
       // CRÍTICO: Loop contínuo para limpar canvas e remover elementos pretos
       // Executar a cada 50ms para garantir que o canvas seja sempre transparente
+      // IMPORTANTE: NÃO limpar canvas quando há targets ativos (isso apagaria o AR)
       if (!window._canvasCleanupInterval) {
         window._canvasCleanupInterval = setInterval(() => {
           try {
@@ -3596,12 +3597,23 @@ const ScanPage = () => {
               canvas.style.setProperty('background', 'transparent', 'important')
               canvas.style.setProperty('opacity', '1', 'important')
               
-              // Limpar canvas WebGL completamente
+              // CRÍTICO: Só limpar canvas se NÃO houver targets ativos
+              // Se houver target ativo, apenas garantir clearColor está em alpha 0, mas NÃO limpar
+              // Limpar o canvas apagaria o conteúdo AR renderizado
+              const hasActiveTarget = activeTargetIndex !== null
+              
               const gl = getWebGLContext(canvas)
               if (gl && !gl.isContextLost()) {
+                // Sempre garantir clearColor está em alpha 0
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-                gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                
+                // Só limpar canvas completamente se NÃO houver target ativo
+                if (!hasActiveTarget) {
+                  // Sem target: limpar canvas completamente para evitar área preta
+                  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
+                }
+                // Se houver target ativo, NÃO limpar - apenas garantir clearColor está correto
               }
             }
             
