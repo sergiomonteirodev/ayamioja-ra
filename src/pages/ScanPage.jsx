@@ -191,6 +191,14 @@ const ScanPage = () => {
   const [audioActive, setAudioActive] = useState(false)
   const [videoState, setVideoState] = useState(null)
   const [activeTargetIndex, setActiveTargetIndex] = useState(null)
+  // Ref para acessar activeTargetIndex dentro de closures (setInterval, requestAnimationFrame)
+  const activeTargetIndexRef = useRef(null)
+  
+  // Atualizar ref sempre que activeTargetIndex mudar
+  useEffect(() => {
+    activeTargetIndexRef.current = activeTargetIndex
+  }, [activeTargetIndex])
+  
   const [arVideoStates, setArVideoStates] = useState({})
   const [isArReady, setIsArReady] = useState(false)
   const [showScanningAnimation, setShowScanningAnimation] = useState(true)
@@ -3598,6 +3606,9 @@ const ScanPage = () => {
       if (!window._canvasCleanupInterval) {
         window._canvasCleanupInterval = setInterval(() => {
           try {
+            // Verificar se há target ativo (usar ref para acessar valor atual)
+            const currentActiveTarget = activeTargetIndex !== null
+            
             const canvas = scene.querySelector('canvas')
             if (canvas) {
               // Forçar CSS transparente
@@ -3608,7 +3619,8 @@ const ScanPage = () => {
               // CRÍTICO: Só limpar canvas se NÃO houver targets ativos
               // Se houver target ativo, apenas garantir clearColor está em alpha 0, mas NÃO limpar
               // Limpar o canvas apagaria o conteúdo AR renderizado
-              const hasActiveTarget = activeTargetIndex !== null
+              // Usar ref para acessar valor atual dentro do closure
+              const hasActiveTarget = activeTargetIndexRef.current !== null
               
               const gl = getWebGLContext(canvas)
               if (gl && !gl.isContextLost()) {
