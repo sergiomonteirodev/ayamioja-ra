@@ -65,6 +65,31 @@
                   // Armazenar para uso futuro
                   this._glContext = context;
                   this._context = context;
+                  
+                  // CRÍTICO: Interceptar gl.clearColor e gl.clear IMEDIATAMENTE após criar contexto
+                  // Isso garante que o canvas sempre seja limpo com alpha 0
+                  if (!context._originalClearColor) {
+                    context._originalClearColor = context.clearColor.bind(context);
+                    context.clearColor = function(r, g, b, a) {
+                      // SEMPRE forçar alpha 0, independente do que foi passado
+                      context._originalClearColor(r, g, b, 0.0);
+                    };
+                  }
+                  
+                  if (!context._originalClear) {
+                    context._originalClear = context.clear.bind(context);
+                    context.clear = function(mask) {
+                      // SEMPRE garantir clearColor com alpha 0 antes de limpar
+                      context.clearColor(0.0, 0.0, 0.0, 0.0);
+                      // Permitir que a limpeza aconteça normalmente
+                      context._originalClear(mask);
+                      // SEMPRE forçar clearColor novamente após limpar
+                      context.clearColor(0.0, 0.0, 0.0, 0.0);
+                    };
+                  }
+                  
+                  // Garantir clearColor está em alpha 0 imediatamente
+                  context.clearColor(0.0, 0.0, 0.0, 0.0);
                 }
                 return context;
               } catch (e) {
