@@ -2178,6 +2178,60 @@ const ScanPage = () => {
       // CRÍTICO: Garantir que o vídeo tenha stream e esteja reproduzindo
       const hasStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
       
+      // Função para tentar reproduzir o vídeo
+      const tryPlayVideo = () => {
+        if (mindarVideo && !mindarVideo.paused) return // Já está reproduzindo
+        
+        // Tentar reproduzir mesmo se não tiver stream ainda (pode receber depois)
+        if (mindarVideo.readyState >= 1 || mindarVideo.srcObject) {
+          console.log('▶️ Tentando reproduzir vídeo da câmera')
+          mindarVideo.play().catch(e => {
+            console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
+          })
+        }
+      }
+      
+      // Adicionar listeners para quando o stream for atribuído
+      if (!mindarVideo._streamListenersAdded) {
+        mindarVideo._streamListenersAdded = true
+        
+        // Listener para quando srcObject for atribuído
+        const checkSrcObject = () => {
+          if (mindarVideo.srcObject) {
+            console.log('✅ srcObject atribuído ao vídeo')
+            tryPlayVideo()
+          }
+        }
+        
+        // Listener para quando o vídeo receber metadados (dimensões)
+        mindarVideo.addEventListener('loadedmetadata', () => {
+          console.log('✅ Vídeo recebeu metadados (dimensões):', {
+            videoWidth: mindarVideo.videoWidth,
+            videoHeight: mindarVideo.videoHeight,
+            hasSrcObject: !!mindarVideo.srcObject
+          })
+          tryPlayVideo()
+        })
+        
+        // Listener para quando o vídeo estiver pronto para reproduzir
+        mindarVideo.addEventListener('canplay', () => {
+          console.log('✅ Vídeo pode reproduzir')
+          tryPlayVideo()
+        })
+        
+        // Verificar srcObject periodicamente (fallback)
+        const srcObjectCheck = setInterval(() => {
+          if (mindarVideo.srcObject) {
+            console.log('✅ srcObject detectado via polling')
+            clearInterval(srcObjectCheck)
+            tryPlayVideo()
+          }
+        }, 200)
+        
+        // Limpar após 10 segundos
+        setTimeout(() => clearInterval(srcObjectCheck), 10000)
+      }
+      
       if (!hasStream) {
         console.warn('⚠️ Vídeo não tem stream - tentando aguardar MindAR atribuir stream...')
         // Aguardar um pouco mais para o MindAR atribuir o stream
@@ -2188,24 +2242,17 @@ const ScanPage = () => {
           if (currentStream) {
             console.log('✅ Vídeo recebeu stream após', attempts * 100, 'ms')
             clearInterval(checkStream)
-            // Tentar reproduzir agora que tem stream
-            if (mindarVideo.paused && mindarVideo.readyState >= 2) {
-              console.log('▶️ Tentando reproduzir vídeo da câmera')
-              mindarVideo.play().catch(e => {
-                console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
-              })
-            }
-          } else if (attempts >= 50) { // Aguardar até 5 segundos
-            console.warn('⚠️ Vídeo ainda não tem stream após 5 segundos - pode haver problema com MindAR')
+            tryPlayVideo()
+          } else if (attempts >= 100) { // Aguardar até 10 segundos (aumentado)
+            console.warn('⚠️ Vídeo ainda não tem stream após 10 segundos - pode haver problema com MindAR')
             clearInterval(checkStream)
+            // Tentar reproduzir mesmo sem stream (pode funcionar)
+            tryPlayVideo()
           }
         }, 100)
-      } else if (mindarVideo.paused && mindarVideo.readyState >= 2) {
-        // Tem stream mas está pausado - tentar reproduzir
-        console.log('▶️ Tentando reproduzir vídeo da câmera')
-        mindarVideo.play().catch(e => {
-          console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
-        })
+      } else {
+        // Tem stream - tentar reproduzir imediatamente
+        tryPlayVideo()
       }
       
       // DIAGNÓSTICO FINAL: Verificar se o vídeo está realmente visível
