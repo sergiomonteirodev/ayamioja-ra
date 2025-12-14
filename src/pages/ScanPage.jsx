@@ -2455,16 +2455,29 @@ const ScanPage = () => {
             } else {
               // Canvas está transparente no CSS, mas pode estar sendo limpo com cor opaca pelo WebGL
               console.warn('⚠️ Canvas está transparente no CSS, mas pode estar sendo limpo com cor opaca pelo WebGL')
-              console.log('🔧 Configurando WebGL clearColor para transparência (sem interceptar gl.clear para não interferir na detecção)...')
+              console.log('🔧 Configurando WebGL clearColor para transparência de forma ULTRA AGRESSIVA...')
               
-              // Interceptar gl.clear() de forma inteligente: apenas garantir clearColor 0 antes de limpar
-              // Mas permitir que a limpeza aconteça normalmente (incluindo depth buffer para AR)
+              // Interceptar gl.clear() e gl.clearColor() de forma ULTRA AGRESSIVA
+              // Garantir que clearColor está SEMPRE em alpha 0
               const gl = getWebGLContext(canvas)
               if (gl) {
                 // Detectar Android/Chrome para aplicar correções mais agressivas
                 const isAndroid = /Android/i.test(navigator.userAgent)
                 const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
                 const needsAggressiveFix = isAndroid && isChrome
+                
+                // CRÍTICO: Interceptar gl.clearColor para SEMPRE forçar alpha 0
+                if (!gl._originalClearColor) {
+                  gl._originalClearColor = gl.clearColor.bind(gl)
+                  gl.clearColor = function(r, g, b, a) {
+                    // SEMPRE forçar alpha 0, independente do que foi passado
+                    gl._originalClearColor(r, g, b, 0.0)
+                  }
+                  console.log('✅ gl.clearColor interceptado - sempre forçando alpha 0')
+                }
+                
+                // Garantir clearColor está em alpha 0 imediatamente
+                gl.clearColor(0.0, 0.0, 0.0, 0.0)
                 
                 gl.clearColor(0.0, 0.0, 0.0, 0.0)
                 gl.enable(gl.BLEND)
