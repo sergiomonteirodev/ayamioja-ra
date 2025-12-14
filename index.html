@@ -55,6 +55,30 @@
               const existingContext = hasExistingContext(this);
               if (existingContext) {
                 // Já existe contexto - retornar o existente SEM tentar criar novo
+                // CRÍTICO: Aplicar interceptação também no contexto existente
+                if (!existingContext._originalClearColor) {
+                  existingContext._originalClearColor = existingContext.clearColor.bind(existingContext);
+                  existingContext.clearColor = function(r, g, b, a) {
+                    // SEMPRE forçar alpha 0, independente do que foi passado
+                    existingContext._originalClearColor(r, g, b, 0.0);
+                  };
+                }
+                
+                if (!existingContext._originalClear) {
+                  existingContext._originalClear = existingContext.clear.bind(existingContext);
+                  existingContext.clear = function(mask) {
+                    // SEMPRE garantir clearColor com alpha 0 antes de limpar
+                    existingContext.clearColor(0.0, 0.0, 0.0, 0.0);
+                    // Permitir que a limpeza aconteça normalmente
+                    existingContext._originalClear(mask);
+                    // SEMPRE forçar clearColor novamente após limpar
+                    existingContext.clearColor(0.0, 0.0, 0.0, 0.0);
+                  };
+                }
+                
+                // Garantir clearColor está em alpha 0
+                existingContext.clearColor(0.0, 0.0, 0.0, 0.0);
+                
                 return existingContext;
               }
               
