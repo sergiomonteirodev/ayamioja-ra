@@ -4090,22 +4090,19 @@ const ScanPage = () => {
     }
   }, [cameraPermissionGranted, isArReady])
 
-  // Garantir que body e html sejam transparentes quando a scan page estiver montada
-  useEffect(() => {
-    document.body.classList.add('scan-page-active')
-    document.documentElement.classList.add('scan-page-active')
-    document.body.style.setProperty('background-color', 'transparent', 'important')
-    document.body.style.setProperty('background', 'transparent', 'important')
-    document.documentElement.style.setProperty('background-color', 'transparent', 'important')
-    document.documentElement.style.setProperty('background', 'transparent', 'important')
-    
-    // Função de debug global para inspecionar elementos no mobile
-    // Criar função diretamente sem verificação condicional para garantir disponibilidade
+  // CRÍTICO: Definir funções de debug ANTES do useEffect para garantir disponibilidade imediata
+  // Isso garante que as funções estejam disponíveis mesmo se o useEffect não executar ainda
+  if (typeof window.debugScanPage !== 'function') {
     window.debugScanPage = function() {
       console.log('🔍 Iniciando análise profunda de elementos...')
       const scene = sceneRef.current
       const canvas = scene?.querySelector('canvas')
       const video = document.querySelector('#arVideo') || document.querySelector('video[id^="mindar"]')
+      
+      if (!scene) {
+        console.error('❌ a-scene não encontrado. Aguarde o carregamento da página.')
+        return { error: 'Scene not found' }
+      }
       
       const report = {
         canvas: canvas ? {
@@ -4369,8 +4366,10 @@ const ScanPage = () => {
       console.log('📊 MindAR Debug Report:', report)
       return report
     }
-    
-    // Função adicional para análise específica do A-Frame
+  }
+  
+  // Definir debugAFrame também fora do useEffect
+  if (typeof window.debugAFrame !== 'function') {
     window.debugAFrame = function() {
       const scene = sceneRef.current
       if (!scene) {
@@ -4417,21 +4416,25 @@ const ScanPage = () => {
       console.log('📊 A-Frame Debug Report:', report)
       return report
     }
+  }
+  
+  // Garantir que body e html sejam transparentes quando a scan page estiver montada
+  useEffect(() => {
+    document.body.classList.add('scan-page-active')
+    document.documentElement.classList.add('scan-page-active')
+    document.body.style.setProperty('background-color', 'transparent', 'important')
+    document.body.style.setProperty('background', 'transparent', 'important')
+    document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+    document.documentElement.style.setProperty('background', 'transparent', 'important')
     
-    // Garantir que a função esteja disponível imediatamente
-    if (typeof window.debugScanPage === 'function') {
-      console.log('✅ Função debugScanPage() disponível - chame window.debugScanPage() no console')
+    // Log de confirmação das funções de debug
+    if (typeof window.debugScanPage === 'function' && typeof window.debugMindAR === 'function' && typeof window.debugAFrame === 'function') {
+      console.log('✅ Funções de debug disponíveis:')
+      console.log('  - window.debugScanPage() - Análise geral')
+      console.log('  - window.debugMindAR() - Análise específica do MindAR')
+      console.log('  - window.debugAFrame() - Análise específica do A-Frame')
     } else {
-      console.error('❌ ERRO: debugScanPage não foi criada!')
-    }
-    
-    // Forçar criação novamente se não estiver disponível (fallback)
-    if (typeof window.debugScanPage !== 'function') {
-      console.warn('⚠️ Tentando criar debugScanPage novamente...')
-      window.debugScanPage = function() {
-        console.error('❌ debugScanPage não foi inicializada corretamente. Recarregue a página.')
-        return { error: 'Function not initialized' }
-      }
+      console.warn('⚠️ Algumas funções de debug não estão disponíveis. Recarregue a página.')
     }
     
     return () => {
