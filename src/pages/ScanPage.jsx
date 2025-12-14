@@ -2234,22 +2234,82 @@ const ScanPage = () => {
       
       if (!hasStream) {
         console.warn('⚠️ Vídeo não tem stream - tentando aguardar MindAR atribuir stream...')
-        // Aguardar um pouco mais para o MindAR atribuir o stream
-        let attempts = 0
-        const checkStream = setInterval(() => {
-          attempts++
-          const currentStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
-          if (currentStream) {
-            console.log('✅ Vídeo recebeu stream após', attempts * 100, 'ms')
-            clearInterval(checkStream)
-            tryPlayVideo()
-          } else if (attempts >= 100) { // Aguardar até 10 segundos (aumentado)
-            console.warn('⚠️ Vídeo ainda não tem stream após 10 segundos - pode haver problema com MindAR')
-            clearInterval(checkStream)
-            // Tentar reproduzir mesmo sem stream (pode funcionar)
-            tryPlayVideo()
+        
+        // Tentar obter stream diretamente do MindAR tracker se disponível
+        const tryGetStreamFromMindAR = () => {
+          try {
+            const scene = sceneRef.current
+            if (!scene) return null
+            
+            const mindarSystem = scene.systems?.mindar || 
+                                scene.systems?.['mindar-image-system'] ||
+                                scene.systems?.['mindar-image']
+            
+            if (mindarSystem && mindarSystem.tracker) {
+              const tracker = mindarSystem.tracker
+              // Tentar acessar o vídeo do tracker
+              if (tracker.video) {
+                console.log('✅ Vídeo encontrado no tracker do MindAR')
+                return tracker.video.srcObject || null
+              }
+              // Tentar acessar o stream diretamente
+              if (tracker.stream) {
+                console.log('✅ Stream encontrado no tracker do MindAR')
+                return tracker.stream
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️ Erro ao tentar obter stream do MindAR:', e)
           }
-        }, 100)
+          return null
+        }
+        
+        // Tentar obter stream do MindAR imediatamente
+        const mindarStream = tryGetStreamFromMindAR()
+        if (mindarStream) {
+          console.log('✅ Atribuindo stream do MindAR ao vídeo manualmente')
+          mindarVideo.srcObject = mindarStream
+          tryPlayVideo()
+        } else {
+          // Aguardar um pouco mais para o MindAR atribuir o stream
+          let attempts = 0
+          const checkStream = setInterval(() => {
+            attempts++
+            
+            // Tentar obter stream do MindAR novamente a cada 5 tentativas
+            if (attempts % 5 === 0) {
+              const mindarStream = tryGetStreamFromMindAR()
+              if (mindarStream && !mindarVideo.srcObject) {
+                console.log('✅ Atribuindo stream do MindAR ao vídeo após', attempts * 100, 'ms')
+                mindarVideo.srcObject = mindarStream
+                clearInterval(checkStream)
+                tryPlayVideo()
+                return
+              }
+            }
+            
+            const currentStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
+            if (currentStream) {
+              console.log('✅ Vídeo recebeu stream após', attempts * 100, 'ms')
+              clearInterval(checkStream)
+              tryPlayVideo()
+            } else if (attempts >= 100) { // Aguardar até 10 segundos
+              console.warn('⚠️ Vídeo ainda não tem stream após 10 segundos - tentando obter stream diretamente')
+              clearInterval(checkStream)
+              
+              // Última tentativa: obter stream diretamente do MindAR
+              const finalStream = tryGetStreamFromMindAR()
+              if (finalStream) {
+                console.log('✅ Atribuindo stream do MindAR ao vídeo (última tentativa)')
+                mindarVideo.srcObject = finalStream
+                tryPlayVideo()
+              } else {
+                // Tentar reproduzir mesmo sem stream (pode funcionar)
+                tryPlayVideo()
+              }
+            }
+          }, 100)
+        }
       } else {
         // Tem stream - tentar reproduzir imediatamente
         tryPlayVideo()
