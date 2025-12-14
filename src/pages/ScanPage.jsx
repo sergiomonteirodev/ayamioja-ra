@@ -3796,6 +3796,28 @@ const ScanPage = () => {
               }
             }
             
+            // CRÍTICO: Verificar o próprio a-scene primeiro
+            if (scene) {
+              const sceneStyle = window.getComputedStyle(scene)
+              const sceneBgColor = sceneStyle.backgroundColor
+              const sceneRect = scene.getBoundingClientRect()
+              
+              // Se o a-scene tem background preto, forçar transparência
+              if (sceneBgColor && (sceneBgColor.includes('rgb(0, 0, 0)') || sceneBgColor.includes('rgba(0, 0, 0, 1)') || sceneBgColor === '#000000' || sceneBgColor === '#000')) {
+                console.warn('⚠️ a-scene detectado com background preto, forçando transparência')
+                scene.style.setProperty('background-color', 'transparent', 'important')
+                scene.style.setProperty('background', 'transparent', 'important')
+                scene.setAttribute('background', 'color: transparent')
+              }
+              
+              // Se o a-scene está no topo cobrindo o vídeo, verificar mais agressivamente
+              if (sceneRect.top <= window.innerHeight * 0.3) {
+                scene.style.setProperty('background-color', 'transparent', 'important')
+                scene.style.setProperty('background', 'transparent', 'important')
+                scene.setAttribute('background', 'color: transparent')
+              }
+            }
+            
             // Remover elementos com background preto que cobrem o vídeo
             const allElements = document.querySelectorAll('*')
             allElements.forEach(el => {
@@ -3811,13 +3833,14 @@ const ScanPage = () => {
               // ESPECIALMENTE elementos no topo que cobrem mesmo pequenas áreas
               if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
                 const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
-                // CRÍTICO: Detectar elementos no topo que cobrem QUALQUER parte significativa (10% ou mais)
-                const coversTopArea = rect.top <= window.innerHeight * 0.2 && 
-                                     rect.width > window.innerWidth * 0.1 && 
-                                     rect.height > window.innerHeight * 0.05
-                // Verificar se cobre qualquer parte significativa da tela (15% ou mais)
-                const coversSignificantArea = (rect.width > window.innerWidth * 0.15 || rect.height > window.innerHeight * 0.15) &&
-                                            (rect.width > 50 || rect.height > 50) // Pelo menos 50px
+                // CRÍTICO: Detectar elementos no topo que cobrem QUALQUER parte (5% ou mais)
+                // Reduzido threshold para detectar até elementos menores no topo
+                const coversTopArea = rect.top <= window.innerHeight * 0.3 && 
+                                     rect.width > window.innerWidth * 0.05 && 
+                                     rect.height > window.innerHeight * 0.03
+                // Verificar se cobre qualquer parte significativa da tela (10% ou mais em qualquer dimensão)
+                const coversSignificantArea = (rect.width > window.innerWidth * 0.1 || rect.height > window.innerHeight * 0.1) &&
+                                            (rect.width > 30 || rect.height > 30) // Pelo menos 30px
                 
                 // CRÍTICO: Remover elementos no topo mesmo com z-index baixo ou sem z-index definido
                 // Se está no topo cobrindo o vídeo, remover independente de z-index
