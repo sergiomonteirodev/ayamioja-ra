@@ -2271,21 +2271,43 @@ const ScanPage = () => {
           mindarVideo.srcObject = mindarStream
           tryPlayVideo()
         } else {
+          // Log detalhado do estado do MindAR para debug
+          try {
+            const scene = sceneRef.current
+            if (scene) {
+              const mindarSystem = scene.systems?.mindar || 
+                                  scene.systems?.['mindar-image-system'] ||
+                                  scene.systems?.['mindar-image']
+              if (mindarSystem) {
+                console.log('🔍 Estado do MindAR:', {
+                  hasTracker: !!mindarSystem.tracker,
+                  isTracking: mindarSystem.isTracking,
+                  isReady: mindarSystem.isReady,
+                  trackerVideo: !!mindarSystem.tracker?.video,
+                  trackerStream: !!mindarSystem.tracker?.stream,
+                  trackerState: mindarSystem.tracker?.state
+                })
+              } else {
+                console.warn('⚠️ Sistema MindAR não encontrado')
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️ Erro ao verificar estado do MindAR:', e)
+          }
+          
           // Aguardar um pouco mais para o MindAR atribuir o stream
           let attempts = 0
           const checkStream = setInterval(() => {
             attempts++
             
-            // Tentar obter stream do MindAR novamente a cada 5 tentativas
-            if (attempts % 5 === 0) {
-              const mindarStream = tryGetStreamFromMindAR()
-              if (mindarStream && !mindarVideo.srcObject) {
-                console.log('✅ Atribuindo stream do MindAR ao vídeo após', attempts * 100, 'ms')
-                mindarVideo.srcObject = mindarStream
-                clearInterval(checkStream)
-                tryPlayVideo()
-                return
-              }
+            // Tentar obter stream do MindAR novamente a cada tentativa (mais frequente)
+            const mindarStream = tryGetStreamFromMindAR()
+            if (mindarStream && !mindarVideo.srcObject) {
+              console.log('✅ Atribuindo stream do MindAR ao vídeo após', attempts * 100, 'ms')
+              mindarVideo.srcObject = mindarStream
+              clearInterval(checkStream)
+              tryPlayVideo()
+              return
             }
             
             const currentStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
@@ -2305,6 +2327,7 @@ const ScanPage = () => {
                 tryPlayVideo()
               } else {
                 // Tentar reproduzir mesmo sem stream (pode funcionar)
+                console.warn('⚠️ Não foi possível obter stream do MindAR - tentando reproduzir vídeo mesmo assim')
                 tryPlayVideo()
               }
             }
