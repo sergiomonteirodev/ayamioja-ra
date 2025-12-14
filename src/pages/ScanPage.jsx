@@ -4062,11 +4062,20 @@ const ScanPage = () => {
       return report
     }
     
-    console.log('✅ Função debugScanPage() disponível - chame window.debugScanPage() no console')
-    
     // Garantir que a função esteja disponível imediatamente
     if (typeof window.debugScanPage === 'function') {
-      console.log('✅ debugScanPage está disponível e pode ser chamada')
+      console.log('✅ Função debugScanPage() disponível - chame window.debugScanPage() no console')
+    } else {
+      console.error('❌ ERRO: debugScanPage não foi criada!')
+    }
+    
+    // Forçar criação novamente se não estiver disponível (fallback)
+    if (typeof window.debugScanPage !== 'function') {
+      console.warn('⚠️ Tentando criar debugScanPage novamente...')
+      window.debugScanPage = function() {
+        console.error('❌ debugScanPage não foi inicializada corretamente. Recarregue a página.')
+        return { error: 'Function not initialized' }
+      }
     }
     
     return () => {
