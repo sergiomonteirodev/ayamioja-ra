@@ -4371,6 +4371,121 @@ const ScanPage = () => {
       console.log('📊 MindAR Debug Report:', report)
       return report
     }
+    
+    // Função de debug automática que roda em runtime e imprime no console
+    window.autoDebugScanPage = function() {
+      console.log('🔍 ===== DEBUG AUTOMÁTICO EM RUNTIME =====')
+      
+      // Obter scene de qualquer forma possível
+      const scene = document.querySelector('a-scene') || 
+                   (window._scanPageSceneRef?.current) ||
+                   null
+      const canvas = scene?.querySelector('canvas')
+      const video = document.querySelector('#arVideo') || document.querySelector('video[id^="mindar"]')
+      
+      const debugInfo = {
+        timestamp: new Date().toISOString(),
+        scene: {
+          exists: !!scene,
+          id: scene?.id || '(sem id)',
+          systems: scene?.systems ? Object.keys(scene.systems) : []
+        },
+        canvas: canvas ? {
+          exists: true,
+          width: canvas.width,
+          height: canvas.height,
+          display: window.getComputedStyle(canvas).display,
+          backgroundColor: window.getComputedStyle(canvas).backgroundColor,
+          zIndex: window.getComputedStyle(canvas).zIndex,
+          position: window.getComputedStyle(canvas).position
+        } : { exists: false },
+        video: video ? {
+          exists: true,
+          videoWidth: video.videoWidth,
+          videoHeight: video.videoHeight,
+          hasSrcObject: !!video.srcObject,
+          paused: video.paused,
+          display: window.getComputedStyle(video).display,
+          zIndex: window.getComputedStyle(video).zIndex,
+          position: window.getComputedStyle(video).position
+        } : { exists: false },
+        blackElements: [],
+        libraryElements: {
+          aFrame: 0,
+          mindAR: 0,
+          threeJS: 0,
+          unknown: 0
+        }
+      }
+      
+      // Procurar elementos com background preto
+      document.querySelectorAll('*').forEach(el => {
+        if (el === canvas || el === video || el.tagName === 'VIDEO' || el.tagName === 'CANVAS') return
+        
+        const style = window.getComputedStyle(el)
+        const bgColor = style.backgroundColor
+        const rect = el.getBoundingClientRect()
+        const zIndex = parseInt(style.zIndex) || 0
+        
+        // Detectar biblioteca
+        const tagName = el.tagName.toLowerCase()
+        const className = el.className || ''
+        const id = el.id || ''
+        let library = 'unknown'
+        if (tagName.startsWith('a-') || className.includes('a-') || el.hasAttribute('data-aframe')) {
+          library = 'aFrame'
+        } else if (el.hasAttribute('mindar-image-target') || el.hasAttribute('mindar') || 
+                   className.includes('mindar') || id.includes('mindar')) {
+          library = 'mindAR'
+        } else if (el.hasAttribute('data-three') || className.includes('three') || 
+                  (el.style && el.style.transform && el.style.transform.includes('matrix3d'))) {
+          library = 'threeJS'
+        }
+        
+        debugInfo.libraryElements[library]++
+        
+        // Verificar se tem background preto
+        if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
+          const coversLargeArea = rect.width > window.innerWidth * 0.3 && rect.height > window.innerHeight * 0.3
+          const coversTopArea = rect.top < window.innerHeight * 0.5 && rect.width > window.innerWidth * 0.15
+          const coversSignificantArea = (rect.width > window.innerWidth * 0.2 || rect.height > window.innerHeight * 0.2) &&
+                                      (rect.width > 100 || rect.height > 100)
+          
+          if ((coversLargeArea || coversTopArea || coversSignificantArea) && zIndex > -2 && zIndex < 100000) {
+            debugInfo.blackElements.push({
+              tag: el.tagName,
+              id: id || '(sem id)',
+              className: className || '(sem classe)',
+              library: library,
+              width: rect.width,
+              height: rect.height,
+              top: rect.top,
+              left: rect.left,
+              backgroundColor: bgColor,
+              zIndex: style.zIndex,
+              position: style.position
+            })
+          }
+        }
+      })
+      
+      console.log('📊 DEBUG AUTOMÁTICO:', debugInfo)
+      
+      if (debugInfo.blackElements.length > 0) {
+        console.error('❌ ELEMENTOS COM BACKGROUND PRETO ENCONTRADOS:', debugInfo.blackElements)
+        console.error('📊 Resumo por biblioteca:', {
+          aFrame: debugInfo.blackElements.filter(e => e.library === 'aFrame').length,
+          mindAR: debugInfo.blackElements.filter(e => e.library === 'mindAR').length,
+          threeJS: debugInfo.blackElements.filter(e => e.library === 'threeJS').length,
+          unknown: debugInfo.blackElements.filter(e => e.library === 'unknown').length
+        })
+      }
+      
+      console.log('📚 Total de elementos por biblioteca:', debugInfo.libraryElements)
+      console.log('🔍 ===== FIM DEBUG AUTOMÁTICO =====')
+      
+      return debugInfo
+    }
   }
   
   // Definir debugAFrame também fora do useEffect
