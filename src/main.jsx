@@ -7,8 +7,7 @@ if (import.meta.env.DEV || new URLSearchParams(window.location.search).get('debu
   import('./utils/webgl-debug.js')
 }
 
+// Removido StrictMode para evitar montagem dupla do A-Frame que causa tela preta no Android
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <App />
 )

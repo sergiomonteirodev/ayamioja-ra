@@ -89,11 +89,29 @@
     box-sizing: border-box;
 }
 
+/* CRÍTICO: CSS limpo para AR no Android - sem overflow hidden ou transforms */
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible !important; /* NÃO hidden - quebra composição WebGL/video no Android */
+}
+
 body {
     font-family: 'RooneySans', Arial, sans-serif;
     background-color: #b36f35;
     min-height: 100vh;
-    overflow-x: hidden;
+    /* overflow-x: hidden; REMOVIDO - quebra AR no Android */
+}
+
+/* CRÍTICO: Remover transforms de containers principais no Android */
+body.scan-page-active,
+html.scan-page-active,
+#root {
+    transform: none !important;
+    -webkit-transform: none !important;
+    will-change: auto !important;
 }
 
 /* Navigation */
@@ -757,23 +775,30 @@ html.scan-page-active {
 }
 
 /* A-Frame Scene */
+/* CRÍTICO: No Android, usar absolute em vez de fixed para evitar problemas de composição */
 a-scene {
-    position: fixed !important;
+    position: absolute !important; /* Mudado de fixed para absolute no Android */
     top: 0 !important;
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: 1 !important;
+    z-index: 1 !important; /* z-index: 1 para ficar acima do vídeo */
+    transform: none !important; /* CRÍTICO: Sem transforms no a-scene */
+    -webkit-transform: none !important;
 }
 
 /* Canvas do A-Frame - Garantir que ocupe 100% */
+/* CRÍTICO: No Android, usar absolute em vez de fixed */
 a-scene canvas {
-    position: fixed !important;
+    position: absolute !important; /* Mudado de fixed para absolute no Android */
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
+    z-index: 1 !important; /* z-index: 1 para ficar acima do vídeo */
+    transform: none !important; /* CRÍTICO: Sem transforms no canvas */
+    -webkit-transform: none !important;
 }
 
 /* Container da câmera AR */
@@ -786,19 +811,22 @@ a-scene canvas {
 }
 
 /* Vídeo da câmera AR do MindAR */
+/* CRÍTICO: No Android, usar absolute em vez de fixed para evitar problemas de composição WebGL/video */
 #arVideo,
 video[id^="mindar"] {
-    position: fixed !important;
+    position: absolute !important; /* Mudado de fixed para absolute no Android */
     top: 0 !important;
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
     object-fit: cover !important;
-    z-index: -2 !important;
+    z-index: 0 !important; /* z-index: 0 para ficar atrás do canvas */
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     background-color: transparent !important;
+    transform: none !important; /* CRÍTICO: Sem transforms no vídeo */
+    -webkit-transform: none !important;
 }
 
 /* Correção específica para Android - Canvas transparente */
@@ -820,15 +848,18 @@ video[id^="mindar"] {
     }
     
     /* Garantir que o vídeo da câmera esteja atrás do canvas */
+    /* CRÍTICO: No Android, usar absolute em vez de fixed */
     .scan-page video[id^="mindar"],
     .scan-page #arVideo {
-        z-index: -2 !important;
-        position: fixed !important;
+        z-index: 0 !important; /* z-index: 0 para ficar atrás do canvas */
+        position: absolute !important; /* Mudado de fixed para absolute */
         top: 0 !important;
         left: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
         object-fit: cover !important;
+        transform: none !important; /* CRÍTICO: Sem transforms */
+        -webkit-transform: none !important;
     }
 }
 
