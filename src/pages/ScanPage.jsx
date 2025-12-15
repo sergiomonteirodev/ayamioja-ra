@@ -4699,16 +4699,18 @@ const ScanPage = () => {
         embedded
         background="color: transparent"
         style={{
-          position: 'fixed',
+          position: /Android/i.test(navigator.userAgent) ? 'absolute' : 'fixed', // CRÍTICO: absolute no Android para evitar problemas de composição
           top: 0,
           left: 0,
           width: '100vw',
           height: '100vh',
-          zIndex: /Android/i.test(navigator.userAgent) && activeTargetIndex === null ? -1 : 1, // No Android sem targets, colocar atrás do vídeo
+          zIndex: 1, // z-index: 1 para ficar acima do vídeo (z-index: 0)
           pointerEvents: 'none',
           backgroundColor: 'transparent',
           opacity: 1,
-          display: /Android/i.test(navigator.userAgent) && activeTargetIndex === null ? 'none' : 'block' // No Android sem targets, ocultar completamente
+          display: 'block',
+          transform: 'none', // CRÍTICO: Sem transforms no Android
+          WebkitTransform: 'none'
         }}
       >
         {/* Assets - Vídeos */}
