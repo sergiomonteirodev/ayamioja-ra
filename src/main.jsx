@@ -2,10 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './styles/main.css'
-// Importar debug WebGL apenas em desenvolvimento ou quando ?debug=true
-if (import.meta.env.DEV || new URLSearchParams(window.location.search).get('debug') === 'true') {
-  import('./utils/webgl-debug.js')
-}
+// REMOVIDO: webgl-debug.js estava interceptando getContext e causando problemas
+// O A-Frame gerencia o contexto WebGL - não devemos interceptar getContext
 
 // Removido StrictMode para evitar montagem dupla do A-Frame que causa tela preta no Android
 ReactDOM.createRoot(document.getElementById('root')).render(
