@@ -315,7 +315,8 @@ const ScanPage = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
 
-      if (activeTargetIndex === null) {
+      // CRÍTICO: Ocultar canvas por padrão, só mostrar quando há target ativo
+      if (activeTargetIndex === null || activeTargetIndex === undefined) {
         // Nenhum target ativo: OCULTAR canvas completamente para evitar área preta
         // Usar visibility: hidden em vez de display: none para não quebrar o renderer
         canvas.style.setProperty('visibility', 'hidden', 'important')
@@ -340,13 +341,49 @@ const ScanPage = () => {
     // Executar imediatamente
     forceCanvasVisibility()
     
-    // Executar continuamente a cada 100ms para garantir que o canvas permaneça oculto quando necessário
-    const interval = setInterval(forceCanvasVisibility, 100)
+    // Executar continuamente a cada 50ms para garantir que o canvas permaneça oculto quando necessário
+    const interval = setInterval(forceCanvasVisibility, 50)
 
     return () => {
       clearInterval(interval)
     }
   }, [activeTargetIndex, cameraPermissionGranted])
+  
+  // CRÍTICO: Ocultar canvas imediatamente ao montar (antes de qualquer renderização)
+  useEffect(() => {
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (!isAndroid) return
+
+    const hideCanvasInitially = () => {
+      const scene = sceneRef.current
+      if (!scene) return
+
+      const canvas = scene.querySelector('canvas')
+      if (canvas) {
+        // Ocultar canvas imediatamente ao ser criado
+        canvas.style.setProperty('visibility', 'hidden', 'important')
+        canvas.style.setProperty('opacity', '0', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
+        scene.style.setProperty('visibility', 'hidden', 'important')
+        scene.style.setProperty('opacity', '0', 'important')
+      }
+    }
+
+    // Verificar imediatamente e depois periodicamente até o canvas ser criado
+    hideCanvasInitially()
+    const checkInterval = setInterval(() => {
+      hideCanvasInitially()
+      const canvas = document.querySelector('a-scene canvas')
+      if (canvas) {
+        clearInterval(checkInterval)
+      }
+    }, 100)
+
+    // Parar após 5 segundos
+    setTimeout(() => clearInterval(checkInterval), 5000)
+
+    return () => clearInterval(checkInterval)
+  }, [])
 
   // REMOVIDO: Interceptação de criação do canvas - A-Frame gerencia isso corretamente
 
