@@ -316,23 +316,21 @@ const ScanPage = () => {
       if (!canvas) return
 
       // CRÍTICO: Ocultar canvas por padrão, só mostrar quando há target ativo
+      // Usar data attribute para CSS também controlar
       if (activeTargetIndex === null || activeTargetIndex === undefined) {
         // Nenhum target ativo: OCULTAR canvas completamente para evitar área preta
-        // Usar visibility: hidden em vez de display: none para não quebrar o renderer
+        scene.removeAttribute('data-has-active-target')
         canvas.style.setProperty('visibility', 'hidden', 'important')
         canvas.style.setProperty('opacity', '0', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
-        
-        // Também ocultar a-scene via CSS
         scene.style.setProperty('visibility', 'hidden', 'important')
         scene.style.setProperty('opacity', '0', 'important')
       } else {
         // Target ativo: MOSTRAR canvas transparente
+        scene.setAttribute('data-has-active-target', 'true')
         canvas.style.setProperty('visibility', 'visible', 'important')
         canvas.style.setProperty('opacity', '1', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
-        
-        // Mostrar a-scene
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
       }
@@ -350,39 +348,59 @@ const ScanPage = () => {
   }, [activeTargetIndex, cameraPermissionGranted])
   
   // CRÍTICO: Ocultar canvas imediatamente ao montar (antes de qualquer renderização)
+  // Usar MutationObserver para garantir que o canvas seja ocultado assim que for criado
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid) return
 
-    const hideCanvasInitially = () => {
-      const scene = sceneRef.current
-      if (!scene) return
-
-      const canvas = scene.querySelector('canvas')
+    const hideCanvasImmediately = (canvas) => {
       if (canvas) {
         // Ocultar canvas imediatamente ao ser criado
         canvas.style.setProperty('visibility', 'hidden', 'important')
         canvas.style.setProperty('opacity', '0', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
-        scene.style.setProperty('visibility', 'hidden', 'important')
-        scene.style.setProperty('opacity', '0', 'important')
       }
     }
 
-    // Verificar imediatamente e depois periodicamente até o canvas ser criado
-    hideCanvasInitially()
-    const checkInterval = setInterval(() => {
-      hideCanvasInitially()
+    // Verificar se canvas já existe
+    const existingCanvas = document.querySelector('a-scene canvas')
+    if (existingCanvas) {
+      hideCanvasImmediately(existingCanvas)
+    }
+
+    // Usar MutationObserver para detectar quando o canvas é criado
+    const observer = new MutationObserver((mutations) => {
       const canvas = document.querySelector('a-scene canvas')
-      if (canvas) {
-        clearInterval(checkInterval)
+      if (canvas && !canvas._hiddenByUs) {
+        canvas._hiddenByUs = true
+        hideCanvasImmediately(canvas)
+      }
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+
+    // Verificar periodicamente também (fallback)
+    const checkInterval = setInterval(() => {
+      const canvas = document.querySelector('a-scene canvas')
+      if (canvas && !canvas._hiddenByUs) {
+        canvas._hiddenByUs = true
+        hideCanvasImmediately(canvas)
       }
     }, 100)
 
-    // Parar após 5 segundos
-    setTimeout(() => clearInterval(checkInterval), 5000)
+    // Parar após 10 segundos
+    setTimeout(() => {
+      observer.disconnect()
+      clearInterval(checkInterval)
+    }, 10000)
 
-    return () => clearInterval(checkInterval)
+    return () => {
+      observer.disconnect()
+      clearInterval(checkInterval)
+    }
   }, [])
 
   // REMOVIDO: Interceptação de criação do canvas - A-Frame gerencia isso corretamente

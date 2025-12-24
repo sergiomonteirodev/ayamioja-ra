@@ -803,11 +803,18 @@ a-scene canvas {
     background: transparent !important;
 }
 
-/* CRÍTICO: Ocultar canvas quando não há targets ativos (evita área preta no Android) */
-.scan-page:not(:has([data-target-active="true"])) a-scene canvas,
-a-scene canvas[data-no-targets="true"] {
+/* CRÍTICO ANDROID: Ocultar canvas por padrão - só mostrar quando há target ativo */
+/* Isso evita área preta no Android quando não há AR para mostrar */
+.scan-page a-scene canvas {
     visibility: hidden !important;
     opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Mostrar canvas apenas quando há target ativo (via data attribute) */
+.scan-page a-scene[data-has-active-target="true"] canvas {
+    visibility: visible !important;
+    opacity: 1 !important;
     pointer-events: none !important;
 }
 
