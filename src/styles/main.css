@@ -805,6 +805,12 @@ a-scene canvas {
 
 /* CRÍTICO ANDROID: Ocultar canvas por padrão - só mostrar quando há target ativo */
 /* Isso evita área preta no Android quando não há AR para mostrar */
+/* IMPORTANTE: NÃO ocultar a-scene, apenas o canvas, para o vídeo da câmera aparecer */
+.scan-page a-scene {
+    visibility: visible !important; /* Manter a-scene visível para o vídeo da câmera */
+    opacity: 1 !important;
+}
+
 .scan-page a-scene canvas {
     visibility: hidden !important;
     opacity: 0 !important;

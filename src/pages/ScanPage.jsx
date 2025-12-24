@@ -315,16 +315,18 @@ const ScanPage = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
 
-      // CRÍTICO: Ocultar canvas por padrão, só mostrar quando há target ativo
+      // CRÍTICO: Ocultar APENAS o canvas, NÃO o a-scene (para o vídeo da câmera aparecer)
       // Usar data attribute para CSS também controlar
       if (activeTargetIndex === null || activeTargetIndex === undefined) {
-        // Nenhum target ativo: OCULTAR canvas completamente para evitar área preta
+        // Nenhum target ativo: OCULTAR APENAS o canvas para evitar área preta
+        // NÃO ocultar o a-scene para que o vídeo da câmera continue visível
         scene.removeAttribute('data-has-active-target')
         canvas.style.setProperty('visibility', 'hidden', 'important')
         canvas.style.setProperty('opacity', '0', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
-        scene.style.setProperty('visibility', 'hidden', 'important')
-        scene.style.setProperty('opacity', '0', 'important')
+        // NÃO ocultar a-scene - o vídeo da câmera precisa estar visível
+        scene.style.setProperty('visibility', 'visible', 'important')
+        scene.style.setProperty('opacity', '1', 'important')
       } else {
         // Target ativo: MOSTRAR canvas transparente
         scene.setAttribute('data-has-active-target', 'true')
