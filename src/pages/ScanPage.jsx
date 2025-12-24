@@ -218,73 +218,7 @@ const ScanPage = () => {
         console.warn('⚠️ Vídeo não recebeu stream após 5 segundos - pode haver problema com MindAR')
       }
       
-      // Garantir que o canvas seja transparente
-      if (sceneRef.current) {
-        const scene = sceneRef.current
-        const canvas = scene.querySelector('canvas')
-        if (canvas) {
-          // Forçar transparência via WebGL - usar contexto existente do renderer
-          try {
-            const rendererSystem = scene.systems?.renderer
-            if (rendererSystem) {
-              const renderer = rendererSystem.renderer || rendererSystem
-              if (renderer && typeof renderer.getContext === 'function') {
-                const gl = renderer.getContext()
-                if (gl && !gl.isContextLost()) {
-                  // REMOVIDO: gl.clearColor // RGBA: transparente
-                  gl.enable(gl.BLEND)
-                  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-                  console.log('✅ Canvas WebGL configurado para transparência após permissão')
-                }
-              }
-            }
-          } catch (e) {
-            console.warn('⚠️ Não foi possível acessar contexto WebGL:', e.message)
-          }
-          
-          // Forçar transparência via CSS
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          console.log('✅ Canvas CSS configurado para transparência após permissão')
-        }
-      }
-      
       console.log('✅ Permissão concedida. MindAR iniciado, aguardando vídeo aparecer...')
-      
-      // Aplicar correções Android após permissão
-      setTimeout(() => {
-        const scene = sceneRef.current
-        if (scene) {
-          const forceAndroidTransparency = () => {
-            const isAndroid = /Android/i.test(navigator.userAgent)
-            if (!isAndroid) return
-            
-            const canvas = scene.querySelector('canvas')
-            if (!canvas) return
-            
-            console.log('🔧 Aplicando correções Android após permissão...')
-            // Usar contexto existente do renderer, não criar novo
-            try {
-              const rendererSystem = scene.systems?.renderer
-              if (rendererSystem) {
-                const renderer = rendererSystem.renderer || rendererSystem
-                if (renderer && typeof renderer.getContext === 'function') {
-                  const gl = renderer.getContext()
-                  if (gl && !gl.isContextLost()) {
-                    // REMOVIDO: gl.clearColor
-                    // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-                    // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-                  }
-                }
-              }
-            } catch (e) {
-              console.warn('⚠️ Não foi possível acessar contexto WebGL:', e.message)
-            }
-          }
-          forceAndroidTransparency()
-        }
-      }, 500)
       
       clearTimeout(timeoutId)
       setIsRequestingPermission(false)
@@ -436,81 +370,8 @@ const ScanPage = () => {
         
         // Mostrar a-scene apenas via CSS (nunca remontar)
         scene.style.setProperty('display', 'block', 'important')
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        
-        // Verificar dimensões reais do canvas
-        const rect = canvas.getBoundingClientRect()
-        const viewportWidth = window.innerWidth
-        const viewportHeight = window.innerHeight
-        
-        // Se o canvas não está cobrindo toda a tela, forçar dimensões
-        if (Math.abs(rect.width - viewportWidth) > 10 || Math.abs(rect.height - viewportHeight) > 10) {
-          console.warn('⚠️ Canvas não está cobrindo toda a tela, forçando dimensões:', {
-            canvasWidth: rect.width,
-            canvasHeight: rect.height,
-            viewportWidth,
-            viewportHeight
-          })
-          // Forçar dimensões via atributos também
-          canvas.setAttribute('width', viewportWidth)
-          canvas.setAttribute('height', viewportHeight)
-        }
-        
-        // Mostrar a-scene
-        scene.style.setProperty('display', 'block', 'important')
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
-        
-        // Forçar transparência via WebGL - SEMPRE, mesmo se já foi feito
-        try {
-          // REMOVIDO: getWebGLContext - não acessar contexto WebGL
-          if (gl && !gl.isContextLost()) {
-            // Configurar viewport para cobrir toda a tela
-            gl.viewport(0, 0, viewportWidth, viewportHeight)
-            // Forçar transparência
-            // REMOVIDO: gl.clearColor
-            // REMOVIDO: gl.clear
-            // REMOVIDO: gl.clearColor
-            
-            // Interceptar clear se ainda não foi interceptado
-            // REMOVIDO: Interceptação de gl.clear - A-Frame gerencia isso
-            
-            // CRÍTICO: Loop contínuo via requestAnimationFrame para garantir clearColor sempre em alpha 0
-            // NÃO limpar o canvas completo (isso apagaria o AR), apenas garantir que clearColor está correto
-            if (!canvas._androidContinuousClearRAF) {
-              let rafId = null
-              const continuousClear = () => {
-                try {
-                  if (gl && !gl.isContextLost()) {
-                    // Apenas garantir que clearColor está sempre em alpha 0
-                    // NÃO limpar o canvas (isso apagaria o conteúdo AR)
-                    // REMOVIDO: gl.clearColor
-                  }
-                  rafId = requestAnimationFrame(continuousClear)
-                  canvas._androidContinuousClearRAF = rafId
-                } catch (e) {
-                  if (rafId) cancelAnimationFrame(rafId)
-                  canvas._androidContinuousClearRAF = null
-                }
-              }
-              rafId = requestAnimationFrame(continuousClear)
-              canvas._androidContinuousClearRAF = rafId
-              console.log('✅ Loop contínuo RAF ativado - garantindo clearColor sempre em alpha 0 (sem limpar AR)')
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ Erro ao configurar WebGL:', e)
-        }
       }
     }
 
@@ -522,170 +383,10 @@ const ScanPage = () => {
 
     return () => {
       clearInterval(interval)
-      // Limpar RAF se existir
-      const canvas = sceneRef.current?.querySelector('canvas')
-      if (canvas && canvas._androidContinuousClearRAF) {
-        cancelAnimationFrame(canvas._androidContinuousClearRAF)
-        canvas._androidContinuousClearRAF = null
-      }
     }
   }, [activeTargetIndex, cameraPermissionGranted])
 
-  // CRÍTICO: Interceptar criação do canvas ANTES do A-Frame renderizar (Android)
-  useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid) return
-
-    console.log('🔍 Configurando MutationObserver para interceptar criação do canvas no Android...')
-
-    // Observar quando o canvas é criado
-    const observer = new MutationObserver((mutations) => {
-      const canvas = document.querySelector('a-scene canvas')
-      if (canvas && !canvas._androidFixed) {
-        canvas._androidFixed = true
-        console.log('✅ Canvas detectado - aplicando transparência IMEDIATAMENTE')
-        
-        // Forçar transparência IMEDIATAMENTE via CSS
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        
-        // Forçar transparência via WebGL ANTES de qualquer renderização
-        try {
-          // NÃO criar novo contexto - usar contexto existente do renderer
-          let gl = null
-          try {
-            const rendererSystem = scene.systems?.renderer
-            if (rendererSystem) {
-              const renderer = rendererSystem.renderer || rendererSystem
-              if (renderer && typeof renderer.getContext === 'function') {
-                gl = renderer.getContext()
-              }
-            }
-          } catch (e) {
-            console.warn('⚠️ Não foi possível obter contexto do renderer:', e.message)
-          }
-          
-          // NÃO tentar criar novo contexto - se não conseguir do renderer, não fazer nada
-          // Criar novo contexto causa erro "Canvas has an existing context of a different type"
-          if (!gl || (gl && gl.isContextLost())) {
-            console.warn('⚠️ Não foi possível obter contexto WebGL do renderer - canvas já tem contexto criado pelo A-Frame')
-          }
-          
-          if (gl && !gl.isContextLost()) {
-            // Configurar ANTES de qualquer renderização
-            // REMOVIDO: gl.clearColor
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-            
-            // Interceptar clear ANTES de qualquer uso - VERSÃO ULTRA AGRESSIVA
-            // CRÍTICO: Garantir que TODA a área do canvas seja limpa com alpha 0
-            // REMOVIDO: Interceptação de gl.clear - A-Frame gerencia isso
-                // REMOVIDO: gl.clear
-                // REMOVIDO: gl.clearColor
-              }
-              gl._androidClearIntercepted = true
-              
-              // Limpar canvas IMEDIATAMENTE após interceptar - TODA a área
-              // REMOVIDO: gl.clearColor
-              // REMOVIDO: gl.clear
-              // REMOVIDO: gl.clearColor
-              
-              // Loop contínuo via requestAnimationFrame para garantir transparência em TODA a área
-              let rafId = null
-              const forceTransparency = () => {
-                try {
-                  if (gl && !gl.isContextLost()) {
-                    // Garantir clearColor sempre em 0,0,0,0
-                    // REMOVIDO: gl.clearColor
-                    // Limpar TODA a área do canvas periodicamente para evitar retângulo preto
-                    // Isso força transparência completa em toda a tela
-                    // REMOVIDO: gl.clear
-                    // REMOVIDO: gl.clearColor
-                  }
-                  rafId = requestAnimationFrame(forceTransparency)
-                } catch (e) {
-                  if (rafId) cancelAnimationFrame(rafId)
-                }
-              }
-              rafId = requestAnimationFrame(forceTransparency)
-              canvas._androidTransparencyRAF = rafId
-              
-              console.log('✅ gl.clear interceptado + loop RAF para limpar TODA a área do canvas com alpha 0')
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ Erro ao configurar WebGL no canvas recém-criado:', e)
-        }
-      }
-    })
-
-    // Observar mudanças no DOM
-    observer.observe(document.body, { 
-      childList: true, 
-      subtree: true 
-    })
-
-    // Também verificar se o canvas já existe e aplicar correções completas
-    const checkExistingCanvas = () => {
-      const existingCanvas = document.querySelector('a-scene canvas')
-      if (existingCanvas && !existingCanvas._androidFixed) {
-        existingCanvas._androidFixed = true
-        console.log('✅ Canvas existente detectado - aplicando correções imediatas')
-        
-        // Forçar CSS transparente
-        existingCanvas.style.setProperty('background-color', 'transparent', 'important')
-        existingCanvas.style.setProperty('background', 'transparent', 'important')
-        existingCanvas.style.setProperty('opacity', '1', 'important')
-        existingCanvas.style.setProperty('width', '100vw', 'important')
-        existingCanvas.style.setProperty('height', '100vh', 'important')
-        existingCanvas.style.setProperty('position', 'fixed', 'important')
-        existingCanvas.style.setProperty('top', '0', 'important')
-        existingCanvas.style.setProperty('left', '0', 'important')
-        
-        // Forçar WebGL transparente e LIMPAR TODO O CANVAS
-        // NÃO criar novo contexto - usar contexto existente do renderer
-        let gl = null
-        try {
-          const rendererSystem = scene.systems?.renderer
-          if (rendererSystem) {
-            const renderer = rendererSystem.renderer || rendererSystem
-            if (renderer && typeof renderer.getContext === 'function') {
-              gl = renderer.getContext()
-            }
-          }
-        } catch (e) {
-          // Ignorar erro
-        }
-        if (gl && !gl.isContextLost()) {
-          // REMOVIDO: gl.clearColor
-          // LIMPAR TODO O CANVAS imediatamente
-          // REMOVIDO: gl.clear
-          // REMOVIDO: gl.clearColor
-          
-          // Interceptar clear se ainda não foi interceptado
-          // REMOVIDO: Interceptação de gl.clear - A-Frame gerencia isso
-          }
-        }
-      }
-    }
-
-    // Verificar imediatamente e depois periodicamente
-    checkExistingCanvas()
-    const checkInterval = setInterval(checkExistingCanvas, 500)
-
-    return () => {
-      observer.disconnect()
-      clearInterval(checkInterval)
-      // Limpar RAF se existir
-      const canvas = document.querySelector('a-scene canvas')
-      if (canvas && canvas._androidTransparencyRAF) {
-        cancelAnimationFrame(canvas._androidTransparencyRAF)
-      }
-    }
-  }, [])
+  // REMOVIDO: Interceptação de criação do canvas - A-Frame gerencia isso corretamente
 
   // Forçar transparência imediatamente ao montar
   useEffect(() => {
@@ -742,52 +443,7 @@ const ScanPage = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
       
-      // Forçar canvas totalmente transparente
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      
-      // Forçar via WebGL - LIMPAR CANVAS COMPLETO COM ALPHA 0
-      // NÃO criar novo contexto - usar contexto existente do renderer
-      try {
-        let gl = null
-        try {
-          const rendererSystem = scene.systems?.renderer
-          if (rendererSystem) {
-            const renderer = rendererSystem.renderer || rendererSystem
-            if (renderer && typeof renderer.getContext === 'function') {
-              gl = renderer.getContext()
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ Não foi possível obter contexto do renderer:', e.message)
-        }
-        
-        if (gl && !gl.isContextLost()) {
-          // Configurar para transparência
-          // REMOVIDO: gl.clearColor
-          gl.enable(gl.BLEND)
-          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-          
-          // LIMPAR TODO O CANVAS com alpha 0 imediatamente
-          // REMOVIDO: gl.clear
-          // REMOVIDO: gl.clearColor
-          
-          // Interceptar clear se ainda não foi interceptado
-          // REMOVIDO: Interceptação de gl.clear - A-Frame gerencia isso
-              // REMOVIDO: gl.clear
-              // REMOVIDO: gl.clearColor
-            }
-            gl._androidClearIntercepted = true
-            console.log('✅ gl.clear interceptado no forceAndroidTransparency')
-          }
-        }
-      } catch (e) {
-        console.warn('⚠️ Erro ao configurar WebGL:', e)
-      }
+      // REMOVIDO: Manipulação de canvas/WebGL - A-Frame controla isso
       
       // Verificar e garantir que o vídeo da câmera existe e está visível
       const mindarVideo = document.querySelector('#arVideo') || 
@@ -820,9 +476,10 @@ const ScanPage = () => {
           mindarVideo._visibilityLogged = true
         }
         
-        // Garantir posicionamento correto sempre
-        mindarVideo.style.setProperty('z-index', '-2', 'important')
-        mindarVideo.style.setProperty('position', 'fixed', 'important')
+        // Garantir posicionamento correto sempre - usar absolute no Android
+        const isAndroid = /Android/i.test(navigator.userAgent)
+        mindarVideo.style.setProperty('z-index', '0', 'important')
+        mindarVideo.style.setProperty('position', isAndroid ? 'absolute' : 'absolute', 'important')
         mindarVideo.style.setProperty('top', '0', 'important')
         mindarVideo.style.setProperty('left', '0', 'important')
         mindarVideo.style.setProperty('width', '100vw', 'important')
@@ -857,69 +514,7 @@ const ScanPage = () => {
     return () => clearInterval(interval)
   }, [cameraPermissionGranted])
 
-  // Fallback de segurança: se canvas não estiver transparente após 2s, aplicar correção agressiva
-  useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid || !cameraPermissionGranted) return
-
-    const timeout = setTimeout(() => {
-      const canvas = document.querySelector('a-scene canvas')
-      if (canvas) {
-        const style = window.getComputedStyle(canvas)
-        const bgColor = style.backgroundColor
-        
-        // Verificar se canvas está realmente transparente
-        const isTransparent = bgColor === 'rgba(0, 0, 0, 0)' || 
-                             bgColor === 'transparent' ||
-                             bgColor.includes('rgba(0, 0, 0, 0)')
-        
-        if (!isTransparent) {
-          console.error('❌ Canvas ainda não transparente após 2s - aplicando correção agressiva:', {
-            backgroundColor: bgColor,
-            opacity: style.opacity,
-            display: style.display
-          })
-          
-          // Correção agressiva: ocultar temporariamente
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          
-          // Forçar transparência via WebGL
-          try {
-            // REMOVIDO: getWebGLContext - não acessar contexto WebGL
-            if (gl && !gl.isContextLost()) {
-              // REMOVIDO: gl.clearColor
-              // REMOVIDO: gl.clear
-            }
-          } catch (e) {
-            console.warn('⚠️ Erro ao limpar canvas:', e)
-          }
-          
-          // Tentar novamente após 500ms
-          setTimeout(() => {
-            // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-            // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-            // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-            
-            // Forçar novamente via WebGL
-            try {
-              // REMOVIDO: getWebGLContext - não acessar contexto WebGL
-              if (gl && !gl.isContextLost()) {
-                // REMOVIDO: gl.clearColor
-              }
-            } catch (e) {
-              // Ignorar
-            }
-            
-            console.log('✅ Correção agressiva aplicada - canvas deve estar transparente agora')
-          }, 500)
-        } else {
-          console.log('✅ Canvas está transparente após 2s')
-        }
-      }
-    }, 2000)
-
-    return () => clearTimeout(timeout)
-  }, [cameraPermissionGranted])
+  // REMOVIDO: Fallback de segurança - A-Frame gerencia transparência via atributos
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
 
@@ -1367,7 +962,7 @@ const ScanPage = () => {
           className="ar-scanning-overlay" 
           style={{
             zIndex: 100000, 
-            position: 'fixed', 
+            position: 'absolute', 
             pointerEvents: 'none',
             display: 'flex',
             flexDirection: 'column',
