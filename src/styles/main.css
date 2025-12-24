@@ -799,6 +799,16 @@ a-scene canvas {
     z-index: 1 !important; /* z-index: 1 para ficar acima do vídeo */
     transform: none !important; /* CRÍTICO: Sem transforms no canvas */
     -webkit-transform: none !important;
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* CRÍTICO: Ocultar canvas quando não há targets ativos (evita área preta no Android) */
+.scan-page:not(:has([data-target-active="true"])) a-scene canvas,
+a-scene canvas[data-no-targets="true"] {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 /* Container da câmera AR */
