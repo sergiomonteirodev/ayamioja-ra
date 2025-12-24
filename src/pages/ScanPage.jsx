@@ -301,9 +301,9 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // SOLUÇÃO RADICAL ANDROID: Ocultar canvas completamente quando não há targets ativos
-  // Isso evita o retângulo preto no meio cobrindo o vídeo
-  // VERSÃO ULTRA AGRESSIVA: Verificar e forçar continuamente
+  // SOLUÇÃO CRÍTICA ANDROID: Ocultar canvas completamente quando não há targets ativos
+  // O canvas WebGL do A-Frame renderiza com fundo preto por padrão no Android
+  // Precisamos ocultá-lo completamente quando não há conteúdo AR para mostrar
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
@@ -315,61 +315,23 @@ const ScanPage = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
 
-      // Verificar estilo computado para garantir que está realmente oculto
-      const computedStyle = window.getComputedStyle(canvas)
-      const isCurrentlyVisible = computedStyle.display !== 'none' && 
-                                  computedStyle.visibility !== 'hidden' &&
-                                  parseFloat(computedStyle.opacity) > 0
-
       if (activeTargetIndex === null) {
-        // Nenhum target ativo: PARAR renderer completamente e ocultar canvas
-        if (isCurrentlyVisible) {
-          console.log('🔴 Parando renderer e ocultando canvas no Android (sem targets)')
-          
-          // PARAR renderer do A-Frame completamente
-          try {
-            const rendererSystem = scene.systems?.renderer
-            if (rendererSystem) {
-              const renderer = rendererSystem.renderer || rendererSystem
-              // REMOVIDO: Não parar renderer - A-Frame gerencia isso
-            }
-          } catch (e) {
-            console.warn('⚠️ Erro ao parar renderer:', e)
-          }
-          
-          // Múltiplas formas de ocultar para garantir
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-          
-          // Ocultar o a-scene apenas via CSS (nunca desmontar)
-          scene.style.setProperty('display', 'none', 'important')
-        }
+        // Nenhum target ativo: OCULTAR canvas completamente para evitar área preta
+        // Usar visibility: hidden em vez de display: none para não quebrar o renderer
+        canvas.style.setProperty('visibility', 'hidden', 'important')
+        canvas.style.setProperty('opacity', '0', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
         
-        // REMOVIDO: Não manipular WebGL - A-Frame gerencia isso
+        // Também ocultar a-scene via CSS
+        scene.style.setProperty('visibility', 'hidden', 'important')
+        scene.style.setProperty('opacity', '0', 'important')
       } else {
-        // Target ativo: REINICIAR renderer e mostrar canvas transparente
-        console.log('🟢 Target ativo - REINICIANDO renderer e mostrando canvas transparente no Android')
+        // Target ativo: MOSTRAR canvas transparente
+        canvas.style.setProperty('visibility', 'visible', 'important')
+        canvas.style.setProperty('opacity', '1', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
         
-        // REINICIAR renderer do A-Frame
-        try {
-          const rendererSystem = scene.systems?.renderer
-          if (rendererSystem) {
-            const renderer = rendererSystem.renderer || rendererSystem
-            // REMOVIDO: Não manipular renderer - A-Frame gerencia isso
-          }
-        } catch (e) {
-          console.warn('⚠️ Erro ao reiniciar renderer:', e)
-        }
-        
-        // Mostrar a-scene apenas via CSS (nunca remontar)
-        scene.style.setProperty('display', 'block', 'important')
+        // Mostrar a-scene
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
       }
@@ -378,7 +340,7 @@ const ScanPage = () => {
     // Executar imediatamente
     forceCanvasVisibility()
     
-    // Executar continuamente a cada 100ms para garantir que o canvas permaneça oculto
+    // Executar continuamente a cada 100ms para garantir que o canvas permaneça oculto quando necessário
     const interval = setInterval(forceCanvasVisibility, 100)
 
     return () => {
@@ -443,7 +405,15 @@ const ScanPage = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
       
-      // REMOVIDO: Manipulação de canvas/WebGL - A-Frame controla isso
+      // CRÍTICO: Garantir que o canvas esteja oculto quando não há targets ativos
+      // Isso evita a área preta no Android
+      if (activeTargetIndex === null) {
+        canvas.style.setProperty('visibility', 'hidden', 'important')
+        canvas.style.setProperty('opacity', '0', 'important')
+      } else {
+        canvas.style.setProperty('visibility', 'visible', 'important')
+        canvas.style.setProperty('opacity', '1', 'important')
+      }
       
       // Verificar e garantir que o vídeo da câmera existe e está visível
       const mindarVideo = document.querySelector('#arVideo') || 
