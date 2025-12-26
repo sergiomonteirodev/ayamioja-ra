@@ -655,20 +655,10 @@ const ScanPage = () => {
         scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo quando há targets
       }
       
-      // CRÍTICO ANDROID: Forçar clear color transparente no WebGL
-      // Isso garante que o canvas não renderize com fundo preto
-      // NOTA: Não tentar acessar contexto se canvas foi removido do DOM
-      if (canvas && canvas.parentNode) {
-        try {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2') || canvas.getContext('experimental-webgl')
-          if (gl) {
-            // Forçar clear color totalmente transparente (RGBA: 0, 0, 0, 0)
-            gl.clearColor(0, 0, 0, 0)
-          }
-        } catch (e) {
-          // Ignorar erros ao acessar contexto WebGL (pode não estar disponível ainda)
-        }
-      }
+      // REMOVIDO: Não acessar contexto WebGL diretamente
+      // Isso estava causando erros repetitivos quando o canvas era removido/restaurado
+      // O A-Frame gerencia o contexto WebGL corretamente
+      // Não precisamos acessar gl.clearColor manualmente
       
       // Verificar e garantir que o vídeo da câmera existe e está visível
       const mindarVideo = document.querySelector('#arVideo') || 
