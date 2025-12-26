@@ -48,23 +48,8 @@ const ScanPage = () => {
     console.log('Toggle Audio:', active)
   }
 
-  const updateCanvasVisibility = (showCanvas) => {
-    const scene = sceneRef.current
-    if (!scene) return
-
-    const canvas = scene.querySelector('canvas')
-    if (!canvas) return
-
-    const targetOpacity = showCanvas ? '1' : '0'
-    // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-    // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-    // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-    if (!showCanvas) {
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-    }
-    console.log(`🎛️ Canvas ${showCanvas ? 'visível' : 'oculto'} (opacity ${targetOpacity})`)
-  }
+  // REMOVIDO: updateCanvasVisibility - NÃO tocar no canvas
+  // Apenas z-index do a-scene é controlado, nunca o canvas
 
   const handleBackClick = () => {
     // Garantir que a URL tenha a barra no final para carregar o background corretamente
