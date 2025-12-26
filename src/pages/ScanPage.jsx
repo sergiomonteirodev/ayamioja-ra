@@ -675,14 +675,8 @@ const ScanPage = () => {
     
     // REMOVIDO: ensureCameraVideoVisible - deixar MindAR gerenciar o vídeo
     
-    // Parar verificação inicial após 10 segundos
-    initialCameraTimeoutRef.current = setTimeout(() => {
-      if (initialCameraCheckRef.current) {
-        clearInterval(initialCameraCheckRef.current)
-        initialCameraCheckRef.current = null
-        console.log('⏱️ Parando verificação inicial da câmera após 10s')
-      }
-    }, 10000)
+    // REMOVIDO: Verificação inicial da câmera
+    // Deixar MindAR gerenciar o vídeo da câmera completamente
 
     // REMOVIDO: getWebGLContext - NUNCA acessar contexto WebGL manualmente
     // Isso causa erro "Canvas has an existing context of a different type"
