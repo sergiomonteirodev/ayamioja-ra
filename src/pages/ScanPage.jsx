@@ -138,8 +138,8 @@ const ScanPage = () => {
   const mindarStartedRef = useRef(false)
   const transparencyIntervalRef = useRef(null)
   const blackElementObserverRef = useRef(null)
-  const canvasRemovedRef = useRef(false) // Ref para rastrear se canvas foi removido do DOM
-  const canvasBackupRef = useRef(null) // Ref para armazenar backup do canvas removido
+  // REMOVIDO: canvasRemovedRef e canvasBackupRef - não vamos mais remover canvas do DOM
+  // Remover canvas causa erro "Canvas has an existing context" quando restaurado
   // REMOVIDO: Deixar o MindAR gerenciar completamente o vídeo da câmera
   // Não precisamos fazer nada - o MindAR gerencia tudo
 
@@ -401,9 +401,10 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // SOLUÇÃO CRÍTICA ANDROID: Remover canvas do DOM quando não há targets ativos
-  // SOLUÇÃO ULTRA AGRESSIVA: Remover canvas completamente do DOM em vez de apenas ocultá-lo
-  // Isso evita que o A-Frame continue renderizando o canvas mesmo com display: none
+  // SOLUÇÃO CRÍTICA ANDROID: Ocultar canvas quando não há targets ativos
+  // CORREÇÃO: NÃO remover canvas do DOM - isso causa erro "Canvas has an existing context"
+  // Quando removemos e restauramos o canvas, o A-Frame tenta criar novo contexto WebGL
+  // Solução: Apenas ocultar o canvas, deixar A-Frame gerenciar o contexto
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
@@ -412,72 +413,37 @@ const ScanPage = () => {
       const scene = sceneRef.current
       if (!scene) return
 
-      let canvas = scene.querySelector('canvas')
-      
-      // Se canvas não existe mas temos backup, restaurar primeiro
-      if (!canvas && canvasBackupRef.current) {
-        canvas = canvasBackupRef.current
-        if (canvas._originalParent && canvas._originalNextSibling) {
-          canvas._originalParent.insertBefore(canvas, canvas._originalNextSibling)
-        } else if (canvas._originalParent) {
-          canvas._originalParent.appendChild(canvas)
-        }
-        canvasBackupRef.current = null
-        canvasRemovedRef.current = false
-      }
-      
+      const canvas = scene.querySelector('canvas')
       if (!canvas) return
 
-      // CRÍTICO: Remover canvas do DOM quando não há targets
+      // CRÍTICO: NÃO remover canvas do DOM - apenas ocultá-lo
+      // Remover canvas causa erro "Canvas has an existing context" quando restaurado
       if (activeTargetIndex === null || activeTargetIndex === undefined) {
-        // Nenhum target ativo: REMOVER canvas do DOM completamente
-        if (!canvasRemovedRef.current && canvas.parentNode) {
-          // Armazenar informações para restaurar depois
-          canvas._originalParent = canvas.parentNode
-          canvas._originalNextSibling = canvas.nextSibling
-          canvasBackupRef.current = canvas
-          canvasRemovedRef.current = true
-          
-          // Remover do DOM
-          canvas.remove()
-          console.log('🗑️ Canvas removido do DOM (sem targets ativos)')
-        }
-        
+        // Nenhum target ativo: OCULTAR canvas mas manter no DOM
         scene.removeAttribute('data-has-active-target')
+        canvas.style.setProperty('display', 'none', 'important') // Ocultar mas manter no DOM
+        canvas.style.setProperty('visibility', 'hidden', 'important')
+        canvas.style.setProperty('opacity', '0', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
+        canvas.style.setProperty('z-index', '-1', 'important')
+        
         // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ATRÁS do vídeo quando não há targets
-        scene.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo quando não há targets
+        scene.style.setProperty('z-index', '-1', 'important')
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
         scene.style.setProperty('background-color', 'transparent', 'important')
         scene.style.setProperty('background', 'transparent', 'important')
       } else {
-        // Target ativo: RESTAURAR canvas no DOM se foi removido
-        if (canvasRemovedRef.current && canvasBackupRef.current) {
-          canvas = canvasBackupRef.current
-          if (canvas._originalParent) {
-            if (canvas._originalNextSibling) {
-              canvas._originalParent.insertBefore(canvas, canvas._originalNextSibling)
-            } else {
-              canvas._originalParent.appendChild(canvas)
-            }
-            console.log('✅ Canvas restaurado no DOM (target ativo detectado)')
-          }
-          canvasBackupRef.current = null
-          canvasRemovedRef.current = false
-        }
-        
-        // Garantir que canvas está visível
-        if (canvas && canvas.parentNode) {
-          scene.setAttribute('data-has-active-target', 'true')
-          canvas.style.setProperty('display', 'block', 'important') // Mostrar quando há target
-          canvas.style.setProperty('visibility', 'visible', 'important')
-          canvas.style.setProperty('opacity', '1', 'important')
-          canvas.style.setProperty('pointer-events', 'none', 'important')
-          canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo para mostrar AR
-        }
+        // Target ativo: MOSTRAR canvas
+        scene.setAttribute('data-has-active-target', 'true')
+        canvas.style.setProperty('display', 'block', 'important')
+        canvas.style.setProperty('visibility', 'visible', 'important')
+        canvas.style.setProperty('opacity', '1', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
+        canvas.style.setProperty('z-index', '1', 'important')
         
         // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ACIMA do vídeo quando há targets
-        scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo quando há targets
+        scene.style.setProperty('z-index', '1', 'important')
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
         scene.style.setProperty('background-color', 'transparent', 'important')
@@ -488,96 +454,19 @@ const ScanPage = () => {
     // Executar imediatamente
     forceCanvasVisibility()
     
-    // Executar continuamente a cada 100ms para garantir que o canvas permaneça removido quando necessário
+    // Executar continuamente a cada 100ms para garantir que o canvas permaneça oculto quando necessário
     const interval = setInterval(forceCanvasVisibility, 100)
 
     return () => {
       clearInterval(interval)
-      // Restaurar canvas ao desmontar se foi removido
-      if (canvasRemovedRef.current && canvasBackupRef.current) {
-        const canvas = canvasBackupRef.current
-        if (canvas._originalParent) {
-          if (canvas._originalNextSibling) {
-            canvas._originalParent.insertBefore(canvas, canvas._originalNextSibling)
-          } else {
-            canvas._originalParent.appendChild(canvas)
-          }
-        }
-      }
     }
   }, [activeTargetIndex, cameraPermissionGranted])
   
-  // CRÍTICO: Interceptar criação do canvas pelo A-Frame e remover do DOM quando não há targets
-  // SOLUÇÃO ULTRA AGRESSIVA: Interceptar appendChild para evitar que canvas seja adicionado ao DOM
-  useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid) return
-
-    // Interceptar appendChild para capturar canvas sendo adicionado
-    const originalAppendChild = Element.prototype.appendChild
-    let interceptActive = true
-
-    Element.prototype.appendChild = function(child) {
-      // Se for canvas sendo adicionado ao a-scene e não há targets, não adicionar
-      if (interceptActive && 
-          child.tagName === 'CANVAS' && 
-          (this.tagName === 'A-SCENE' || this.closest('a-scene')) &&
-          activeTargetIndexRef.current === null) {
-        console.log('🚫 Interceptado: Canvas não será adicionado ao DOM (sem targets)')
-        // Armazenar canvas para possível uso futuro
-        if (!canvasBackupRef.current) {
-          canvasBackupRef.current = child
-          child._intercepted = true
-        }
-        return child // Retornar elemento mas não adicionar ao DOM
-      }
-      return originalAppendChild.call(this, child)
-    }
-
-    // Verificar se canvas já existe e remover se necessário
-    const existingCanvas = document.querySelector('a-scene canvas')
-    if (existingCanvas && activeTargetIndexRef.current === null) {
-      if (existingCanvas.parentNode) {
-        existingCanvas._originalParent = existingCanvas.parentNode
-        existingCanvas._originalNextSibling = existingCanvas.nextSibling
-        canvasBackupRef.current = existingCanvas
-        canvasRemovedRef.current = true
-        existingCanvas.remove()
-        console.log('🗑️ Canvas existente removido do DOM')
-      }
-    }
-
-    // Usar MutationObserver como fallback para detectar canvas criado
-    const observer = new MutationObserver((mutations) => {
-      if (activeTargetIndexRef.current !== null) return // Se há target, não fazer nada
-      
-      const canvas = document.querySelector('a-scene canvas')
-      if (canvas && canvas.parentNode && !canvas._intercepted) {
-        canvas._originalParent = canvas.parentNode
-        canvas._originalNextSibling = canvas.nextSibling
-        canvasBackupRef.current = canvas
-        canvasRemovedRef.current = true
-        canvas.remove()
-        console.log('🗑️ Canvas detectado e removido via MutationObserver')
-      }
-    })
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    })
-
-    // Parar interceptação após 30 segundos (após inicialização)
-    setTimeout(() => {
-      interceptActive = false
-      observer.disconnect()
-    }, 30000)
-
-    return () => {
-      Element.prototype.appendChild = originalAppendChild
-      observer.disconnect()
-    }
-  }, [])
+  // REMOVIDO: Interceptação de criação do canvas e remoção do DOM
+  // CORREÇÃO: NÃO remover canvas do DOM - isso causa erro "Canvas has an existing context"
+  // Quando removemos e restauramos o canvas, o A-Frame tenta criar novo contexto WebGL
+  // Solução: Deixar A-Frame criar e gerenciar o canvas, apenas ocultá-lo quando necessário
+  // O canvas deve permanecer no DOM sempre - apenas oculto quando não há targets
 
   // REMOVIDO: Interceptação de criação do canvas - A-Frame gerencia isso corretamente
 
