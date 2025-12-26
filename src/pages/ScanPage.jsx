@@ -33,20 +33,9 @@ const ScanPage = () => {
   const [isRequestingPermission, setIsRequestingPermission] = useState(false) // Controla se está solicitando permissão
   
   const sceneRef = useRef(null)
-  const rendererCheckIntervalRef = useRef(null)
-  const rafIdRef = useRef(null)
-  const initialCameraCheckRef = useRef(null)
-  const initialCameraTimeoutRef = useRef(null)
-  const ensureCameraVideoVisibleRef = useRef(null)
-  const cameraOverlayRef = useRef(null)
-  const cameraStreamRef = useRef(null)
   const mindarStartedRef = useRef(false)
-  const transparencyIntervalRef = useRef(null)
-  const blackElementObserverRef = useRef(null)
-  // REMOVIDO: canvasRemovedRef e canvasBackupRef - não vamos mais remover canvas do DOM
-  // Remover canvas causa erro "Canvas has an existing context" quando restaurado
-  // REMOVIDO: Deixar o MindAR gerenciar completamente o vídeo da câmera
-  // Não precisamos fazer nada - o MindAR gerencia tudo
+  // REMOVIDO: Refs desnecessários que eram usados para interceptações e hacks
+  // Deixar A-Frame/MindAR gerenciar tudo naturalmente
 
   const navigate = useNavigate()
 
