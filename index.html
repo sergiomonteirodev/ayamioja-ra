@@ -139,6 +139,44 @@
       })();
     </script>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <!-- Interceptar THREE.WebGLRenderer imediatamente após A-Frame carregar -->
+    <script>
+      // Interceptar THREE.WebGLRenderer assim que Three.js estiver disponível
+      (function interceptWebGLRenderer() {
+        // Verificar se THREE já está disponível
+        if (window.THREE && window.THREE.WebGLRenderer) {
+          const OriginalWebGLRenderer = window.THREE.WebGLRenderer;
+          window.THREE.WebGLRenderer = function(...args) {
+            try {
+              return new OriginalWebGLRenderer(...args);
+            } catch (e) {
+              // Se for erro de contexto WebGL, suprimir silenciosamente
+              const errorMsg = e.message || String(e);
+              if (errorMsg.includes('WebGL context') || 
+                  errorMsg.includes('existing context')) {
+                // Não fazer nada - erro suprimido
+                // Tentar retornar renderer existente se possível
+                if (args[0] && args[0]._glContext) {
+                  try {
+                    return new OriginalWebGLRenderer({ canvas: args[0] });
+                  } catch (e2) {
+                    // Ignorar
+                  }
+                }
+                return null;
+              }
+              throw e;
+            }
+          };
+          // Copiar propriedades estáticas
+          Object.setPrototypeOf(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
+          Object.assign(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
+        } else {
+          // Se THREE ainda não carregou, tentar novamente
+          setTimeout(interceptWebGLRenderer, 50);
+        }
+      })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   <body>
