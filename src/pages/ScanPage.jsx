@@ -304,6 +304,7 @@ const ScanPage = () => {
   // SOLUÇÃO CRÍTICA ANDROID: Ocultar canvas completamente quando não há targets ativos
   // O canvas WebGL do A-Frame renderiza com fundo preto por padrão no Android
   // Precisamos ocultá-lo completamente quando não há conteúdo AR para mostrar
+  // SOLUÇÃO OTIMIZADA: Usar display: none + z-index dinâmico para melhor performance no Android
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
@@ -318,21 +319,25 @@ const ScanPage = () => {
       // CRÍTICO: Ocultar APENAS o canvas, NÃO o a-scene (para o vídeo da câmera aparecer)
       // Usar data attribute para CSS também controlar
       if (activeTargetIndex === null || activeTargetIndex === undefined) {
-        // Nenhum target ativo: OCULTAR APENAS o canvas para evitar área preta
-        // NÃO ocultar o a-scene para que o vídeo da câmera continue visível
+        // Nenhum target ativo: OCULTAR COMPLETAMENTE o canvas usando display: none
+        // Isso é mais eficaz no Android do que visibility: hidden
         scene.removeAttribute('data-has-active-target')
-        canvas.style.setProperty('visibility', 'hidden', 'important')
+        canvas.style.setProperty('display', 'none', 'important') // display: none é mais eficaz no Android
+        canvas.style.setProperty('visibility', 'hidden', 'important') // Fallback
         canvas.style.setProperty('opacity', '0', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
+        canvas.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo quando oculto
         // NÃO ocultar a-scene - o vídeo da câmera precisa estar visível
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
       } else {
-        // Target ativo: MOSTRAR canvas transparente
+        // Target ativo: MOSTRAR canvas transparente ACIMA do vídeo
         scene.setAttribute('data-has-active-target', 'true')
+        canvas.style.setProperty('display', 'block', 'important') // Mostrar quando há target
         canvas.style.setProperty('visibility', 'visible', 'important')
         canvas.style.setProperty('opacity', '1', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
+        canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo para mostrar AR
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
       }
@@ -351,16 +356,20 @@ const ScanPage = () => {
   
   // CRÍTICO: Ocultar canvas imediatamente ao montar (antes de qualquer renderização)
   // Usar MutationObserver para garantir que o canvas seja ocultado assim que for criado
+  // SOLUÇÃO OTIMIZADA: Usar display: none para melhor eficácia no Android
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid) return
 
     const hideCanvasImmediately = (canvas) => {
       if (canvas) {
-        // Ocultar canvas imediatamente ao ser criado
-        canvas.style.setProperty('visibility', 'hidden', 'important')
+        // Ocultar canvas imediatamente ao ser criado usando display: none
+        // Isso é mais eficaz no Android do que visibility: hidden
+        canvas.style.setProperty('display', 'none', 'important')
+        canvas.style.setProperty('visibility', 'hidden', 'important') // Fallback
         canvas.style.setProperty('opacity', '0', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
+        canvas.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo
       }
     }
 
@@ -464,12 +473,29 @@ const ScanPage = () => {
       
       // CRÍTICO: Garantir que o canvas esteja oculto quando não há targets ativos
       // Isso evita a área preta no Android
+      // Usar display: none para melhor eficácia no Android
       if (activeTargetIndex === null) {
-        canvas.style.setProperty('visibility', 'hidden', 'important')
+        canvas.style.setProperty('display', 'none', 'important') // display: none é mais eficaz
+        canvas.style.setProperty('visibility', 'hidden', 'important') // Fallback
         canvas.style.setProperty('opacity', '0', 'important')
+        canvas.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo
       } else {
+        canvas.style.setProperty('display', 'block', 'important') // Mostrar quando há target
         canvas.style.setProperty('visibility', 'visible', 'important')
         canvas.style.setProperty('opacity', '1', 'important')
+        canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo para AR
+      }
+      
+      // CRÍTICO ANDROID: Forçar clear color transparente no WebGL
+      // Isso garante que o canvas não renderize com fundo preto
+      try {
+        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2') || canvas.getContext('experimental-webgl')
+        if (gl) {
+          // Forçar clear color totalmente transparente (RGBA: 0, 0, 0, 0)
+          gl.clearColor(0, 0, 0, 0)
+        }
+      } catch (e) {
+        // Ignorar erros ao acessar contexto WebGL (pode não estar disponível ainda)
       }
       
       // Verificar e garantir que o vídeo da câmera existe e está visível
@@ -661,7 +687,7 @@ const ScanPage = () => {
     // Garantir que o elemento .scan-page também seja transparente
     const scanPage = document.querySelector('.scan-page')
     if (scanPage) {
-      scanPage.style.setProperty('background-color', 'transparent', 'important')
+      scanPage.style.setProperty('backgrounposition: regular; top: 0px; left: -109.875px; z-index: -2; width: 651.75px; height: 869px;d-color', 'transparent', 'important')
       scanPage.style.setProperty('background', 'transparent', 'important')
     }
     
@@ -893,14 +919,17 @@ const ScanPage = () => {
     // O A-Frame gerencia o contexto WebGL - não devemos tocá-lo
 
     // REMOVIDO: makeRendererTransparent - A-Frame gerencia transparência via atributos
+  }, [])
 
+  return (
+    <div className="scan-page">
       {/* A-Frame Scene - SEMPRE renderizado (nunca desmontado) */}
       <a-scene 
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer="alpha: true; antialias: true"
+        renderer="alpha: true; antialias: true; preserveDrawingBuffer: false; colorManagement: false"
         embedded
         background="color: transparent"
         style={{
