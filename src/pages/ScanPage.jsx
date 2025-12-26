@@ -505,7 +505,7 @@ const ScanPage = () => {
       return
     }
     
-    // MutationObserver será criado depois que ensureCameraVideoVisible estiver definida
+    // REMOVIDO: MutationObserver - não interferir com o ciclo de vida do canvas
 
     // Detectar Android
     const isAndroid = /Android/i.test(navigator.userAgent)
@@ -684,8 +684,7 @@ const ScanPage = () => {
     // A transparência já está configurada no renderer e background do a-scene
     // Não precisamos verificar periodicamente
     
-    // Depois tentar periodicamente (após a função ser definida)
-    // A função será chamada via ensureCameraVideoVisibleRef.current após ser definida
+    // REMOVIDO: ensureCameraVideoVisible - deixar MindAR gerenciar o vídeo
     
     // Parar verificação inicial após 10 segundos
     initialCameraTimeoutRef.current = setTimeout(() => {
