@@ -233,16 +233,47 @@ const ScanPage = () => {
 
     // CRÍTICO: NÃO tocar no canvas - apenas z-index do a-scene
     // Tocar no canvas (opacity, display) pode quebrar o compositor WebGL
+    // Usar !important para garantir que sobrescreva qualquer style inline
     if (activeTargetIndex === null || activeTargetIndex === undefined) {
-      // Quando não há target: colocar a-scene atrás do vídeo
-      scene.style.zIndex = '-1'
+      // Quando não há target: colocar a-scene atrás do vídeo (z-index: -1)
+      scene.style.setProperty('z-index', '-1', 'important')
       scene.removeAttribute('data-has-active-target')
+      console.log('📐 a-scene z-index: -1 (atrás do vídeo - sem targets)')
     } else {
-      // Quando há target: colocar a-scene acima do vídeo
-      scene.style.zIndex = '1'
+      // Quando há target: colocar a-scene acima do vídeo (z-index: 1)
+      scene.style.setProperty('z-index', '1', 'important')
       scene.setAttribute('data-has-active-target', 'true')
+      console.log('📐 a-scene z-index: 1 (acima do vídeo - target ativo)')
     }
   }, [activeTargetIndex, cameraPermissionGranted])
+  
+  // Garantir z-index inicial quando a cena carregar
+  useEffect(() => {
+    if (!cameraPermissionGranted) return
+    
+    const scene = sceneRef.current
+    if (!scene) return
+    
+    // Aguardar a-scene estar pronto
+    const checkScene = setInterval(() => {
+      if (scene.hasLoaded) {
+        clearInterval(checkScene)
+        // Aplicar z-index inicial baseado em activeTargetIndex
+        if (activeTargetIndex === null || activeTargetIndex === undefined) {
+          scene.style.setProperty('z-index', '-1', 'important')
+          scene.removeAttribute('data-has-active-target')
+        } else {
+          scene.style.setProperty('z-index', '1', 'important')
+          scene.setAttribute('data-has-active-target', 'true')
+        }
+      }
+    }, 100)
+    
+    // Parar após 5 segundos
+    setTimeout(() => clearInterval(checkScene), 5000)
+    
+    return () => clearInterval(checkScene)
+  }, [cameraPermissionGranted, activeTargetIndex])
   
   // REMOVIDO: Todas as interceptações e hacks
   // Deixar A-Frame/MindAR gerenciar o canvas completamente
@@ -622,7 +653,7 @@ const ScanPage = () => {
           inset: 0,
           width: '100vw',
           height: '100vh',
-          zIndex: 1,
+          zIndex: -1, // Iniciar atrás do vídeo - será ajustado dinamicamente pelo useEffect
           pointerEvents: 'none',
           backgroundColor: 'transparent'
         }}
