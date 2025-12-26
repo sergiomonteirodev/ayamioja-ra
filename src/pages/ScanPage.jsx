@@ -615,7 +615,7 @@ const ScanPage = () => {
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer="alpha: true; antialias: true; preserveDrawingBuffer: false; colorManagement: false"
+        renderer="alpha: true; antialias: true; preserveDrawingBuffer: false; colorManagement: false; powerPreference: default"
         background="color: transparent"
         style={{
           position: 'fixed',
