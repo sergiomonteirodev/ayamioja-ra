@@ -73,61 +73,9 @@ const ScanPage = () => {
     window.location.href = `${baseUrl}/ayamioja-ra/`
   }
 
-  const startMindAR = async () => {
-    if (mindarStartedRef.current) {
-      console.log('▶️ MindAR já está em execução')
-      return
-    }
-
-    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-    for (let attempt = 0; attempt < 30; attempt++) {
-      const scene = sceneRef.current
-      if (!scene) {
-        await wait(100)
-        continue
-      }
-
-      if (!scene.hasLoaded) {
-        await new Promise((resolve) => {
-          scene.addEventListener('loaded', resolve, { once: true })
-        })
-      }
-
-      const component = scene.components && scene.components['mindar-image']
-      const system = scene.systems && scene.systems['mindar-image-system']
-
-      if (component && system) {
-        if (!component.ui) {
-          component.ui = {
-            showLoading: () => {},
-            hideLoading: () => {},
-            showScanning: () => {},
-            hideScanning: () => {},
-            showError: () => {},
-            hideError: () => {}
-          }
-        }
-
-        const startFn = (typeof component.start === 'function')
-          ? component.start.bind(component)
-          : (typeof system.start === 'function' ? system.start.bind(system) : null)
-
-        if (!startFn) {
-          throw new Error('MindAR não expôs um método de inicialização.')
-        }
-
-        await startFn()
-        mindarStartedRef.current = true
-        console.log('🚀 MindAR iniciado manualmente após a permissão')
-        return
-      }
-
-      await wait(200)
-    }
-
-    throw new Error('MindAR não ficou pronto para iniciar.')
-  }
+  // REMOVIDO: startMindAR() - causa inicialização dupla do WebGL
+  // O MindAR já inicia automaticamente com autoStart: true no a-scene
+  // Chamar startMindAR() manualmente tenta criar segundo WebGLRenderer → erro
 
   // Função para solicitar permissão da câmera antes de iniciar a cena
   const requestCameraPermission = async () => {
@@ -174,15 +122,10 @@ const ScanPage = () => {
       
       // REMOVIDO: Não solicitar stream manualmente - deixar o MindAR fazer isso
       // O MindAR precisa gerenciar completamente o stream da câmera
-      console.log('✅ Permissão da câmera concedida - MindAR irá solicitar o stream')
+      // REMOVIDO: startMindAR() - causa inicialização dupla do WebGL
+      // O MindAR já inicia automaticamente com autoStart: true no a-scene
+      console.log('✅ Permissão da câmera concedida - MindAR iniciará automaticamente com autoStart: true')
       
-      // Adicionar timeout para startMindAR para evitar travamento
-      const mindarTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout ao iniciar MindAR')), 15000)
-      })
-      
-      await Promise.race([startMindAR(), mindarTimeout])
-
       setCameraPermissionGranted(true)
       
       // CRÍTICO: Aguardar o vídeo receber o stream da câmera
@@ -727,7 +670,7 @@ const ScanPage = () => {
             rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; side: double; transparent: false; opacity: 1.0"
+            material="shader: flat; side: double"
             autoplay="true"
             visible="true"
           ></a-video>
@@ -740,7 +683,7 @@ const ScanPage = () => {
             rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; side: double; transparent: false; opacity: 1.0"
+            material="shader: flat; side: double"
             autoplay="true"
             visible="true"
             loop="true"
@@ -755,7 +698,7 @@ const ScanPage = () => {
             rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; side: double; transparent: false; opacity: 1.0"
+            material="shader: flat; side: double"
             autoplay="true"
             visible="true"
             loop="true"
