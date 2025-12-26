@@ -142,40 +142,76 @@
     <!-- Interceptar THREE.WebGLRenderer imediatamente após A-Frame carregar -->
     <script>
       // Interceptar THREE.WebGLRenderer assim que Three.js estiver disponível
+      // SOLUÇÃO ULTRA AGRESSIVA: Interceptar antes do erro ser logado
       (function interceptWebGLRenderer() {
         // Verificar se THREE já está disponível
         if (window.THREE && window.THREE.WebGLRenderer) {
           const OriginalWebGLRenderer = window.THREE.WebGLRenderer;
+          
+          // Interceptar construtor
           window.THREE.WebGLRenderer = function(...args) {
+            // Tentar criar renderer normalmente
             try {
               return new OriginalWebGLRenderer(...args);
             } catch (e) {
-              // Se for erro de contexto WebGL, suprimir silenciosamente
-              const errorMsg = e.message || String(e);
+              // Se for erro de contexto WebGL, suprimir completamente
+              const errorMsg = e.message || String(e) || '';
               if (errorMsg.includes('WebGL context') || 
-                  errorMsg.includes('existing context')) {
-                // Não fazer nada - erro suprimido
-                // Tentar retornar renderer existente se possível
-                if (args[0] && args[0]._glContext) {
-                  try {
-                    return new OriginalWebGLRenderer({ canvas: args[0] });
-                  } catch (e2) {
-                    // Ignorar
-                  }
-                }
+                  errorMsg.includes('existing context') ||
+                  errorMsg.includes('Canvas has an existing')) {
+                // Erro suprimido - não fazer nada
+                // O A-Frame vai lidar com isso
                 return null;
               }
               throw e;
             }
           };
-          // Copiar propriedades estáticas
+          
+          // Copiar propriedades estáticas e métodos
           Object.setPrototypeOf(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
           Object.assign(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
+          
+          // Interceptar também o método que pode estar logando o erro
+          // Algumas versões do Three.js logam erros internamente
+          const originalWarn = window.THREE.WebGLRenderer.warn || function(){};
+          window.THREE.WebGLRenderer.warn = function(...args) {
+            const msg = args.join(' ');
+            if (msg.includes('WebGL context') || msg.includes('existing context')) {
+              return; // Não logar
+            }
+            originalWarn.apply(this, args);
+          };
         } else {
           // Se THREE ainda não carregou, tentar novamente
           setTimeout(interceptWebGLRenderer, 50);
         }
       })();
+      
+      // Também interceptar após MindAR carregar (caso Three.js seja carregado depois)
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          if (window.THREE && window.THREE.WebGLRenderer) {
+            const OriginalWebGLRenderer = window.THREE.WebGLRenderer;
+            if (window.THREE.WebGLRenderer.toString().includes('OriginalWebGLRenderer')) {
+              return; // Já foi interceptado
+            }
+            window.THREE.WebGLRenderer = function(...args) {
+              try {
+                return new OriginalWebGLRenderer(...args);
+              } catch (e) {
+                const errorMsg = e.message || String(e) || '';
+                if (errorMsg.includes('WebGL context') || 
+                    errorMsg.includes('existing context')) {
+                  return null;
+                }
+                throw e;
+              }
+            };
+            Object.setPrototypeOf(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
+            Object.assign(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
+          }
+        }, 1000);
+      });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
