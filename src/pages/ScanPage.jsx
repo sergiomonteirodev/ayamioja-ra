@@ -237,28 +237,23 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // SOLUÇÃO SIMPLES E CORRETA: Controlar visibilidade do canvas apenas via CSS
-  // NUNCA remover canvas do DOM - isso quebra o contexto WebGL do A-Frame
-  // Apenas ajustar opacity e z-index quando activeTargetIndex mudar
+  // SOLUÇÃO CORRETA: Controlar visibilidade APENAS via z-index do a-scene
+  // NUNCA tocar no canvas - isso pode quebrar o compositor WebGL no Android
+  // Apenas ajustar z-index do a-scene quando activeTargetIndex mudar
   useEffect(() => {
     if (!cameraPermissionGranted) return
 
     const scene = sceneRef.current
     if (!scene) return
 
-    const canvas = scene.querySelector('canvas')
-    if (!canvas) return
-
-    // Quando não há target: ocultar canvas (opacity 0) e colocar atrás do vídeo
+    // CRÍTICO: NÃO tocar no canvas - apenas z-index do a-scene
+    // Tocar no canvas (opacity, display) pode quebrar o compositor WebGL
     if (activeTargetIndex === null || activeTargetIndex === undefined) {
-      canvas.style.opacity = '0'
-      canvas.style.pointerEvents = 'none'
+      // Quando não há target: colocar a-scene atrás do vídeo
       scene.style.zIndex = '-1'
       scene.removeAttribute('data-has-active-target')
     } else {
-      // Quando há target: mostrar canvas (opacity 1) e colocar acima do vídeo
-      canvas.style.opacity = '1'
-      canvas.style.pointerEvents = 'none'
+      // Quando há target: colocar a-scene acima do vídeo
       scene.style.zIndex = '1'
       scene.setAttribute('data-has-active-target', 'true')
     }
@@ -636,21 +631,15 @@ const ScanPage = () => {
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         renderer="alpha: true; antialias: true; preserveDrawingBuffer: false; colorManagement: false"
-        embedded
         background="color: transparent"
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
+          position: 'fixed',
+          inset: 0,
           width: '100vw',
           height: '100vh',
           zIndex: 1,
           pointerEvents: 'none',
-          backgroundColor: 'transparent',
-          opacity: 1,
-          display: 'block',
-          transform: 'none',
-          WebkitTransform: 'none'
+          backgroundColor: 'transparent'
         }}
       >
         {/* Assets - Vídeos */}
