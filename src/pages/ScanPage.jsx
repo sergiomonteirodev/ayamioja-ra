@@ -327,9 +327,13 @@ const ScanPage = () => {
         canvas.style.setProperty('opacity', '0', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
         canvas.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo quando oculto
-        // NÃO ocultar a-scene - o vídeo da câmera precisa estar visível
+        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ATRÁS do vídeo quando não há targets
+        // Isso evita que o a-scene cubra o vídeo mesmo com canvas oculto
+        scene.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo quando não há targets
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
+        scene.style.setProperty('background-color', 'transparent', 'important')
+        scene.style.setProperty('background', 'transparent', 'important')
       } else {
         // Target ativo: MOSTRAR canvas transparente ACIMA do vídeo
         scene.setAttribute('data-has-active-target', 'true')
@@ -338,8 +342,12 @@ const ScanPage = () => {
         canvas.style.setProperty('opacity', '1', 'important')
         canvas.style.setProperty('pointer-events', 'none', 'important')
         canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo para mostrar AR
+        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ACIMA do vídeo quando há targets
+        scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo quando há targets
         scene.style.setProperty('visibility', 'visible', 'important')
         scene.style.setProperty('opacity', '1', 'important')
+        scene.style.setProperty('background-color', 'transparent', 'important')
+        scene.style.setProperty('background', 'transparent', 'important')
       }
     }
 
@@ -479,11 +487,15 @@ const ScanPage = () => {
         canvas.style.setProperty('visibility', 'hidden', 'important') // Fallback
         canvas.style.setProperty('opacity', '0', 'important')
         canvas.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo
+        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ATRÁS do vídeo
+        scene.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo quando não há targets
       } else {
         canvas.style.setProperty('display', 'block', 'important') // Mostrar quando há target
         canvas.style.setProperty('visibility', 'visible', 'important')
         canvas.style.setProperty('opacity', '1', 'important')
         canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo para AR
+        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ACIMA do vídeo
+        scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo quando há targets
       }
       
       // CRÍTICO ANDROID: Forçar clear color transparente no WebGL
@@ -531,7 +543,11 @@ const ScanPage = () => {
         
         // Garantir posicionamento correto sempre - usar absolute no Android
         const isAndroid = /Android/i.test(navigator.userAgent)
-        mindarVideo.style.setProperty('z-index', '0', 'important')
+        // CRÍTICO ANDROID: z-index do vídeo deve ser maior que o a-scene quando não há targets
+        // Quando não há targets: vídeo (z-index: 0) > a-scene (z-index: -1)
+        // Quando há targets: vídeo (z-index: 0) < a-scene (z-index: 1)
+        const videoZIndex = activeTargetIndex === null ? '0' : '0' // Sempre 0, a-scene ajusta seu z-index
+        mindarVideo.style.setProperty('z-index', videoZIndex, 'important')
         mindarVideo.style.setProperty('position', isAndroid ? 'absolute' : 'absolute', 'important')
         mindarVideo.style.setProperty('top', '0', 'important')
         mindarVideo.style.setProperty('left', '0', 'important')
@@ -541,6 +557,8 @@ const ScanPage = () => {
         mindarVideo.style.setProperty('display', 'block', 'important')
         mindarVideo.style.setProperty('visibility', 'visible', 'important')
         mindarVideo.style.setProperty('opacity', '1', 'important')
+        mindarVideo.style.setProperty('background-color', 'transparent', 'important')
+        mindarVideo.style.setProperty('background', 'transparent', 'important')
         
         // Garantir que está reproduzindo
         if (mindarVideo.paused && mindarVideo.readyState >= 2 && mindarVideo.srcObject) {
@@ -556,6 +574,25 @@ const ScanPage = () => {
           console.warn('⚠️ Vídeo #arVideo não encontrado - MindAR pode não ter criado ainda (tentativa', window._videoNotFoundCount, ')')
         }
       }
+      
+      // CRÍTICO ANDROID: Verificar e remover qualquer elemento com background preto que possa estar cobrindo
+      // Verificar todos os elementos filhos do a-scene
+      const allSceneChildren = scene.querySelectorAll('*')
+      allSceneChildren.forEach((child) => {
+        if (child === canvas || child === mindarVideo) return // Pular canvas e vídeo
+        
+        const childStyle = window.getComputedStyle(child)
+        const bgColor = childStyle.backgroundColor
+        
+        // Se o elemento tem background preto e não é necessário, torná-lo transparente
+        if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor === '#000000' || bgColor === 'black')) {
+          // Apenas se não for um elemento de vídeo AR necessário
+          if (!child.id || (!child.id.includes('target') && !child.id.includes('video'))) {
+            child.style.setProperty('background-color', 'transparent', 'important')
+            child.style.setProperty('background', 'transparent', 'important')
+          }
+        }
+      })
     }
 
     // Chamar imediatamente
