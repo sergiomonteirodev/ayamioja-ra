@@ -775,17 +775,14 @@ html.scan-page-active {
 }
 
 /* A-Frame Scene */
-/* CRÍTICO: No Android, usar absolute em vez de fixed para evitar problemas de composição */
-/* CRÍTICO: z-index será controlado dinamicamente via JavaScript baseado em activeTargetIndex */
+/* CORREÇÃO: NÃO usar embedded em SPA React - causa inicialização dupla do WebGL */
+/* Usar position: fixed e deixar A-Frame gerenciar o canvas completamente */
 a-scene {
-    position: absolute !important; /* Mudado de fixed para absolute no Android */
-    top: 0 !important;
-    left: 0 !important;
+    position: fixed !important;
+    inset: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: -1 !important; /* z-index: -1 por padrão (atrás do vídeo) - será ajustado dinamicamente */
-    transform: none !important; /* CRÍTICO: Sem transforms no a-scene */
-    -webkit-transform: none !important;
+    z-index: -1 !important; /* Por padrão, atrás do vídeo - será ajustado dinamicamente */
     background-color: transparent !important;
     background: transparent !important;
 }
@@ -795,51 +792,21 @@ a-scene {
     z-index: 1 !important; /* Acima do vídeo quando há target ativo */
 }
 
-/* Canvas do A-Frame - Garantir que ocupe 100% */
-/* CRÍTICO: No Android, usar absolute em vez de fixed */
+/* Canvas do A-Frame - Deixar A-Frame gerenciar completamente */
+/* CRÍTICO: NÃO tocar no canvas via CSS - pode quebrar o compositor WebGL */
 a-scene canvas {
-    position: absolute !important; /* Mudado de fixed para absolute no Android */
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important;
-    z-index: 1 !important; /* z-index: 1 para ficar acima do vídeo */
-    transform: none !important; /* CRÍTICO: Sem transforms no canvas */
-    -webkit-transform: none !important;
     background-color: transparent !important;
     background: transparent !important;
 }
 
-/* CRÍTICO ANDROID: Ocultar canvas por padrão - só mostrar quando há target ativo */
-/* Isso evita área preta no Android quando não há AR para mostrar */
-/* IMPORTANTE: NÃO ocultar a-scene, apenas o canvas, para o vídeo da câmera aparecer */
-/* SOLUÇÃO OTIMIZADA: Usar display: none no Android para melhor eficácia */
-/* CRÍTICO: z-index do a-scene será controlado dinamicamente via JavaScript */
-.scan-page a-scene {
-    visibility: visible !important; /* Manter a-scene visível para o vídeo da câmera */
-    opacity: 1 !important;
-    z-index: -1 !important; /* Por padrão, atrás do vídeo (z-index: 0) */
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-.scan-page a-scene canvas {
-    display: none !important; /* display: none é mais eficaz no Android do que visibility */
-    visibility: hidden !important; /* Fallback para outros navegadores */
-    opacity: 0 !important;
-    pointer-events: none !important;
-    z-index: -1 !important; /* Atrás do vídeo quando oculto */
-}
-
-/* Mostrar canvas apenas quando há target ativo (via data attribute) */
-.scan-page a-scene[data-has-active-target="true"] canvas {
-    display: block !important; /* Mostrar quando há target ativo */
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: none !important;
-    z-index: 1 !important; /* Acima do vídeo para mostrar AR */
-}
+/* REMOVIDO: Todas as regras CSS que controlam opacity/display do canvas */
+/* Tocar no canvas pode quebrar o compositor WebGL no Android */
+/* Apenas z-index do a-scene é controlado dinamicamente via JavaScript */
 
 /* Container da câmera AR */
 .a-canvas {
