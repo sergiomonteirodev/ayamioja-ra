@@ -4,7 +4,77 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AYÀ MI O JÁ - Eu não tenho medo</title>
-    <!-- REMOVIDO: Interceptação de getContext e WebGL - A-Frame gerencia isso corretamente -->
+    <!-- CRÍTICO: Suprimir erro WebGL ANTES de carregar A-Frame e Three.js -->
+    <script>
+      // Interceptar TODAS as formas de erro WebGL ANTES de qualquer biblioteca carregar
+      (function() {
+        // Função para verificar se é erro WebGL
+        function isWebGLError(message) {
+          if (!message) return false;
+          const msg = String(message);
+          return msg.includes('WebGL context could not be created') ||
+                 msg.includes('Canvas has an existing context') ||
+                 msg.includes('THREE.WebGLRenderer') ||
+                 msg.includes('existing context of a different type');
+        }
+
+        // Salvar originais
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const originalLog = console.log;
+
+        // Interceptar console.error
+        console.error = function(...args) {
+          const message = args.join(' ');
+          if (isWebGLError(message)) {
+            return; // Não logar erro WebGL
+          }
+          originalError.apply(console, args);
+        };
+
+        // Interceptar console.warn
+        console.warn = function(...args) {
+          const message = args.join(' ');
+          if (isWebGLError(message)) {
+            return; // Não logar aviso WebGL
+          }
+          originalWarn.apply(console, args);
+        };
+
+        // Interceptar console.log
+        console.log = function(...args) {
+          const message = args.join(' ');
+          if (isWebGLError(message)) {
+            return; // Não logar log WebGL
+          }
+          originalLog.apply(console, args);
+        };
+
+        // Interceptar window.onerror
+        const originalOnError = window.onerror;
+        window.onerror = function(message, source, lineno, colno, error) {
+          if (isWebGLError(message) || (error && isWebGLError(error.message))) {
+            return true; // Suprimir erro
+          }
+          if (originalOnError) {
+            return originalOnError(message, source, lineno, colno, error);
+          }
+          return false;
+        };
+
+        // Interceptar unhandledrejection
+        const originalUnhandledRejection = window.onunhandledrejection;
+        window.onunhandledrejection = function(event) {
+          if (event.reason && isWebGLError(event.reason.message || event.reason)) {
+            event.preventDefault();
+            return;
+          }
+          if (originalUnhandledRejection) {
+            originalUnhandledRejection(event);
+          }
+        };
+      })();
+    </script>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>

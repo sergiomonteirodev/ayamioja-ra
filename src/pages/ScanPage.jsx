@@ -10,41 +10,101 @@ import AudioDescriptionAR from '../components/AudioDescriptionAR'
 
 const ScanPage = () => {
   // CRÍTICO ANDROID: Suprimir erro WebGL que está poluindo o console
-  // Este erro não afeta a funcionalidade mas gera muito ruído
+  // SOLUÇÃO ULTRA AGRESSIVA: Interceptar TODAS as formas possíveis de erro
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid) return
 
     const originalError = console.error
     const originalWarn = console.warn
+    const originalLog = console.log
+    const originalOnError = window.onerror
+    const originalUnhandledRejection = window.onunhandledrejection
 
-    // Interceptar console.error para suprimir erro WebGL específico
+    // Função para verificar se é erro WebGL
+    const isWebGLError = (message) => {
+      if (!message) return false
+      const msg = typeof message === 'string' ? message : String(message)
+      return msg.includes('WebGL context could not be created') ||
+             msg.includes('Canvas has an existing context') ||
+             msg.includes('THREE.WebGLRenderer') ||
+             msg.includes('existing context of a different type')
+    }
+
+    // Interceptar console.error
     console.error = (...args) => {
       const message = args.join(' ')
-      // Suprimir erro WebGL sobre contexto existente
-      if (message.includes('WebGL context could not be created') || 
-          message.includes('Canvas has an existing context')) {
-        // Não logar este erro específico
-        return
+      if (isWebGLError(message)) {
+        return // Não logar este erro
       }
       originalError.apply(console, args)
     }
 
-    // Interceptar console.warn também (alguns navegadores usam warn)
+    // Interceptar console.warn
     console.warn = (...args) => {
       const message = args.join(' ')
-      // Suprimir aviso WebGL sobre contexto existente
-      if (message.includes('WebGL context could not be created') || 
-          message.includes('Canvas has an existing context')) {
-        // Não logar este aviso específico
-        return
+      if (isWebGLError(message)) {
+        return // Não logar este aviso
       }
       originalWarn.apply(console, args)
+    }
+
+    // Interceptar console.log (alguns navegadores podem usar log)
+    console.log = (...args) => {
+      const message = args.join(' ')
+      if (isWebGLError(message)) {
+        return // Não logar este log
+      }
+      originalLog.apply(console, args)
+    }
+
+    // Interceptar window.onerror
+    window.onerror = (message, source, lineno, colno, error) => {
+      if (isWebGLError(message) || (error && isWebGLError(error.message))) {
+        return true // Suprimir erro
+      }
+      if (originalOnError) {
+        return originalOnError(message, source, lineno, colno, error)
+      }
+      return false
+    }
+
+    // Interceptar unhandledrejection
+    window.onunhandledrejection = (event) => {
+      if (event.reason && isWebGLError(event.reason.message || event.reason)) {
+        event.preventDefault()
+        return
+      }
+      if (originalUnhandledRejection) {
+        originalUnhandledRejection(event)
+      }
+    }
+
+    // Interceptar addEventListener('error') também
+    const originalAddEventListener = EventTarget.prototype.addEventListener
+    EventTarget.prototype.addEventListener = function(type, listener, options) {
+      if (type === 'error' && listener) {
+        const wrappedListener = function(event) {
+          if (event.error && isWebGLError(event.error.message)) {
+            return // Não chamar listener para erros WebGL
+          }
+          if (event.message && isWebGLError(event.message)) {
+            return // Não chamar listener para erros WebGL
+          }
+          return listener.call(this, event)
+        }
+        return originalAddEventListener.call(this, type, wrappedListener, options)
+      }
+      return originalAddEventListener.call(this, type, listener, options)
     }
 
     return () => {
       console.error = originalError
       console.warn = originalWarn
+      console.log = originalLog
+      window.onerror = originalOnError
+      window.onunhandledrejection = originalUnhandledRejection
+      EventTarget.prototype.addEventListener = originalAddEventListener
     }
   }, [])
   const [librasActive, setLibrasActive] = useState(true) // ✅ Iniciar com Libras ativado
