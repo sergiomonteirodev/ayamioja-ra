@@ -9,104 +9,9 @@ import AudioDescriptionAR from '../components/AudioDescriptionAR'
 // REMOVIDO: Interceptação de getContext e WebGL - A-Frame gerencia isso corretamente
 
 const ScanPage = () => {
-  // CRÍTICO ANDROID: Suprimir erro WebGL que está poluindo o console
-  // SOLUÇÃO ULTRA AGRESSIVA: Interceptar TODAS as formas possíveis de erro
-  useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid) return
-
-    const originalError = console.error
-    const originalWarn = console.warn
-    const originalLog = console.log
-    const originalOnError = window.onerror
-    const originalUnhandledRejection = window.onunhandledrejection
-
-    // Função para verificar se é erro WebGL
-    const isWebGLError = (message) => {
-      if (!message) return false
-      const msg = typeof message === 'string' ? message : String(message)
-      return msg.includes('WebGL context could not be created') ||
-             msg.includes('Canvas has an existing context') ||
-             msg.includes('THREE.WebGLRenderer') ||
-             msg.includes('existing context of a different type')
-    }
-
-    // Interceptar console.error
-    console.error = (...args) => {
-      const message = args.join(' ')
-      if (isWebGLError(message)) {
-        return // Não logar este erro
-      }
-      originalError.apply(console, args)
-    }
-
-    // Interceptar console.warn
-    console.warn = (...args) => {
-      const message = args.join(' ')
-      if (isWebGLError(message)) {
-        return // Não logar este aviso
-      }
-      originalWarn.apply(console, args)
-    }
-
-    // Interceptar console.log (alguns navegadores podem usar log)
-    console.log = (...args) => {
-      const message = args.join(' ')
-      if (isWebGLError(message)) {
-        return // Não logar este log
-      }
-      originalLog.apply(console, args)
-    }
-
-    // Interceptar window.onerror
-    window.onerror = (message, source, lineno, colno, error) => {
-      if (isWebGLError(message) || (error && isWebGLError(error.message))) {
-        return true // Suprimir erro
-      }
-      if (originalOnError) {
-        return originalOnError(message, source, lineno, colno, error)
-      }
-      return false
-    }
-
-    // Interceptar unhandledrejection
-    window.onunhandledrejection = (event) => {
-      if (event.reason && isWebGLError(event.reason.message || event.reason)) {
-        event.preventDefault()
-        return
-      }
-      if (originalUnhandledRejection) {
-        originalUnhandledRejection(event)
-      }
-    }
-
-    // Interceptar addEventListener('error') também
-    const originalAddEventListener = EventTarget.prototype.addEventListener
-    EventTarget.prototype.addEventListener = function(type, listener, options) {
-      if (type === 'error' && listener) {
-        const wrappedListener = function(event) {
-          if (event.error && isWebGLError(event.error.message)) {
-            return // Não chamar listener para erros WebGL
-          }
-          if (event.message && isWebGLError(event.message)) {
-            return // Não chamar listener para erros WebGL
-          }
-          return listener.call(this, event)
-        }
-        return originalAddEventListener.call(this, type, wrappedListener, options)
-      }
-      return originalAddEventListener.call(this, type, listener, options)
-    }
-
-    return () => {
-      console.error = originalError
-      console.warn = originalWarn
-      console.log = originalLog
-      window.onerror = originalOnError
-      window.onunhandledrejection = originalUnhandledRejection
-      EventTarget.prototype.addEventListener = originalAddEventListener
-    }
-  }, [])
+  // REMOVIDO: Todas as interceptações de console/erros
+  // Essas interceptações estavam criando problemas, não resolvendo
+  // Deixar o A-Frame/MindAR trabalhar naturalmente
   const [librasActive, setLibrasActive] = useState(true) // ✅ Iniciar com Libras ativado
   const [audioActive, setAudioActive] = useState(false)
   const [videoState, setVideoState] = useState(null)
@@ -401,74 +306,35 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // SOLUÇÃO CRÍTICA ANDROID: Ocultar canvas quando não há targets ativos
-  // CORREÇÃO: NÃO remover canvas do DOM - isso causa erro "Canvas has an existing context"
-  // Quando removemos e restauramos o canvas, o A-Frame tenta criar novo contexto WebGL
-  // Solução: Apenas ocultar o canvas, deixar A-Frame gerenciar o contexto
+  // SOLUÇÃO SIMPLES E CORRETA: Controlar visibilidade do canvas apenas via CSS
+  // NUNCA remover canvas do DOM - isso quebra o contexto WebGL do A-Frame
+  // Apenas ajustar opacity e z-index quando activeTargetIndex mudar
   useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid || !cameraPermissionGranted) return
+    if (!cameraPermissionGranted) return
 
-    const forceCanvasVisibility = () => {
-      const scene = sceneRef.current
-      if (!scene) return
+    const scene = sceneRef.current
+    if (!scene) return
 
-      const canvas = scene.querySelector('canvas')
-      if (!canvas) return
+    const canvas = scene.querySelector('canvas')
+    if (!canvas) return
 
-      // CRÍTICO: NÃO remover canvas do DOM - apenas ocultá-lo
-      // Remover canvas causa erro "Canvas has an existing context" quando restaurado
-      if (activeTargetIndex === null || activeTargetIndex === undefined) {
-        // Nenhum target ativo: OCULTAR canvas mas manter no DOM
-        scene.removeAttribute('data-has-active-target')
-        canvas.style.setProperty('display', 'none', 'important') // Ocultar mas manter no DOM
-        canvas.style.setProperty('visibility', 'hidden', 'important')
-        canvas.style.setProperty('opacity', '0', 'important')
-        canvas.style.setProperty('pointer-events', 'none', 'important')
-        canvas.style.setProperty('z-index', '-1', 'important')
-        
-        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ATRÁS do vídeo quando não há targets
-        scene.style.setProperty('z-index', '-1', 'important')
-        scene.style.setProperty('visibility', 'visible', 'important')
-        scene.style.setProperty('opacity', '1', 'important')
-        scene.style.setProperty('background-color', 'transparent', 'important')
-        scene.style.setProperty('background', 'transparent', 'important')
-      } else {
-        // Target ativo: MOSTRAR canvas
-        scene.setAttribute('data-has-active-target', 'true')
-        canvas.style.setProperty('display', 'block', 'important')
-        canvas.style.setProperty('visibility', 'visible', 'important')
-        canvas.style.setProperty('opacity', '1', 'important')
-        canvas.style.setProperty('pointer-events', 'none', 'important')
-        canvas.style.setProperty('z-index', '1', 'important')
-        
-        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ACIMA do vídeo quando há targets
-        scene.style.setProperty('z-index', '1', 'important')
-        scene.style.setProperty('visibility', 'visible', 'important')
-        scene.style.setProperty('opacity', '1', 'important')
-        scene.style.setProperty('background-color', 'transparent', 'important')
-        scene.style.setProperty('background', 'transparent', 'important')
-      }
-    }
-
-    // Executar imediatamente
-    forceCanvasVisibility()
-    
-    // Executar continuamente a cada 100ms para garantir que o canvas permaneça oculto quando necessário
-    const interval = setInterval(forceCanvasVisibility, 100)
-
-    return () => {
-      clearInterval(interval)
+    // Quando não há target: ocultar canvas (opacity 0) e colocar atrás do vídeo
+    if (activeTargetIndex === null || activeTargetIndex === undefined) {
+      canvas.style.opacity = '0'
+      canvas.style.pointerEvents = 'none'
+      scene.style.zIndex = '-1'
+      scene.removeAttribute('data-has-active-target')
+    } else {
+      // Quando há target: mostrar canvas (opacity 1) e colocar acima do vídeo
+      canvas.style.opacity = '1'
+      canvas.style.pointerEvents = 'none'
+      scene.style.zIndex = '1'
+      scene.setAttribute('data-has-active-target', 'true')
     }
   }, [activeTargetIndex, cameraPermissionGranted])
   
-  // REMOVIDO: Interceptação de criação do canvas e remoção do DOM
-  // CORREÇÃO: NÃO remover canvas do DOM - isso causa erro "Canvas has an existing context"
-  // Quando removemos e restauramos o canvas, o A-Frame tenta criar novo contexto WebGL
-  // Solução: Deixar A-Frame criar e gerenciar o canvas, apenas ocultá-lo quando necessário
-  // O canvas deve permanecer no DOM sempre - apenas oculto quando não há targets
-
-  // REMOVIDO: Interceptação de criação do canvas - A-Frame gerencia isso corretamente
+  // REMOVIDO: Todas as interceptações e hacks
+  // Deixar A-Frame/MindAR gerenciar o canvas completamente
 
   // Forçar transparência imediatamente ao montar
   useEffect(() => {
@@ -495,153 +361,9 @@ const ScanPage = () => {
     }
   }, [])
 
-  // Forçar transparência Android continuamente - VERSÃO ULTRA AGRESSIVA
-  useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid || !cameraPermissionGranted) return
-
-    const forceAndroidTransparency = () => {
-      // Forçar body e html transparentes
-      document.body.style.setProperty('background-color', 'transparent', 'important')
-      document.body.style.setProperty('background', 'transparent', 'important')
-      document.documentElement.style.setProperty('background-color', 'transparent', 'important')
-      document.documentElement.style.setProperty('background', 'transparent', 'important')
-      
-      // Forçar .scan-page transparente
-      const scanPage = document.querySelector('.scan-page')
-      if (scanPage) {
-        scanPage.style.setProperty('background-color', 'transparent', 'important')
-        scanPage.style.setProperty('background', 'transparent', 'important')
-      }
-      
-      const scene = sceneRef.current
-      if (!scene) return
-      
-      // Forçar a-scene transparente
-      scene.style.setProperty('background-color', 'transparent', 'important')
-      scene.style.setProperty('background', 'transparent', 'important')
-      scene.setAttribute('background', 'color: transparent')
-      
-      const canvas = scene.querySelector('canvas')
-      if (!canvas) return
-      
-      // CRÍTICO: Garantir que o canvas esteja oculto quando não há targets ativos
-      // Isso evita a área preta no Android
-      // Usar display: none para melhor eficácia no Android
-      if (activeTargetIndex === null) {
-        canvas.style.setProperty('display', 'none', 'important') // display: none é mais eficaz
-        canvas.style.setProperty('visibility', 'hidden', 'important') // Fallback
-        canvas.style.setProperty('opacity', '0', 'important')
-        canvas.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo
-        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ATRÁS do vídeo
-        scene.style.setProperty('z-index', '-1', 'important') // Atrás do vídeo quando não há targets
-      } else {
-        canvas.style.setProperty('display', 'block', 'important') // Mostrar quando há target
-        canvas.style.setProperty('visibility', 'visible', 'important')
-        canvas.style.setProperty('opacity', '1', 'important')
-        canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo para AR
-        // CRÍTICO ANDROID: Ajustar z-index do a-scene para ficar ACIMA do vídeo
-        scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo quando há targets
-      }
-      
-      // REMOVIDO: Não acessar contexto WebGL diretamente
-      // Isso estava causando erros repetitivos quando o canvas era removido/restaurado
-      // O A-Frame gerencia o contexto WebGL corretamente
-      // Não precisamos acessar gl.clearColor manualmente
-      
-      // Verificar e garantir que o vídeo da câmera existe e está visível
-      const mindarVideo = document.querySelector('#arVideo') || 
-                          Array.from(document.querySelectorAll('video')).find(v => 
-                            v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
-                            (v.srcObject || v.videoWidth > 0)
-                          )
-      
-      if (mindarVideo) {
-        const computedStyle = window.getComputedStyle(mindarVideo)
-        const isVisible = 
-          computedStyle.display !== 'none' &&
-          computedStyle.visibility !== 'hidden' &&
-          computedStyle.opacity !== '0' &&
-          mindarVideo.videoWidth > 0 &&
-          mindarVideo.videoHeight > 0
-        
-        // Log apenas se houver problema (para não poluir console)
-        if (!isVisible && !mindarVideo._visibilityLogged) {
-          console.warn('⚠️ Vídeo da câmera existe mas não está visível ou não tem stream:', {
-            display: computedStyle.display,
-            visibility: computedStyle.visibility,
-            opacity: computedStyle.opacity,
-            videoWidth: mindarVideo.videoWidth,
-            videoHeight: mindarVideo.videoHeight,
-            hasSrcObject: !!mindarVideo.srcObject,
-            paused: mindarVideo.paused,
-            readyState: mindarVideo.readyState
-          })
-          mindarVideo._visibilityLogged = true
-        }
-        
-        // Garantir posicionamento correto sempre - usar absolute no Android
-        const isAndroid = /Android/i.test(navigator.userAgent)
-        // CRÍTICO ANDROID: z-index do vídeo deve ser maior que o a-scene quando não há targets
-        // Quando não há targets: vídeo (z-index: 0) > a-scene (z-index: -1)
-        // Quando há targets: vídeo (z-index: 0) < a-scene (z-index: 1)
-        const videoZIndex = activeTargetIndex === null ? '0' : '0' // Sempre 0, a-scene ajusta seu z-index
-        mindarVideo.style.setProperty('z-index', videoZIndex, 'important')
-        mindarVideo.style.setProperty('position', isAndroid ? 'absolute' : 'absolute', 'important')
-        mindarVideo.style.setProperty('top', '0', 'important')
-        mindarVideo.style.setProperty('left', '0', 'important')
-        mindarVideo.style.setProperty('width', '100vw', 'important')
-        mindarVideo.style.setProperty('height', '100vh', 'important')
-        mindarVideo.style.setProperty('object-fit', 'cover', 'important')
-        mindarVideo.style.setProperty('display', 'block', 'important')
-        mindarVideo.style.setProperty('visibility', 'visible', 'important')
-        mindarVideo.style.setProperty('opacity', '1', 'important')
-        mindarVideo.style.setProperty('background-color', 'transparent', 'important')
-        mindarVideo.style.setProperty('background', 'transparent', 'important')
-        
-        // Garantir que está reproduzindo
-        if (mindarVideo.paused && mindarVideo.readyState >= 2 && mindarVideo.srcObject) {
-          mindarVideo.play().catch(e => {
-            console.warn('⚠️ Erro ao reproduzir vídeo da câmera:', e)
-          })
-        }
-      } else {
-        // Log apenas ocasionalmente para não poluir o console
-        if (!window._videoNotFoundCount) window._videoNotFoundCount = 0
-        window._videoNotFoundCount++
-        if (window._videoNotFoundCount <= 3) {
-          console.warn('⚠️ Vídeo #arVideo não encontrado - MindAR pode não ter criado ainda (tentativa', window._videoNotFoundCount, ')')
-        }
-      }
-      
-      // CRÍTICO ANDROID: Verificar e remover qualquer elemento com background preto que possa estar cobrindo
-      // Verificar todos os elementos filhos do a-scene
-      const allSceneChildren = scene.querySelectorAll('*')
-      allSceneChildren.forEach((child) => {
-        if (child === canvas || child === mindarVideo) return // Pular canvas e vídeo
-        
-        const childStyle = window.getComputedStyle(child)
-        const bgColor = childStyle.backgroundColor
-        
-        // Se o elemento tem background preto e não é necessário, torná-lo transparente
-        if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor === '#000000' || bgColor === 'black')) {
-          // Apenas se não for um elemento de vídeo AR necessário
-          if (!child.id || (!child.id.includes('target') && !child.id.includes('video'))) {
-            child.style.setProperty('background-color', 'transparent', 'important')
-            child.style.setProperty('background', 'transparent', 'important')
-          }
-        }
-      })
-    }
-
-    // Chamar imediatamente
-    forceAndroidTransparency()
-    
-    // Chamar continuamente a cada 100ms no Android
-    const interval = setInterval(forceAndroidTransparency, 100)
-    
-    return () => clearInterval(interval)
-  }, [cameraPermissionGranted])
+  // REMOVIDO: Loop agressivo de 100ms
+  // Esses loops causam race conditions e interferem com o renderer do A-Frame
+  // A transparência já está configurada no renderer e background do a-scene
 
   // REMOVIDO: Fallback de segurança - A-Frame gerencia transparência via atributos
 
@@ -958,25 +680,9 @@ const ScanPage = () => {
     console.log("🚀 Iniciando pré-carregamento de vídeos...")
     preloadVideos()
 
-    // Forçar background transparente periodicamente (caso algum CSS externo sobrescreva)
-    const backgroundCheckInterval = setInterval(() => {
-      document.body.style.setProperty('background-color', 'transparent', 'important')
-      document.body.style.setProperty('background', 'transparent', 'important')
-      document.documentElement.style.setProperty('background-color', 'transparent', 'important')
-      document.documentElement.style.setProperty('background', 'transparent', 'important')
-      
-      // Garantir canvas transparente também
-      const canvas = scene.querySelector('canvas')
-      if (canvas) {
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-        // REMOVIDO: Manipulação direta do canvas - A-Frame controla isso
-      }
-    }, 1000) // Verificar a cada 1 segundo
-    
-    // Parar verificação de background após 30 segundos
-    const backgroundCheckTimeout = setTimeout(() => {
-      clearInterval(backgroundCheckInterval)
-    }, 30000)
+    // REMOVIDO: Loop de verificação de background
+    // A transparência já está configurada no renderer e background do a-scene
+    // Não precisamos verificar periodicamente
     
     // Depois tentar periodicamente (após a função ser definida)
     // A função será chamada via ensureCameraVideoVisibleRef.current após ser definida
