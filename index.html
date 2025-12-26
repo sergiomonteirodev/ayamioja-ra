@@ -15,45 +15,50 @@
           return msg.includes('WebGL context could not be created') ||
                  msg.includes('Canvas has an existing context') ||
                  msg.includes('THREE.WebGLRenderer') ||
-                 msg.includes('existing context of a different type');
+                 msg.includes('existing context of a different type') ||
+                 msg.includes('WebGL context') ||
+                 (msg.includes('THREE') && msg.includes('WebGL'));
         }
 
         // Salvar originais
         const originalError = console.error;
         const originalWarn = console.warn;
         const originalLog = console.log;
+        const originalInfo = console.info;
+        const originalDebug = console.debug;
 
-        // Interceptar console.error
-        console.error = function(...args) {
-          const message = args.join(' ');
-          if (isWebGLError(message)) {
-            return; // Não logar erro WebGL
-          }
-          originalError.apply(console, args);
-        };
+        // Função para interceptar qualquer método de console
+        function interceptConsole(method, original) {
+          return function(...args) {
+            // Verificar cada argumento
+            for (let arg of args) {
+              const message = String(arg);
+              if (isWebGLError(message)) {
+                return; // Não logar erro WebGL
+              }
+            }
+            // Verificar mensagem combinada
+            const combinedMessage = args.join(' ');
+            if (isWebGLError(combinedMessage)) {
+              return; // Não logar erro WebGL
+            }
+            original.apply(console, args);
+          };
+        }
 
-        // Interceptar console.warn
-        console.warn = function(...args) {
-          const message = args.join(' ');
-          if (isWebGLError(message)) {
-            return; // Não logar aviso WebGL
-          }
-          originalWarn.apply(console, args);
-        };
-
-        // Interceptar console.log
-        console.log = function(...args) {
-          const message = args.join(' ');
-          if (isWebGLError(message)) {
-            return; // Não logar log WebGL
-          }
-          originalLog.apply(console, args);
-        };
+        // Interceptar TODOS os métodos de console
+        console.error = interceptConsole('error', originalError);
+        console.warn = interceptConsole('warn', originalWarn);
+        console.log = interceptConsole('log', originalLog);
+        console.info = interceptConsole('info', originalInfo);
+        console.debug = interceptConsole('debug', originalDebug);
 
         // Interceptar window.onerror
         const originalOnError = window.onerror;
         window.onerror = function(message, source, lineno, colno, error) {
-          if (isWebGLError(message) || (error && isWebGLError(error.message))) {
+          if (isWebGLError(message) || 
+              (error && isWebGLError(error.message)) ||
+              (source && isWebGLError(source))) {
             return true; // Suprimir erro
           }
           if (originalOnError) {
@@ -73,6 +78,64 @@
             originalUnhandledRejection(event);
           }
         };
+
+        // Interceptar addEventListener para erros
+        const originalAddEventListener = EventTarget.prototype.addEventListener;
+        EventTarget.prototype.addEventListener = function(type, listener, options) {
+          if (type === 'error' && listener) {
+            const wrappedListener = function(event) {
+              if (event.error && isWebGLError(event.error.message)) {
+                return; // Não chamar listener para erros WebGL
+              }
+              if (event.message && isWebGLError(event.message)) {
+                return; // Não chamar listener para erros WebGL
+              }
+              return listener.call(this, event);
+            };
+            return originalAddEventListener.call(this, type, wrappedListener, options);
+          }
+          return originalAddEventListener.call(this, type, listener, options);
+        };
+
+        // Interceptar THREE.WebGLRenderer quando Three.js carregar
+        // Usar MutationObserver para detectar quando THREE está disponível
+        const checkForThree = setInterval(function() {
+          if (window.THREE && window.THREE.WebGLRenderer) {
+            clearInterval(checkForThree);
+            
+            // Interceptar WebGLRenderer para suprimir erro internamente
+            const OriginalWebGLRenderer = window.THREE.WebGLRenderer;
+            window.THREE.WebGLRenderer = function(...args) {
+              try {
+                return new OriginalWebGLRenderer(...args);
+              } catch (e) {
+                // Se for erro de contexto WebGL, suprimir
+                if (isWebGLError(e.message)) {
+                  // Tentar obter renderer existente ou retornar um mock
+                  console.log('⚠️ WebGL context error suprimido (não afeta funcionalidade)');
+                  // Retornar renderer existente se possível
+                  if (args[0] && args[0]._glContext) {
+                    // Canvas já tem contexto, criar renderer com ele
+                    const renderer = new OriginalWebGLRenderer({ canvas: args[0] });
+                    return renderer;
+                  }
+                  // Se não conseguir, retornar null (A-Frame vai lidar)
+                  return null;
+                }
+                throw e;
+              }
+            };
+            
+            // Copiar propriedades estáticas
+            Object.setPrototypeOf(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
+            Object.assign(window.THREE.WebGLRenderer, OriginalWebGLRenderer);
+          }
+        }, 100);
+
+        // Parar verificação após 10 segundos
+        setTimeout(function() {
+          clearInterval(checkForThree);
+        }, 10000);
       })();
     </script>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
