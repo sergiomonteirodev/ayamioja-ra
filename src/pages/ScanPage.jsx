@@ -33,9 +33,8 @@ const ScanPage = () => {
   const [isRequestingPermission, setIsRequestingPermission] = useState(false) // Controla se está solicitando permissão
   
   const sceneRef = useRef(null)
-  const mindarStartedRef = useRef(false)
-  // REMOVIDO: Refs desnecessários que eram usados para interceptações e hacks
-  // Deixar A-Frame/MindAR gerenciar tudo naturalmente
+  // REMOVIDO: mindarStartedRef - não precisamos mais rastrear inicialização manual
+  // O MindAR inicia automaticamente com autoStart: true
 
   const navigate = useNavigate()
 
