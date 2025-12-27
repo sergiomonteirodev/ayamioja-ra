@@ -310,6 +310,13 @@ const ScanPage = () => {
     document.documentElement.style.setProperty('background-color', 'transparent', 'important')
     document.documentElement.style.setProperty('background', 'transparent', 'important')
     
+    // CRÍTICO: Garantir que #root também seja transparente
+    const root = document.getElementById('root')
+    if (root) {
+      root.style.setProperty('background-color', 'transparent', 'important')
+      root.style.setProperty('background', 'transparent', 'important')
+    }
+    
     // Adicionar classe para CSS específico
     document.body.classList.add('scan-page-active')
     document.documentElement.classList.add('scan-page-active')
@@ -321,7 +328,24 @@ const ScanPage = () => {
       scanPage.style.setProperty('background', 'transparent', 'important')
     }
     
+    // Loop para garantir que background permaneça transparente
+    const keepTransparent = setInterval(() => {
+      document.body.style.setProperty('background-color', 'transparent', 'important')
+      document.body.style.setProperty('background', 'transparent', 'important')
+      document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+      document.documentElement.style.setProperty('background', 'transparent', 'important')
+      if (root) {
+        root.style.setProperty('background-color', 'transparent', 'important')
+        root.style.setProperty('background', 'transparent', 'important')
+      }
+      if (scanPage) {
+        scanPage.style.setProperty('background-color', 'transparent', 'important')
+        scanPage.style.setProperty('background', 'transparent', 'important')
+      }
+    }, 100)
+    
     return () => {
+      clearInterval(keepTransparent)
       document.body.classList.remove('scan-page-active')
       document.documentElement.classList.remove('scan-page-active')
     }
