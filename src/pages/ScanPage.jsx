@@ -218,6 +218,18 @@ const ScanPage = () => {
     } else {
       console.log('👁️ Nenhum target ativo - MOSTRANDO animação')
       setShowScanningAnimation(true)
+      
+      // CRÍTICO: Garantir background transparente quando animação aparece
+      document.body.style.setProperty('background-color', 'transparent', 'important')
+      document.body.style.setProperty('background', 'transparent', 'important')
+      document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+      document.documentElement.style.setProperty('background', 'transparent', 'important')
+      
+      const scanPage = document.querySelector('.scan-page')
+      if (scanPage) {
+        scanPage.style.setProperty('background-color', 'transparent', 'important')
+        scanPage.style.setProperty('background', 'transparent', 'important')
+      }
     }
   }, [activeTargetIndex])
 
