@@ -328,6 +328,42 @@ const ScanPage = () => {
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
 
+  // Função helper para atualizar material de forma segura
+  const safeUpdateMaterial = (aVideo, retryCount = 0) => {
+    if (!aVideo) return false
+    
+    // Verificar se o componente material existe
+    if (!aVideo.components || !aVideo.components.material) {
+      if (retryCount < 5) {
+        // Tentar novamente após delay
+        setTimeout(() => safeUpdateMaterial(aVideo, retryCount + 1), 100 * (retryCount + 1))
+      }
+      return false
+    }
+    
+    const material = aVideo.components.material
+    const materialData = material.data || {}
+    
+    // CRÍTICO: Verificar se o material está completamente inicializado
+    // O erro "can't access property shader" ocorre quando o material não tem shader definido
+    if (!materialData.shader && !material.material) {
+      if (retryCount < 5) {
+        // Material ainda não inicializado, tentar novamente
+        setTimeout(() => safeUpdateMaterial(aVideo, retryCount + 1), 100 * (retryCount + 1))
+      }
+      return false
+    }
+    
+    // Material está pronto, tentar atualizar com try/catch
+    try {
+      material.update()
+      return true
+    } catch (e) {
+      console.warn('⚠️ Erro ao atualizar material:', e)
+      return false
+    }
+  }
+
   // CRÍTICO: Forçar play do vídeo quando target é detectado E garantir visibilidade do a-video
   useEffect(() => {
     if (activeTargetIndex === null || activeTargetIndex === undefined) {
@@ -355,24 +391,12 @@ const ScanPage = () => {
     if (aVideo) {
       console.log(`✅ Garantindo visibilidade do a-video no target ${activeTargetIndex}`)
       
-      // CRÍTICO: Garantir que o material existe antes de atualizar
-      // O erro "can't access property shader" ocorre quando o material não está inicializado
-      if (!aVideo.components || !aVideo.components.material) {
-        console.log(`⚠️ Material não inicializado, aguardando...`)
-        // Aguardar material inicializar
-        setTimeout(() => {
-          if (aVideo.components && aVideo.components.material) {
-            aVideo.components.material.update()
-          }
-        }, 200)
-      } else {
-        // Material já existe, atualizar normalmente
-        aVideo.components.material.update()
-      }
-      
-      // Forçar visibilidade
+      // Forçar visibilidade primeiro
       aVideo.setAttribute('visible', 'true')
       aVideo.setAttribute('autoplay', 'true')
+      
+      // Tentar atualizar material de forma segura
+      safeUpdateMaterial(aVideo)
       
       // Garantir que o componente video está ativo
       if (aVideo.components && aVideo.components.video) {
@@ -388,21 +412,15 @@ const ScanPage = () => {
         console.log(`✅ a-video object3D.visible = true`)
       }
       
-      // Aguardar um frame e verificar novamente
+      // Aguardar e tentar atualizar material novamente após delay
       setTimeout(() => {
         if (aVideo.object3D) {
           aVideo.object3D.visible = true
           console.log(`✅ a-video object3D.visible confirmado após delay`)
         }
         // Tentar atualizar material novamente após delay
-        if (aVideo.components && aVideo.components.material) {
-          try {
-            aVideo.components.material.update()
-          } catch (e) {
-            console.warn('⚠️ Erro ao atualizar material após delay:', e)
-          }
-        }
-      }, 100)
+        safeUpdateMaterial(aVideo)
+      }, 200)
     } else {
       console.warn(`⚠️ a-video não encontrado no target ${activeTargetIndex}`)
     }
@@ -778,8 +796,8 @@ const ScanPage = () => {
             if (aVideo) {
               console.log(`✅ a-video encontrado no target ${targetIndex}, garantindo visibilidade`)
               aVideo.setAttribute('visible', 'true')
-              // Forçar atualização do componente
-              aVideo.components && aVideo.components.material && aVideo.components.material.update()
+              // Usar função helper para atualizar material de forma segura
+              safeUpdateMaterial(aVideo)
             }
           }
         }
@@ -819,25 +837,8 @@ const ScanPage = () => {
             console.log(`✅ a-video encontrado no target ${index}, garantindo visibilidade`)
             aVideo.setAttribute('visible', 'true')
             
-            // CRÍTICO: Garantir que o material existe antes de atualizar
-            if (!aVideo.components || !aVideo.components.material) {
-              console.log(`⚠️ Material não inicializado no target ${index}, aguardando...`)
-              setTimeout(() => {
-                if (aVideo.components && aVideo.components.material) {
-                  try {
-                    aVideo.components.material.update()
-                  } catch (e) {
-                    console.warn('⚠️ Erro ao atualizar material:', e)
-                  }
-                }
-              }, 200)
-            } else {
-              try {
-                aVideo.components.material.update()
-              } catch (e) {
-                console.warn('⚠️ Erro ao atualizar material:', e)
-              }
-            }
+            // Usar função helper para atualizar material de forma segura
+            safeUpdateMaterial(aVideo)
           }
         })
 
