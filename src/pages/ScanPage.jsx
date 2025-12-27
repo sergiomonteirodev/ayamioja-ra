@@ -966,8 +966,43 @@ const ScanPage = () => {
         </div>
       )}
 
+      {/* Botão para solicitar permissão da câmera (se ainda não foi concedida) */}
+      {!cameraPermissionGranted && !isRequestingPermission && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 100001,
+          textAlign: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: '30px',
+          borderRadius: '10px',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <p style={{ color: 'white', fontSize: '18px', marginBottom: '20px', fontWeight: 'bold' }}>
+            Para usar a Realidade Aumentada, precisamos acessar sua câmera
+          </p>
+          <button
+            onClick={requestCameraPermission}
+            style={{
+              padding: '15px 30px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+          >
+            Permitir acesso à câmera
+          </button>
+        </div>
+      )}
+
       {/* Animação de Scanning - mostra quando não há target ativo */}
-      {cameraPermissionGranted && showScanningAnimation && (activeTargetIndex === null || activeTargetIndex === undefined) && (
+      {showScanningAnimation && (activeTargetIndex === null || activeTargetIndex === undefined) && (
         <div 
           className="ar-scanning-overlay" 
           style={{
