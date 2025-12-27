@@ -622,6 +622,79 @@ const ScanPage = () => {
     console.log("🚀 Iniciando pré-carregamento de vídeos...")
     preloadVideos()
 
+    // CRÍTICO: Adicionar listeners para eventos do MindAR (targetFound e targetLost)
+    // Esses eventos são disparados quando um target é detectado ou perdido
+    const setupMindARListeners = () => {
+      // Aguardar a-scene estar pronto
+      if (!scene.hasLoaded) {
+        scene.addEventListener('loaded', setupMindARListeners, { once: true })
+        return
+      }
+
+      // Obter o sistema MindAR
+      const mindarSystem = scene.systems && scene.systems['mindar-image-system']
+      if (!mindarSystem) {
+        console.warn('⚠️ MindAR system não encontrado, tentando novamente...')
+        setTimeout(setupMindARListeners, 500)
+        return
+      }
+
+      console.log('✅ Configurando listeners do MindAR...')
+
+      // Listener para quando um target é encontrado
+      scene.addEventListener('targetFound', (event) => {
+        const targetIndex = event.detail?.targetIndex ?? event.detail?.index
+        if (targetIndex !== undefined && targetIndex !== null) {
+          console.log(`🎯 Target encontrado: ${targetIndex}`)
+          setActiveTargetIndex(targetIndex)
+          activeTargetIndexRef.current = targetIndex
+        }
+      })
+
+      // Listener para quando um target é perdido
+      scene.addEventListener('targetLost', (event) => {
+        const targetIndex = event.detail?.targetIndex ?? event.detail?.index
+        if (targetIndex !== undefined && targetIndex !== null) {
+          console.log(`❌ Target perdido: ${targetIndex}`)
+          // Só limpar se for o target ativo atual
+          if (activeTargetIndexRef.current === targetIndex) {
+            setActiveTargetIndex(null)
+            activeTargetIndexRef.current = null
+          }
+        }
+      })
+
+      // Também verificar eventos nas entidades individuais
+      const targets = [
+        document.getElementById('target0'),
+        document.getElementById('target1'),
+        document.getElementById('target2')
+      ]
+
+      targets.forEach((target, index) => {
+        if (!target) return
+
+        target.addEventListener('targetFound', () => {
+          console.log(`🎯 Target ${index} encontrado (via entity)`)
+          setActiveTargetIndex(index)
+          activeTargetIndexRef.current = index
+        })
+
+        target.addEventListener('targetLost', () => {
+          console.log(`❌ Target ${index} perdido (via entity)`)
+          if (activeTargetIndexRef.current === index) {
+            setActiveTargetIndex(null)
+            activeTargetIndexRef.current = null
+          }
+        })
+      })
+
+      console.log('✅ Listeners do MindAR configurados')
+    }
+
+    // Configurar listeners quando a cena carregar
+    setupMindARListeners()
+
     // Detectar quando MindAR está pronto (simplificado)
     // Marcar como pronto quando a cena carregar OU após timeout curto
     let arReadyMarked = false
@@ -763,12 +836,16 @@ const ScanPage = () => {
       )}
 
       {/* Animação de Scanning - mostra quando não há target ativo */}
-      {cameraPermissionGranted && showScanningAnimation && activeTargetIndex === null && (
+      {cameraPermissionGranted && showScanningAnimation && (activeTargetIndex === null || activeTargetIndex === undefined) && (
         <div 
           className="ar-scanning-overlay" 
           style={{
             zIndex: 100000, 
-            position: 'absolute', 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
             pointerEvents: 'none',
             display: 'flex',
             flexDirection: 'column',
@@ -776,9 +853,6 @@ const ScanPage = () => {
             justifyContent: 'center',
             visibility: 'visible',
             opacity: 1,
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
             backgroundColor: 'transparent'
           }}
           onLoad={() => console.log('✅ Animação de scanning renderizada')}
@@ -798,7 +872,8 @@ const ScanPage = () => {
               textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
               display: 'block',
               visibility: 'visible',
-              opacity: 1
+              opacity: 1,
+              zIndex: 100001
             }}
           >
             Aponte a câmera do celular para o livro
