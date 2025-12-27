@@ -230,6 +230,19 @@ const ScanPage = () => {
     const scene = sceneRef.current
     if (!scene) return
 
+    // CRÍTICO: Garantir que o background permaneça transparente
+    // Forçar background transparente sempre que activeTargetIndex mudar
+    document.body.style.setProperty('background-color', 'transparent', 'important')
+    document.body.style.setProperty('background', 'transparent', 'important')
+    document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+    document.documentElement.style.setProperty('background', 'transparent', 'important')
+    
+    const scanPage = document.querySelector('.scan-page')
+    if (scanPage) {
+      scanPage.style.setProperty('background-color', 'transparent', 'important')
+      scanPage.style.setProperty('background', 'transparent', 'important')
+    }
+
     // CRÍTICO: NÃO tocar no canvas - apenas z-index do a-scene
     // Tocar no canvas (opacity, display) pode quebrar o compositor WebGL
     // Usar !important para garantir que sobrescreva qualquer style inline
@@ -341,14 +354,25 @@ const ScanPage = () => {
     // CRÍTICO: Garantir que o a-video seja visível e renderizado
     if (aVideo) {
       console.log(`✅ Garantindo visibilidade do a-video no target ${activeTargetIndex}`)
+      
+      // CRÍTICO: Garantir que o material existe antes de atualizar
+      // O erro "can't access property shader" ocorre quando o material não está inicializado
+      if (!aVideo.components || !aVideo.components.material) {
+        console.log(`⚠️ Material não inicializado, aguardando...`)
+        // Aguardar material inicializar
+        setTimeout(() => {
+          if (aVideo.components && aVideo.components.material) {
+            aVideo.components.material.update()
+          }
+        }, 200)
+      } else {
+        // Material já existe, atualizar normalmente
+        aVideo.components.material.update()
+      }
+      
       // Forçar visibilidade
       aVideo.setAttribute('visible', 'true')
       aVideo.setAttribute('autoplay', 'true')
-      
-      // Forçar atualização do componente material
-      if (aVideo.components && aVideo.components.material) {
-        aVideo.components.material.update()
-      }
       
       // Garantir que o componente video está ativo
       if (aVideo.components && aVideo.components.video) {
@@ -369,6 +393,14 @@ const ScanPage = () => {
         if (aVideo.object3D) {
           aVideo.object3D.visible = true
           console.log(`✅ a-video object3D.visible confirmado após delay`)
+        }
+        // Tentar atualizar material novamente após delay
+        if (aVideo.components && aVideo.components.material) {
+          try {
+            aVideo.components.material.update()
+          } catch (e) {
+            console.warn('⚠️ Erro ao atualizar material após delay:', e)
+          }
         }
       }, 100)
     } else {
@@ -786,9 +818,25 @@ const ScanPage = () => {
           if (aVideo) {
             console.log(`✅ a-video encontrado no target ${index}, garantindo visibilidade`)
             aVideo.setAttribute('visible', 'true')
-            // Forçar atualização do componente
-            if (aVideo.components && aVideo.components.material) {
-              aVideo.components.material.update()
+            
+            // CRÍTICO: Garantir que o material existe antes de atualizar
+            if (!aVideo.components || !aVideo.components.material) {
+              console.log(`⚠️ Material não inicializado no target ${index}, aguardando...`)
+              setTimeout(() => {
+                if (aVideo.components && aVideo.components.material) {
+                  try {
+                    aVideo.components.material.update()
+                  } catch (e) {
+                    console.warn('⚠️ Erro ao atualizar material:', e)
+                  }
+                }
+              }, 200)
+            } else {
+              try {
+                aVideo.components.material.update()
+              } catch (e) {
+                console.warn('⚠️ Erro ao atualizar material:', e)
+              }
             }
           }
         })
