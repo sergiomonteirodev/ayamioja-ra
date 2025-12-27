@@ -622,90 +622,36 @@ const ScanPage = () => {
     console.log("🚀 Iniciando pré-carregamento de vídeos...")
     preloadVideos()
 
-    // Detectar quando MindAR está pronto
-    let arReadyChecked = false
-    const checkMindARReady = () => {
-      if (arReadyChecked) return true
-      if (!scene) return false
-      
-      // Verificar se a-scene está carregado
-      if (!scene.hasLoaded) {
-        return false
-      }
-      
-      // Verificar se MindAR está inicializado
-      const mindarSystem = scene.systems && scene.systems['mindar-image-system']
-      const mindarComponent = scene.components && scene.components['mindar-image']
-      
-      if (mindarSystem && mindarComponent) {
-        // Verificar se o vídeo da câmera existe (MindAR cria isso)
-        const arVideo = document.querySelector('#arVideo') || 
-                       Array.from(document.querySelectorAll('video')).find(v => 
-                         v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' &&
-                         (v.srcObject || v.videoWidth > 0)
-                       )
-        
-        if (arVideo && (arVideo.srcObject || arVideo.videoWidth > 0)) {
-          console.log('✅ MindAR está pronto!')
-          setIsArReady(true)
-          arReadyChecked = true
-          return true
-        }
-      }
-      
-      return false
+    // Detectar quando MindAR está pronto (simplificado)
+    // Marcar como pronto quando a cena carregar OU após timeout curto
+    let arReadyMarked = false
+    const markArReady = () => {
+      if (arReadyMarked) return
+      arReadyMarked = true
+      console.log('✅ MindAR marcado como pronto')
+      setIsArReady(true)
     }
 
     // Aguardar a-scene carregar
     if (scene.hasLoaded) {
-      // Se já está carregado, verificar imediatamente
-      setTimeout(() => {
-        if (!checkMindARReady()) {
-          // Se não está pronto, tentar novamente após 1 segundo
-          const interval = setInterval(() => {
-            if (checkMindARReady()) {
-              clearInterval(interval)
-            }
-          }, 1000)
-          
-          // Parar após 10 segundos
-          setTimeout(() => {
-            clearInterval(interval)
-            // Marcar como pronto mesmo se não detectar (para não travar)
-            if (!arReadyChecked) {
-              console.warn('⚠️ Timeout ao detectar MindAR pronto - marcando como pronto mesmo assim')
-              setIsArReady(true)
-              arReadyChecked = true
-            }
-          }, 10000)
-        }
-      }, 500)
+      // Se já está carregado, marcar como pronto após pequeno delay
+      setTimeout(markArReady, 1000)
     } else {
       // Aguardar evento loaded
       scene.addEventListener('loaded', () => {
-        setTimeout(() => {
-          if (!checkMindARReady()) {
-            // Se não está pronto, tentar novamente após 1 segundo
-            const interval = setInterval(() => {
-              if (checkMindARReady()) {
-                clearInterval(interval)
-              }
-            }, 1000)
-            
-            // Parar após 10 segundos
-            setTimeout(() => {
-              clearInterval(interval)
-              // Marcar como pronto mesmo se não detectar (para não travar)
-              if (!arReadyChecked) {
-                console.warn('⚠️ Timeout ao detectar MindAR pronto - marcando como pronto mesmo assim')
-                setIsArReady(true)
-                arReadyChecked = true
-              }
-            }, 10000)
-          }
-        }, 500)
+        console.log('✅ a-scene carregado')
+        setTimeout(markArReady, 1000)
       }, { once: true })
     }
+
+    // Timeout de segurança: marcar como pronto após 3 segundos mesmo se não detectar
+    // Isso evita que a tela fique eternamente em "Carregando AR..."
+    setTimeout(() => {
+      if (!arReadyMarked) {
+        console.warn('⚠️ Timeout de segurança - marcando AR como pronto')
+        markArReady()
+      }
+    }, 3000)
 
     // REMOVIDO: Loop de verificação de background
     // A transparência já está configurada no renderer e background do a-scene
@@ -725,6 +671,14 @@ const ScanPage = () => {
 
   return (
     <div className="scan-page">
+      {/* Navigation e ToggleControls - SEMPRE visíveis */}
+      <Navigation />
+      <ToggleControls 
+        onLibrasToggle={handleLibrasToggle}
+        onAudioToggle={handleAudioToggle}
+        showLogo={false}
+      />
+
       {/* A-Frame Scene - SEMPRE renderizado (nunca desmontado) */}
       <a-scene 
         ref={sceneRef}
