@@ -740,6 +740,23 @@ html.scan-page-active {
     background: transparent !important;
 }
 
+/* CRÍTICO: Garantir que quando animação de scanning aparece, background seja transparente */
+.scan-page .ar-scanning-overlay {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+.scan-page:has(.ar-scanning-overlay) {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+body:has(.ar-scanning-overlay),
+html:has(.ar-scanning-overlay) {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
 /* Toggles na Scan Page */
 .scan-page .toggle-controls {
     position: absolute;
