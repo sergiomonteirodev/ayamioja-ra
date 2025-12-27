@@ -315,7 +315,7 @@ const ScanPage = () => {
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
 
-  // CRÍTICO: Forçar play do vídeo quando target é detectado
+  // CRÍTICO: Forçar play do vídeo quando target é detectado E garantir visibilidade do a-video
   useEffect(() => {
     if (activeTargetIndex === null || activeTargetIndex === undefined) {
       // Nenhum target ativo - pausar estado do vídeo
@@ -328,6 +328,8 @@ const ScanPage = () => {
 
     const videoId = `video${activeTargetIndex + 1}`
     const video = document.getElementById(videoId)
+    const targetEntity = document.getElementById(`target${activeTargetIndex}`)
+    const aVideo = targetEntity ? targetEntity.querySelector('a-video') : null
     
     if (!video) {
       console.warn(`⚠️ Vídeo ${videoId} não encontrado para target ${activeTargetIndex}`)
@@ -336,7 +338,44 @@ const ScanPage = () => {
 
     console.log(`🎬 Target ${activeTargetIndex} detectado - forçando play do vídeo ${videoId}`)
 
-    // Forçar play do vídeo quando target é detectado
+    // CRÍTICO: Garantir que o a-video seja visível e renderizado
+    if (aVideo) {
+      console.log(`✅ Garantindo visibilidade do a-video no target ${activeTargetIndex}`)
+      // Forçar visibilidade
+      aVideo.setAttribute('visible', 'true')
+      aVideo.setAttribute('autoplay', 'true')
+      
+      // Forçar atualização do componente material
+      if (aVideo.components && aVideo.components.material) {
+        aVideo.components.material.update()
+      }
+      
+      // Garantir que o componente video está ativo
+      if (aVideo.components && aVideo.components.video) {
+        const videoComponent = aVideo.components.video
+        if (videoComponent.videoEl) {
+          videoComponent.videoEl.play().catch(e => console.warn('⚠️ Erro ao tocar vídeo do a-video:', e))
+        }
+      }
+      
+      // Verificar se o objeto 3D está sendo renderizado
+      if (aVideo.object3D) {
+        aVideo.object3D.visible = true
+        console.log(`✅ a-video object3D.visible = true`)
+      }
+      
+      // Aguardar um frame e verificar novamente
+      setTimeout(() => {
+        if (aVideo.object3D) {
+          aVideo.object3D.visible = true
+          console.log(`✅ a-video object3D.visible confirmado após delay`)
+        }
+      }, 100)
+    } else {
+      console.warn(`⚠️ a-video não encontrado no target ${activeTargetIndex}`)
+    }
+
+    // Forçar play do vídeo HTML quando target é detectado
     const forcePlayVideo = async () => {
       try {
         // Garantir que o vídeo está configurado corretamente
@@ -699,6 +738,18 @@ const ScanPage = () => {
           console.log(`🎯 Target encontrado: ${targetIndex}`)
           setActiveTargetIndex(targetIndex)
           activeTargetIndexRef.current = targetIndex
+          
+          // CRÍTICO: Garantir que o a-video dentro do target seja visível
+          const targetEntity = document.getElementById(`target${targetIndex}`)
+          if (targetEntity) {
+            const aVideo = targetEntity.querySelector('a-video')
+            if (aVideo) {
+              console.log(`✅ a-video encontrado no target ${targetIndex}, garantindo visibilidade`)
+              aVideo.setAttribute('visible', 'true')
+              // Forçar atualização do componente
+              aVideo.components && aVideo.components.material && aVideo.components.material.update()
+            }
+          }
         }
       })
 
@@ -729,6 +780,17 @@ const ScanPage = () => {
           console.log(`🎯 Target ${index} encontrado (via entity)`)
           setActiveTargetIndex(index)
           activeTargetIndexRef.current = index
+          
+          // CRÍTICO: Garantir que o a-video seja visível
+          const aVideo = target.querySelector('a-video')
+          if (aVideo) {
+            console.log(`✅ a-video encontrado no target ${index}, garantindo visibilidade`)
+            aVideo.setAttribute('visible', 'true')
+            // Forçar atualização do componente
+            if (aVideo.components && aVideo.components.material) {
+              aVideo.components.material.update()
+            }
+          }
         })
 
         target.addEventListener('targetLost', () => {
