@@ -328,8 +328,9 @@ const ScanPage = () => {
       scanPage.style.setProperty('background', 'transparent', 'important')
     }
     
-    // Loop para garantir que background permaneça transparente
+    // Loop para garantir que background permaneça transparente E vídeo apareça
     const keepTransparent = setInterval(() => {
+      // Forçar background transparente
       document.body.style.setProperty('background-color', 'transparent', 'important')
       document.body.style.setProperty('background', 'transparent', 'important')
       document.documentElement.style.setProperty('background-color', 'transparent', 'important')
@@ -341,6 +342,20 @@ const ScanPage = () => {
       if (scanPage) {
         scanPage.style.setProperty('background-color', 'transparent', 'important')
         scanPage.style.setProperty('background', 'transparent', 'important')
+      }
+      
+      // CRÍTICO: Garantir que vídeo da câmera apareça
+      const arVideo = document.querySelector('#arVideo') || 
+                     Array.from(document.querySelectorAll('video')).find(v => 
+                       v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' &&
+                       (v.srcObject || v.videoWidth > 0)
+                     )
+      if (arVideo) {
+        arVideo.style.setProperty('display', 'block', 'important')
+        arVideo.style.setProperty('visibility', 'visible', 'important')
+        arVideo.style.setProperty('opacity', '1', 'important')
+        arVideo.style.setProperty('z-index', '0', 'important')
+        arVideo.style.setProperty('position', 'absolute', 'important')
       }
     }, 100)
     
