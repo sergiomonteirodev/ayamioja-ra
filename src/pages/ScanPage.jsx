@@ -623,7 +623,9 @@ const ScanPage = () => {
     preloadVideos()
 
     // Detectar quando MindAR está pronto
+    let arReadyChecked = false
     const checkMindARReady = () => {
+      if (arReadyChecked) return true
       if (!scene) return false
       
       // Verificar se a-scene está carregado
@@ -646,6 +648,7 @@ const ScanPage = () => {
         if (arVideo && (arVideo.srcObject || arVideo.videoWidth > 0)) {
           console.log('✅ MindAR está pronto!')
           setIsArReady(true)
+          arReadyChecked = true
           return true
         }
       }
@@ -669,9 +672,10 @@ const ScanPage = () => {
           setTimeout(() => {
             clearInterval(interval)
             // Marcar como pronto mesmo se não detectar (para não travar)
-            if (!isArReady) {
+            if (!arReadyChecked) {
               console.warn('⚠️ Timeout ao detectar MindAR pronto - marcando como pronto mesmo assim')
               setIsArReady(true)
+              arReadyChecked = true
             }
           }, 10000)
         }
@@ -692,9 +696,10 @@ const ScanPage = () => {
             setTimeout(() => {
               clearInterval(interval)
               // Marcar como pronto mesmo se não detectar (para não travar)
-              if (!isArReady) {
+              if (!arReadyChecked) {
                 console.warn('⚠️ Timeout ao detectar MindAR pronto - marcando como pronto mesmo assim')
                 setIsArReady(true)
+                arReadyChecked = true
               }
             }, 10000)
           }
