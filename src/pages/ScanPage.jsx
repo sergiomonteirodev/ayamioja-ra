@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navigation from '../components/Navigation'
 import ToggleControls from '../components/ToggleControls'
 // import InterpreterVideo from '../components/InterpreterVideo' // DESATIVADO - vídeo de libras desativado
 import SafeImage from '../components/SafeImage'
@@ -316,10 +315,9 @@ const ScanPage = () => {
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
 
-  // Atualizar videoState continuamente enquanto um vídeo AR está reproduzindo
-  // Necessário para sincronizar a audiodescrição com os vídeos AR
+  // CRÍTICO: Forçar play do vídeo quando target é detectado
   useEffect(() => {
-    if (activeTargetIndex === null) {
+    if (activeTargetIndex === null || activeTargetIndex === undefined) {
       // Nenhum target ativo - pausar estado do vídeo
       setVideoState({
         isPlaying: false,
@@ -335,6 +333,56 @@ const ScanPage = () => {
       console.warn(`⚠️ Vídeo ${videoId} não encontrado para target ${activeTargetIndex}`)
       return
     }
+
+    console.log(`🎬 Target ${activeTargetIndex} detectado - forçando play do vídeo ${videoId}`)
+
+    // Forçar play do vídeo quando target é detectado
+    const forcePlayVideo = async () => {
+      try {
+        // Garantir que o vídeo está configurado corretamente
+        video.setAttribute('playsinline', '')
+        video.setAttribute('webkit-playsinline', '')
+        video.playsInline = true
+        
+        // Mutar apenas video1
+        if (video.id === 'video1') {
+          video.muted = true
+        } else {
+          video.muted = false
+        }
+
+        // Se o vídeo não está pronto, aguardar
+        if (video.readyState < 2) {
+          console.log(`⏳ Vídeo ${videoId} não está pronto (readyState: ${video.readyState}), aguardando...`)
+          const canPlayHandler = () => {
+            video.removeEventListener('canplay', canPlayHandler)
+            video.play().catch(e => console.warn(`⚠️ Erro ao reproduzir ${videoId}:`, e))
+          }
+          video.addEventListener('canplay', canPlayHandler, { once: true })
+          
+          // Timeout de segurança
+          setTimeout(() => {
+            video.removeEventListener('canplay', canPlayHandler)
+            if (video.readyState >= 2) {
+              video.play().catch(e => console.warn(`⚠️ Erro ao reproduzir ${videoId} (timeout):`, e))
+            }
+          }, 3000)
+        } else {
+          // Vídeo está pronto, tentar play imediatamente
+          await video.play().catch(e => {
+            console.warn(`⚠️ Erro ao reproduzir ${videoId}:`, e)
+            // Retry após 500ms
+            setTimeout(() => {
+              video.play().catch(e2 => console.warn(`⚠️ Erro no retry de ${videoId}:`, e2))
+            }, 500)
+          })
+        }
+      } catch (error) {
+        console.error(`❌ Erro ao forçar play do vídeo ${videoId}:`, error)
+      }
+    }
+
+    forcePlayVideo()
 
     const updateVideoState = () => {
       if (video) {
@@ -353,7 +401,10 @@ const ScanPage = () => {
     const interval = setInterval(updateVideoState, 100)
 
     // Adicionar listeners para eventos do vídeo
-    const handlePlay = () => updateVideoState()
+    const handlePlay = () => {
+      console.log(`✅ Vídeo ${videoId} começou a reproduzir`)
+      updateVideoState()
+    }
     const handlePause = () => updateVideoState()
     const handleTimeUpdate = () => updateVideoState()
     const handleEnded = () => updateVideoState()
@@ -744,8 +795,26 @@ const ScanPage = () => {
 
   return (
     <div className="scan-page">
-      {/* Navigation e ToggleControls - SEMPRE visíveis */}
-      <Navigation />
+      {/* Botão de voltar e ToggleControls - SEMPRE visíveis */}
+      <div style={{ position: 'fixed', top: '10px', left: '10px', zIndex: 10000 }}>
+        <button 
+          onClick={handleBackClick}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          ← Voltar
+        </button>
+      </div>
+      
       <ToggleControls 
         onLibrasToggle={handleLibrasToggle}
         onAudioToggle={handleAudioToggle}
