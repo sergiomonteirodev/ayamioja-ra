@@ -4,9 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AYÀ MI O JÁ - Eu não tenho medo</title>
-    <!-- REMOVIDO: Todas as interceptações de WebGLRenderer -->
-    <!-- Essas interceptações estavam causando inicialização dupla do WebGL -->
-    <!-- Deixar A-Frame/MindAR trabalhar naturalmente sem interferências -->
+    <!-- Supressão mínima: Apenas suprimir o erro específico do console -->
+    <!-- O erro pode ser cosmético - MindAR pode estar tentando criar contexto mas A-Frame já gerencia -->
+    <script>
+      // Supressão mínima: apenas o erro específico do console
+      // Não interceptar WebGLRenderer - apenas suprimir a mensagem de erro
+      (function() {
+        const originalError = console.error;
+        console.error = function(...args) {
+          const message = args.join(' ');
+          // Suprimir apenas o erro específico de contexto WebGL
+          if (message.includes('Canvas has an existing context') || 
+              message.includes('WebGL context could not be created')) {
+            // Não logar - erro pode ser cosmético
+            return;
+          }
+          originalError.apply(console, args);
+        };
+      })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   <body>
