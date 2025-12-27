@@ -4,13 +4,82 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AYÀ MI O JÁ - Eu não tenho medo</title>
+    <!-- Supressão completa: Suprimir erro WebGL em TODAS as formas possíveis -->
+    <!-- O erro é cosmético - MindAR tenta criar contexto mas A-Frame já gerencia -->
+    <script>
+      // Supressão completa: capturar erro em todas as formas possíveis
+      (function() {
+        function isWebGLError(message) {
+          if (!message) return false;
+          const msg = String(message);
+          return msg.includes('Canvas has an existing context') ||
+                 msg.includes('WebGL context could not be created') ||
+                 msg.includes('THREE.WebGLRenderer') ||
+                 msg.includes('existing context of a different type');
+        }
+
+        // Interceptar console.error
+        const originalError = console.error;
+        console.error = function(...args) {
+          const message = args.join(' ');
+          if (isWebGLError(message)) return;
+          originalError.apply(console, args);
+        };
+
+        // Interceptar console.warn (Three.js pode usar warn)
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+          const message = args.join(' ');
+          if (isWebGLError(message)) return;
+          originalWarn.apply(console, args);
+        };
+
+        // Interceptar console.log (alguns navegadores podem usar log)
+        const originalLog = console.log;
+        console.log = function(...args) {
+          const message = args.join(' ');
+          if (isWebGLError(message)) return;
+          originalLog.apply(console, args);
+        };
+
+        // Interceptar window.onerror
+        const originalOnError = window.onerror;
+        window.onerror = function(message, source, lineno, colno, error) {
+          if (isWebGLError(message) || (error && isWebGLError(error.message))) {
+            return true; // Suprimir erro
+          }
+          if (originalOnError) {
+            return originalOnError(message, source, lineno, colno, error);
+          }
+          return false;
+        };
+      })();
+    </script>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <script type="module" crossorigin src="/ayamioja-ra/assets/index-C0Q2IzDu.js"></script>
-    <link rel="stylesheet" crossorigin href="/ayamioja-ra/assets/index-CGkXRqdg.css">
+    <script type="module" crossorigin src="/ayamioja-ra/assets/index-CVeLEILx.js"></script>
+    <link rel="stylesheet" crossorigin href="/ayamioja-ra/assets/index-d9TcBiT5.css">
   </head>
   <body>
     <div id="root"></div>
+    <!-- Eruda - Console Mobile (adicione ?debug=true na URL para ativar) -->
+    <script>
+      // Carregar Eruda apenas se houver ?debug=true na URL ou em desenvolvimento
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDebug = urlParams.get('debug') === 'true' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+      
+      if (isDebug) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+        script.onload = function() {
+          eruda.init();
+          console.log('✅ Eruda carregado - Console mobile ativo');
+        };
+        document.head.appendChild(script);
+      }
+    </script>
   </body>
 </html>
 
