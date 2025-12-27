@@ -1056,8 +1056,9 @@ const ScanPage = () => {
           style={{
             zIndex: 100000, 
             position: 'fixed',
-            top: 0,
-            left: 0,
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
             width: '100vw',
             height: '100vh',
             pointerEvents: 'none',
@@ -1071,7 +1072,7 @@ const ScanPage = () => {
           }}
           onLoad={() => console.log('✅ Animação de scanning renderizada')}
         >
-          <div className="scanning-circles">
+          <div className="scanning-circles" style={{ position: 'relative' }}>
             <div className="scanning-circle-outer"></div>
             <div className="scanning-circle-inner"></div>
           </div>
@@ -1087,7 +1088,8 @@ const ScanPage = () => {
               display: 'block',
               visibility: 'visible',
               opacity: 1,
-              zIndex: 100001
+              zIndex: 100001,
+              position: 'relative'
             }}
           >
             Aponte a câmera do celular para o livro
