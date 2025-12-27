@@ -1069,9 +1069,17 @@ const ScanPage = () => {
             justifyContent: 'center',
             visibility: 'visible',
             opacity: 1,
-            backgroundColor: 'transparent'
+            backgroundColor: 'transparent',
+            background: 'transparent'
           }}
-          onLoad={() => console.log('✅ Animação de scanning renderizada')}
+          onLoad={() => {
+            console.log('✅ Animação de scanning renderizada')
+            // Garantir que o background seja transparente quando a animação carregar
+            document.body.style.setProperty('background-color', 'transparent', 'important')
+            document.body.style.setProperty('background', 'transparent', 'important')
+            document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+            document.documentElement.style.setProperty('background', 'transparent', 'important')
+          }}
         >
           <div className="scanning-circles" style={{ position: 'relative' }}>
             <div className="scanning-circle-outer"></div>
