@@ -622,6 +622,86 @@ const ScanPage = () => {
     console.log("🚀 Iniciando pré-carregamento de vídeos...")
     preloadVideos()
 
+    // Detectar quando MindAR está pronto
+    const checkMindARReady = () => {
+      if (!scene) return false
+      
+      // Verificar se a-scene está carregado
+      if (!scene.hasLoaded) {
+        return false
+      }
+      
+      // Verificar se MindAR está inicializado
+      const mindarSystem = scene.systems && scene.systems['mindar-image-system']
+      const mindarComponent = scene.components && scene.components['mindar-image']
+      
+      if (mindarSystem && mindarComponent) {
+        // Verificar se o vídeo da câmera existe (MindAR cria isso)
+        const arVideo = document.querySelector('#arVideo') || 
+                       Array.from(document.querySelectorAll('video')).find(v => 
+                         v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' &&
+                         (v.srcObject || v.videoWidth > 0)
+                       )
+        
+        if (arVideo && (arVideo.srcObject || arVideo.videoWidth > 0)) {
+          console.log('✅ MindAR está pronto!')
+          setIsArReady(true)
+          return true
+        }
+      }
+      
+      return false
+    }
+
+    // Aguardar a-scene carregar
+    if (scene.hasLoaded) {
+      // Se já está carregado, verificar imediatamente
+      setTimeout(() => {
+        if (!checkMindARReady()) {
+          // Se não está pronto, tentar novamente após 1 segundo
+          const interval = setInterval(() => {
+            if (checkMindARReady()) {
+              clearInterval(interval)
+            }
+          }, 1000)
+          
+          // Parar após 10 segundos
+          setTimeout(() => {
+            clearInterval(interval)
+            // Marcar como pronto mesmo se não detectar (para não travar)
+            if (!isArReady) {
+              console.warn('⚠️ Timeout ao detectar MindAR pronto - marcando como pronto mesmo assim')
+              setIsArReady(true)
+            }
+          }, 10000)
+        }
+      }, 500)
+    } else {
+      // Aguardar evento loaded
+      scene.addEventListener('loaded', () => {
+        setTimeout(() => {
+          if (!checkMindARReady()) {
+            // Se não está pronto, tentar novamente após 1 segundo
+            const interval = setInterval(() => {
+              if (checkMindARReady()) {
+                clearInterval(interval)
+              }
+            }, 1000)
+            
+            // Parar após 10 segundos
+            setTimeout(() => {
+              clearInterval(interval)
+              // Marcar como pronto mesmo se não detectar (para não travar)
+              if (!isArReady) {
+                console.warn('⚠️ Timeout ao detectar MindAR pronto - marcando como pronto mesmo assim')
+                setIsArReady(true)
+              }
+            }, 10000)
+          }
+        }, 500)
+      }, { once: true })
+    }
+
     // REMOVIDO: Loop de verificação de background
     // A transparência já está configurada no renderer e background do a-scene
     // Não precisamos verificar periodicamente
