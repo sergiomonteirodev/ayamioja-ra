@@ -743,31 +743,65 @@ const ScanPage = () => {
       console.log(`✅ Garantindo visibilidade do a-video no target ${activeTargetIndex}`)
       
       // CRÍTICO: Garantir que o canvas esteja visível e acima do vídeo da câmera
-      // ESPECIALMENTE IMPORTANTE NO iOS/Safari
+      // ESPECIALMENTE IMPORTANTE NO iOS/Safari E Android 12+
       const scene = sceneRef.current
       if (scene) {
         const canvas = scene.querySelector('canvas')
         if (canvas) {
+          // Android 12+ pode ter problema com retângulo preto - adicionar delay
+          const isAndroid = /Android/.test(navigator.userAgent)
+          const isAndroid12Plus = detectAndroidVersion() // Reutilizar função existente
+          
           // iOS/Safari precisa de z-index muito alto e display/visibility explícitos
           const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-          const canvasZIndex = isIOS ? '9999' : '3' // Z-index muito alto para iOS
-          canvas.style.setProperty('z-index', canvasZIndex, 'important')
-          canvas.style.setProperty('opacity', '1', 'important')
-          canvas.style.setProperty('display', 'block', 'important') // CRÍTICO para iOS
-          canvas.style.setProperty('visibility', 'visible', 'important') // CRÍTICO para iOS
-          canvas.style.setProperty('position', 'absolute', 'important') // CRÍTICO para iOS
-          canvas.style.setProperty('pointer-events', 'auto', 'important')
-          console.log(`✅ Canvas configurado para estar acima do vídeo da câmera (z-index: ${canvasZIndex}, iOS: ${isIOS})`)
+          const canvasZIndex = isIOS ? '9999' : '3'
+          
+          // Função para configurar canvas (com delay para Android 12+)
+          const configureCanvas = () => {
+            // Primeiro garantir transparência do WebGL
+            try {
+              const gl = canvas.getContext('webgl', { alpha: true }) || 
+                         canvas.getContext('webgl2', { alpha: true }) || 
+                         canvas.getContext('experimental-webgl', { alpha: true })
+              if (gl) {
+                gl.clearColor(0, 0, 0, 0) // RGBA: transparente
+                // Forçar clear imediatamente
+                gl.clear(gl.COLOR_BUFFER_BIT)
+              }
+            } catch (e) {
+              console.warn('⚠️ Erro ao configurar WebGL clearColor:', e)
+            }
+            
+            // Depois configurar estilos
+            canvas.style.setProperty('z-index', canvasZIndex, 'important')
+            canvas.style.setProperty('opacity', '1', 'important')
+            canvas.style.setProperty('display', 'block', 'important')
+            canvas.style.setProperty('visibility', 'visible', 'important')
+            canvas.style.setProperty('position', 'absolute', 'important')
+            canvas.style.setProperty('pointer-events', 'auto', 'important')
+            canvas.style.setProperty('background-color', 'transparent', 'important')
+            canvas.style.setProperty('background', 'transparent', 'important')
+            
+            console.log(`✅ Canvas configurado (z-index: ${canvasZIndex}, iOS: ${isIOS}, Android12+: ${isAndroid12Plus})`)
+          }
+          
+          // Android 12+ precisa de um pequeno delay para evitar retângulo preto
+          if (isAndroid12Plus) {
+            // Aguardar um frame antes de mostrar o canvas
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                configureCanvas()
+              })
+            })
+          } else {
+            configureCanvas()
+          }
           
           // iOS específico: forçar também no a-scene
           if (isIOS) {
             scene.style.setProperty('z-index', '9998', 'important')
           }
-          console.log('✅ Canvas configurado para estar acima do vídeo da câmera (iOS-safe)')
-          
-          // iOS específico: forçar também no a-scene
-          scene.style.setProperty('z-index', '9998', 'important')
         }
       }
       
