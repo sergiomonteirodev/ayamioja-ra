@@ -753,6 +753,14 @@ footer {
     margin-top: auto;
 }
 
+/* Footer na scan-page deve ser transparente */
+.scan-page footer,
+.scan-page .scan-footer {
+    background-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
 /* ==================== SCAN PAGE STYLES ==================== */
 
 /* Scan Page Container */
