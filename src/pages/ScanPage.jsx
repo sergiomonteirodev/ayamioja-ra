@@ -741,21 +741,13 @@ const ScanPage = () => {
                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
           const canvasZIndex = isIOS ? '9999' : '3'
           
-          // CRÍTICO: Configurar canvas apenas UMA vez quando target é detectado
-          // Evitar múltiplas configurações que causam piscar
+          // CRÍTICO: Configurar canvas quando target é detectado
+          // SEMPRE configurar quando target é detectado (não verificar estado para evitar bloqueios)
           const configureCanvasOnce = () => {
-            // Verificar se canvas já está configurado corretamente
-            const currentZIndex = canvas.style.zIndex || window.getComputedStyle(canvas).zIndex
-            const currentDisplay = canvas.style.display || window.getComputedStyle(canvas).display
-            const currentOpacity = canvas.style.opacity || window.getComputedStyle(canvas).opacity
+            console.log(`🔧 Configurando canvas para target ${activeTargetIndex} (z-index: ${canvasZIndex})`)
             
-            // Se já está configurado corretamente, não alterar (evita piscar)
-            if (currentZIndex === canvasZIndex && 
-                currentDisplay === 'block' && 
-                currentOpacity === '1') {
-              console.log('✅ Canvas já está configurado corretamente, não alterar')
-              return
-            }
+            // SEMPRE configurar - não verificar estado anterior para evitar bloqueios
+            // A verificação estava impedindo a configuração inicial
             
             // Primeiro garantir transparência do WebGL
             try {
