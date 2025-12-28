@@ -876,7 +876,8 @@ const ScanPage = () => {
         mindarSystem: mindarSystem,
         el: mindarSystem.el,
         isTracking: mindarSystem.isTracking,
-        isReady: mindarSystem.isReady
+        isReady: mindarSystem.isReady,
+        allKeys: Object.keys(mindarSystem)
       })
       
       if (mindarSystem.el) {
@@ -888,7 +889,8 @@ const ScanPage = () => {
           data: mindarData,
           isTracking: mindarComponent?.isTracking || mindarSystem.isTracking,
           isReady: mindarComponent?.isReady || mindarSystem.isReady,
-          targets: mindarComponent?.targets?.length || mindarSystem.targets?.length
+          targets: mindarComponent?.targets?.length || mindarSystem.targets?.length,
+          componentKeys: mindarComponent ? Object.keys(mindarComponent) : null
         })
         
         // Verificar se o arquivo .mind está carregado
@@ -898,6 +900,35 @@ const ScanPage = () => {
             maxTrack: mindarData.maxTrack,
             autoStart: mindarData.autoStart
           })
+          
+          // Verificar se o arquivo .mind está acessível
+          const mindFileUrl = mindarData.imageTargetSrc
+          if (mindFileUrl) {
+            fetch(mindFileUrl, { method: 'HEAD' })
+              .then(response => {
+                if (response.ok) {
+                  console.log(`✅ Arquivo .mind acessível: ${mindFileUrl} (${response.status})`)
+                } else {
+                  console.error(`❌ Arquivo .mind não acessível: ${mindFileUrl} (${response.status})`)
+                }
+              })
+              .catch(error => {
+                console.error(`❌ Erro ao verificar arquivo .mind: ${mindFileUrl}`, error)
+              })
+          }
+        }
+        
+        // Verificar se MindAR está realmente iniciado
+        if (mindarComponent) {
+          // Aguardar um pouco e verificar novamente
+          setTimeout(() => {
+            console.log('📊 MindAR Status após delay:', {
+              isTracking: mindarComponent.isTracking,
+              isReady: mindarComponent.isReady,
+              targets: mindarComponent.targets?.length,
+              allComponentKeys: Object.keys(mindarComponent)
+            })
+          }, 2000)
         }
       }
 
