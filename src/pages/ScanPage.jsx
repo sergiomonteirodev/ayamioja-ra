@@ -1142,7 +1142,15 @@ const ScanPage = () => {
 
       {/* UI Elements */}
       {!isArReady && (
-        <div id="ui-loading" className="ui-loading" style={{ display: 'flex' }}>
+        <div 
+          id="ui-loading" 
+          className="ui-loading" 
+          style={{ 
+            display: 'flex',
+            backgroundColor: 'transparent',
+            background: 'transparent'
+          }}
+        >
           <div className="loading-content">
             <div className="loading-spinner"></div>
             <p>Carregando AR...</p>
