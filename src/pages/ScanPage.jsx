@@ -344,18 +344,31 @@ const ScanPage = () => {
         scanPage.style.setProperty('background', 'transparent', 'important')
       }
       
-      // CRÍTICO: Garantir que vídeo da câmera apareça
+      // CRÍTICO: Garantir que vídeo da câmera apareça E ocupe toda a tela
       const arVideo = document.querySelector('#arVideo') || 
                      Array.from(document.querySelectorAll('video')).find(v => 
                        v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' &&
                        (v.srcObject || v.videoWidth > 0)
                      )
       if (arVideo) {
+        // Remover atributos width/height fixos que impedem fullscreen
+        arVideo.removeAttribute('width')
+        arVideo.removeAttribute('height')
+        
+        // Forçar estilos para ocupar toda a tela
         arVideo.style.setProperty('display', 'block', 'important')
         arVideo.style.setProperty('visibility', 'visible', 'important')
         arVideo.style.setProperty('opacity', '1', 'important')
         arVideo.style.setProperty('z-index', '0', 'important')
         arVideo.style.setProperty('position', 'absolute', 'important')
+        arVideo.style.setProperty('width', '100vw', 'important')
+        arVideo.style.setProperty('height', '100vh', 'important')
+        arVideo.style.setProperty('object-fit', 'cover', 'important')
+        arVideo.style.setProperty('top', '0', 'important')
+        arVideo.style.setProperty('left', '0', 'important')
+        arVideo.style.setProperty('padding', '0', 'important')
+        arVideo.style.setProperty('margin', '0', 'important')
+        arVideo.style.setProperty('border', 'none', 'important')
       }
     }, 100)
     
