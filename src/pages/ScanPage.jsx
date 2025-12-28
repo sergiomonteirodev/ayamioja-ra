@@ -418,11 +418,26 @@ const ScanPage = () => {
       }
       
       // CRÍTICO: Garantir que vídeo da câmera apareça E ocupe toda a tela E fique acima do canvas quando não há targets
-      const arVideo = document.querySelector('#arVideo') || 
-                     Array.from(document.querySelectorAll('video')).find(v => 
-                       v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' &&
-                       (v.srcObject || v.videoWidth > 0)
-                     )
+      // Buscar vídeo de múltiplas formas - MindAR pode criar com diferentes IDs
+      let arVideo = document.querySelector('#arVideo') || 
+                    document.querySelector('video[id^="mindar"]') ||
+                    document.querySelector('video[id*="mindar"]') ||
+                    Array.from(document.querySelectorAll('video')).find(v => {
+                      const id = v.id || ''
+                      return id !== 'video1' && id !== 'video2' && id !== 'video3' &&
+                             (v.srcObject || v.videoWidth > 0 || v.readyState >= 2)
+                    })
+      
+      // Se não encontrou, tentar encontrar qualquer vídeo que não seja dos targets AR
+      if (!arVideo) {
+        const allVideos = Array.from(document.querySelectorAll('video'))
+        arVideo = allVideos.find(v => {
+          const id = v.id || ''
+          return !id.includes('video1') && !id.includes('video2') && !id.includes('video3') &&
+                 !id.includes('target')
+        })
+      }
+      
       if (arVideo) {
         // Remover atributos width/height fixos que impedem fullscreen
         arVideo.removeAttribute('width')
@@ -431,24 +446,45 @@ const ScanPage = () => {
         // Verificar se há target ativo para ajustar z-index
         const scene = sceneRef.current
         const hasActiveTarget = scene && scene.hasAttribute('data-has-active-target')
-        const videoZIndex = '0' // Sempre z-index: 0, a-scene ajusta seu próprio z-index
+        const videoZIndex = hasActiveTarget ? '0' : '1' // Quando não há target, vídeo deve estar acima
         
         // Forçar estilos para ocupar toda a tela
         arVideo.style.setProperty('display', 'block', 'important')
         arVideo.style.setProperty('visibility', 'visible', 'important')
         arVideo.style.setProperty('opacity', '1', 'important')
         arVideo.style.setProperty('z-index', videoZIndex, 'important')
-        arVideo.style.setProperty('position', 'absolute', 'important')
+        arVideo.style.setProperty('position', 'fixed', 'important') // Mudado para fixed para garantir fullscreen
         arVideo.style.setProperty('width', '100vw', 'important')
         arVideo.style.setProperty('height', '100vh', 'important')
+        arVideo.style.setProperty('min-width', '100vw', 'important')
+        arVideo.style.setProperty('min-height', '100vh', 'important')
         arVideo.style.setProperty('object-fit', 'cover', 'important')
         arVideo.style.setProperty('top', '0', 'important')
         arVideo.style.setProperty('left', '0', 'important')
+        arVideo.style.setProperty('right', '0', 'important')
+        arVideo.style.setProperty('bottom', '0', 'important')
         arVideo.style.setProperty('padding', '0', 'important')
         arVideo.style.setProperty('margin', '0', 'important')
         arVideo.style.setProperty('border', 'none', 'important')
         arVideo.style.setProperty('background', 'transparent', 'important')
         arVideo.style.setProperty('background-color', 'transparent', 'important')
+        arVideo.style.setProperty('transform', 'none', 'important')
+        arVideo.style.setProperty('-webkit-transform', 'none', 'important')
+        
+        // Garantir que o vídeo esteja tocando
+        if (arVideo.paused && arVideo.readyState >= 2) {
+          arVideo.play().catch(e => console.warn('⚠️ Erro ao tocar vídeo da câmera:', e))
+        }
+      } else {
+        // Log para debug se vídeo não for encontrado
+        const allVideos = Array.from(document.querySelectorAll('video'))
+        console.log('🔍 Vídeo da câmera não encontrado. Vídeos disponíveis:', allVideos.map(v => ({
+          id: v.id,
+          src: v.src,
+          hasSrcObject: !!v.srcObject,
+          videoWidth: v.videoWidth,
+          readyState: v.readyState
+        })))
       }
       
       // CRÍTICO: Garantir que canvas do A-Frame não cubra o vídeo quando não há targets
@@ -458,20 +494,28 @@ const ScanPage = () => {
         if (canvas) {
           const hasActiveTarget = sceneForCanvas.hasAttribute('data-has-active-target')
           if (!hasActiveTarget) {
-            // Sem target: canvas deve estar atrás do vídeo
-            canvas.style.setProperty('z-index', '-1', 'important')
+            // Sem target: canvas deve estar atrás do vídeo E transparente
+            canvas.style.setProperty('z-index', '-2', 'important') // Atrás do vídeo (z-index: 1)
             canvas.style.setProperty('pointer-events', 'none', 'important')
+            canvas.style.setProperty('opacity', '0', 'important') // Ocultar completamente quando não há target
           } else {
             // Com target: canvas pode estar acima do vídeo
-            canvas.style.setProperty('z-index', '1', 'important')
+            canvas.style.setProperty('z-index', '2', 'important') // Acima do vídeo (z-index: 0)
+            canvas.style.setProperty('opacity', '1', 'important')
           }
           
-          // Verificar computed style e forçar transparência se necessário
-          const computedStyle = window.getComputedStyle(canvas)
-          if (computedStyle.backgroundColor !== 'transparent' && 
-              computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-            canvas.style.setProperty('background-color', 'transparent', 'important')
-            canvas.style.setProperty('background', 'transparent', 'important')
+          // SEMPRE forçar transparência no background do canvas
+          canvas.style.setProperty('background-color', 'transparent', 'important')
+          canvas.style.setProperty('background', 'transparent', 'important')
+          
+          // CRÍTICO: Tentar acessar o WebGL context e configurar clearColor para transparente
+          try {
+            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2') || canvas.getContext('experimental-webgl')
+            if (gl) {
+              gl.clearColor(0, 0, 0, 0) // RGBA: transparente
+            }
+          } catch (e) {
+            // Ignorar erro se não conseguir acessar o contexto
           }
         }
       }

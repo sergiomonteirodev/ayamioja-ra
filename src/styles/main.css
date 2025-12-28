@@ -894,19 +894,24 @@ a-scene[data-has-active-target="true"] canvas {
 }
 
 /* Vídeo da câmera AR do MindAR */
-/* CRÍTICO: No Android, usar absolute em vez de fixed para evitar problemas de composição WebGL/video */
-/* CRÍTICO: z-index: 0 - sempre acima do a-scene quando não há targets (a-scene tem z-index: -1) */
-/* Quando há targets, a-scene tem z-index: 1 e fica acima do vídeo */
+/* CRÍTICO: Usar fixed para garantir fullscreen e cobrir qualquer background branco */
+/* CRÍTICO: z-index: 1 - sempre acima do canvas quando não há targets (canvas tem z-index: -2) */
+/* Quando há targets, canvas tem z-index: 2 e fica acima do vídeo */
 #arVideo,
 video[id^="mindar"],
-video:not([id="video1"]):not([id="video2"]):not([id="video3"]) {
-    position: absolute !important; /* Mudado de fixed para absolute no Android */
+video[id*="mindar"],
+video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"]) {
+    position: fixed !important; /* Fixed para garantir fullscreen */
     top: 0 !important;
     left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    min-width: 100vw !important;
+    min-height: 100vh !important;
     object-fit: cover !important;
-    z-index: 0 !important; /* z-index: 0 - acima do a-scene quando não há targets (a-scene: -1) */
+    z-index: 1 !important; /* z-index: 1 - acima do canvas quando não há targets (canvas: -2) */
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -920,8 +925,6 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]) {
     /* CRÍTICO: Remover width/height fixos do HTML */
     max-width: none !important;
     max-height: none !important;
-    min-width: 100vw !important;
-    min-height: 100vh !important;
 }
 
 /* Correção específica para Android - Canvas transparente */
@@ -930,34 +933,34 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]) {
     a-scene canvas {
         background-color: transparent !important;
         background: transparent !important;
-        opacity: 1 !important;
         mix-blend-mode: normal !important;
         pointer-events: none !important;
     }
     
-    /* Forçar transparência no Android */
+    /* Forçar transparência no Android - ocultar quando não há target */
     .scan-page a-scene canvas {
         background-color: transparent !important;
         background: transparent !important;
-        opacity: 1 !important;
-        display: none !important; /* Ocultar por padrão no Android */
-        z-index: -1 !important; /* Atrás do vídeo quando oculto */
+        opacity: 0 !important; /* Ocultar completamente quando não há target */
+        z-index: -2 !important; /* Atrás do vídeo quando oculto */
     }
     
     /* Mostrar canvas quando há target ativo no Android */
     .scan-page a-scene[data-has-active-target="true"] canvas {
-        display: block !important; /* Mostrar quando há target */
-        z-index: 1 !important; /* Acima do vídeo para AR */
+        opacity: 1 !important; /* Mostrar quando há target */
+        z-index: 2 !important; /* Acima do vídeo para AR */
     }
     
-    /* Garantir que o vídeo da câmera esteja atrás do canvas */
-    /* CRÍTICO: No Android, usar absolute em vez de fixed */
+    /* Garantir que o vídeo da câmera esteja sempre visível */
     .scan-page video[id^="mindar"],
+    .scan-page video[id*="mindar"],
     .scan-page #arVideo {
-        z-index: 0 !important; /* z-index: 0 para ficar atrás do canvas */
-        position: absolute !important; /* Mudado de fixed para absolute */
+        z-index: 1 !important; /* z-index: 1 para ficar acima do canvas quando não há target */
+        position: fixed !important; /* Fixed para garantir fullscreen */
         top: 0 !important;
         left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
         object-fit: cover !important;
