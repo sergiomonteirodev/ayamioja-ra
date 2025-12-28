@@ -606,9 +606,37 @@ const ScanPage = () => {
   }
 
   // CRÍTICO: Forçar play do vídeo quando target é detectado E garantir visibilidade do a-video
+  // CRÍTICO: Pausar vídeo quando target é perdido
   useEffect(() => {
     if (activeTargetIndex === null || activeTargetIndex === undefined) {
-      // Nenhum target ativo - pausar estado do vídeo
+      // Nenhum target ativo - pausar TODOS os vídeos AR
+      console.log('⏸️ Nenhum target ativo - pausando todos os vídeos AR')
+      
+      // Pausar todos os vídeos AR (video1, video2, video3)
+      for (let i = 0; i < 3; i++) {
+        const videoId = `video${i + 1}`
+        const video = document.getElementById(videoId)
+        if (video) {
+          if (!video.paused) {
+            video.pause()
+            console.log(`⏸️ Vídeo ${videoId} pausado`)
+          }
+        }
+        
+        // Também pausar o a-video se existir
+        const targetEntity = document.getElementById(`target${i}`)
+        if (targetEntity) {
+          const aVideo = targetEntity.querySelector('a-video')
+          if (aVideo && aVideo.components && aVideo.components.video) {
+            const videoComponent = aVideo.components.video
+            if (videoComponent.videoEl && !videoComponent.videoEl.paused) {
+              videoComponent.videoEl.pause()
+              console.log(`⏸️ a-video do target ${i} pausado`)
+            }
+          }
+        }
+      }
+      
       setVideoState({
         isPlaying: false,
         currentTime: 0
@@ -1189,6 +1217,28 @@ const ScanPage = () => {
         const targetIndex = event.detail?.targetIndex ?? event.detail?.index
         if (targetIndex !== undefined && targetIndex !== null) {
           console.log(`❌ Target perdido: ${targetIndex}`)
+          
+          // CRÍTICO: Pausar o vídeo do target que foi perdido
+          const videoId = `video${targetIndex + 1}`
+          const video = document.getElementById(videoId)
+          if (video && !video.paused) {
+            video.pause()
+            console.log(`⏸️ Vídeo ${videoId} pausado (target perdido)`)
+          }
+          
+          // Também pausar o a-video se existir
+          const targetEntity = document.getElementById(`target${targetIndex}`)
+          if (targetEntity) {
+            const aVideo = targetEntity.querySelector('a-video')
+            if (aVideo && aVideo.components && aVideo.components.video) {
+              const videoComponent = aVideo.components.video
+              if (videoComponent.videoEl && !videoComponent.videoEl.paused) {
+                videoComponent.videoEl.pause()
+                console.log(`⏸️ a-video do target ${targetIndex} pausado (target perdido)`)
+              }
+            }
+          }
+          
           // Só limpar se for o target ativo atual
           if (activeTargetIndexRef.current === targetIndex) {
             setActiveTargetIndex(null)
@@ -1234,6 +1284,25 @@ const ScanPage = () => {
 
         target.addEventListener('targetLost', () => {
           console.log(`❌ Target ${index} perdido (via entity)`)
+          
+          // CRÍTICO: Pausar o vídeo do target que foi perdido
+          const videoId = `video${index + 1}`
+          const video = document.getElementById(videoId)
+          if (video && !video.paused) {
+            video.pause()
+            console.log(`⏸️ Vídeo ${videoId} pausado (target perdido via entity)`)
+          }
+          
+          // Também pausar o a-video se existir
+          const aVideo = target.querySelector('a-video')
+          if (aVideo && aVideo.components && aVideo.components.video) {
+            const videoComponent = aVideo.components.video
+            if (videoComponent.videoEl && !videoComponent.videoEl.paused) {
+              videoComponent.videoEl.pause()
+              console.log(`⏸️ a-video do target ${index} pausado (target perdido via entity)`)
+            }
+          }
+          
           if (activeTargetIndexRef.current === index) {
             setActiveTargetIndex(null)
             activeTargetIndexRef.current = null
