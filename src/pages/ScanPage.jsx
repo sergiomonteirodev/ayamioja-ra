@@ -116,18 +116,49 @@ const ScanPage = () => {
           const mindarSystem = scene.systems && scene.systems['mindar-image-system']
           if (mindarSystem && mindarSystem.el) {
             const mindarComponent = mindarSystem.el.components && mindarSystem.el.components['mindar-image']
-            if (mindarComponent && mindarComponent.start) {
-              console.log('🔄 Forçando inicialização do MindAR após permissão da câmera...')
-              try {
-                mindarComponent.start()
-                console.log('✅ MindAR iniciado após permissão da câmera')
-              } catch (e) {
-                console.warn('⚠️ Erro ao iniciar MindAR após permissão:', e)
+            console.log('🔄 Tentando iniciar MindAR após permissão da câmera...', {
+              hasComponent: !!mindarComponent,
+              hasStart: !!(mindarComponent && mindarComponent.start),
+              componentKeys: mindarComponent ? Object.keys(mindarComponent) : null
+            })
+            
+            if (mindarComponent) {
+              // Tentar múltiplas formas de iniciar
+              if (mindarComponent.start) {
+                try {
+                  mindarComponent.start()
+                  console.log('✅ MindAR.start() chamado com sucesso')
+                } catch (e) {
+                  console.warn('⚠️ Erro ao chamar mindarComponent.start():', e)
+                }
+              }
+              
+              // Tentar via el
+              if (mindarComponent.el) {
+                try {
+                  const elComponent = mindarComponent.el.components['mindar-image']
+                  if (elComponent && elComponent.start) {
+                    elComponent.start()
+                    console.log('✅ MindAR.start() chamado via el')
+                  }
+                } catch (e) {
+                  console.warn('⚠️ Erro ao chamar via el:', e)
+                }
+              }
+              
+              // Tentar via sistema
+              if (mindarSystem.start) {
+                try {
+                  mindarSystem.start()
+                  console.log('✅ MindAR.start() chamado via system')
+                } catch (e) {
+                  console.warn('⚠️ Erro ao chamar mindarSystem.start():', e)
+                }
               }
             }
           }
         }
-      }, 1000)
+      }, 1500)
       
       setCameraPermissionGranted(true)
       
