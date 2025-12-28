@@ -1057,6 +1057,10 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]) {
 .loading-content {
     text-align: center;
     color: white;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 30px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
 }
 
 .loading-spinner {
