@@ -871,14 +871,34 @@ const ScanPage = () => {
         el: mindarSystem.el
       })
 
-      // Verificar se MindAR está ativo
-      if (mindarSystem.el && mindarSystem.el.components) {
-        const mindarComponent = mindarSystem.el.components['mindar-image']
+      // Verificar se MindAR está ativo - tentar múltiplas formas de acessar
+      console.log('📊 MindAR System completo:', {
+        mindarSystem: mindarSystem,
+        el: mindarSystem.el,
+        isTracking: mindarSystem.isTracking,
+        isReady: mindarSystem.isReady
+      })
+      
+      if (mindarSystem.el) {
+        const mindarComponent = mindarSystem.el.components && mindarSystem.el.components['mindar-image']
+        const mindarData = mindarSystem.el.getAttribute && mindarSystem.el.getAttribute('mindar-image')
+        
         console.log('📊 MindAR Component:', {
-          isTracking: mindarComponent?.isTracking,
-          isReady: mindarComponent?.isReady,
-          targets: mindarComponent?.targets?.length
+          component: mindarComponent,
+          data: mindarData,
+          isTracking: mindarComponent?.isTracking || mindarSystem.isTracking,
+          isReady: mindarComponent?.isReady || mindarSystem.isReady,
+          targets: mindarComponent?.targets?.length || mindarSystem.targets?.length
         })
+        
+        // Verificar se o arquivo .mind está carregado
+        if (mindarData) {
+          console.log('📁 MindAR Config:', {
+            imageTargetSrc: mindarData.imageTargetSrc,
+            maxTrack: mindarData.maxTrack,
+            autoStart: mindarData.autoStart
+          })
+        }
       }
 
       // Listener para quando um target é encontrado
@@ -978,14 +998,36 @@ const ScanPage = () => {
     const checkMindARStatus = setInterval(() => {
       const mindarSystem = scene.systems && scene.systems['mindar-image-system']
       if (mindarSystem) {
-        const mindarComponent = scene.components && scene.components['mindar-image']
-        if (mindarComponent) {
-          console.log('📊 MindAR Status Check:', {
-            isTracking: mindarComponent.isTracking,
-            isReady: mindarComponent.isReady,
-            hasTargets: !!mindarComponent.targets
+        // Tentar múltiplas formas de acessar propriedades
+        const isTracking = mindarSystem.isTracking !== undefined ? mindarSystem.isTracking : 
+                         (mindarSystem.el?.components?.['mindar-image']?.isTracking)
+        const isReady = mindarSystem.isReady !== undefined ? mindarSystem.isReady :
+                       (mindarSystem.el?.components?.['mindar-image']?.isReady)
+        const targets = mindarSystem.targets || mindarSystem.el?.components?.['mindar-image']?.targets
+        
+        console.log('📊 MindAR Status Check:', {
+          isTracking: isTracking,
+          isReady: isReady,
+          hasTargets: !!targets,
+          targetsCount: targets?.length || 0,
+          system: mindarSystem,
+          el: mindarSystem.el
+        })
+        
+        // Verificar se há targets ativos manualmente
+        const target0 = document.getElementById('target0')
+        const target1 = document.getElementById('target1')
+        const target2 = document.getElementById('target2')
+        
+        if (target0 || target1 || target2) {
+          console.log('🎯 Targets no DOM:', {
+            target0: !!target0,
+            target1: !!target1,
+            target2: !!target2
           })
         }
+      } else {
+        console.warn('⚠️ MindAR system não encontrado no status check')
       }
     }, 2000)
 
