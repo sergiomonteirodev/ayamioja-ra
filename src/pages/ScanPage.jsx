@@ -834,29 +834,19 @@ const ScanPage = () => {
           }
           
           // Android 12+ precisa de um pequeno delay para evitar retângulo preto
-          // E garantir que o vídeo AR esteja pronto antes de mostrar o canvas
+          // Mas não bloquear se vídeo não estiver pronto - mostrar canvas de qualquer forma
           if (isAndroid12Plus) {
-            // Aguardar múltiplos frames e verificar se vídeo está pronto
-            let frameCount = 0
-            const checkAndConfigure = () => {
-              frameCount++
-              // Verificar se o vídeo AR está pronto
-              const videoReady = video && (video.readyState >= 2 || video.readyState >= 3)
-              const aVideoReady = aVideo && aVideo.components && aVideo.components.video && aVideo.components.video.videoEl
-              
-              // Aguardar pelo menos 3 frames e vídeo estar pronto
-              if (frameCount >= 3 && (videoReady || aVideoReady)) {
+            // Aguardar apenas 2 frames para garantir WebGL está pronto
+            // Não bloquear por vídeo - mostrar canvas mesmo se vídeo não estiver pronto
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
                 configureCanvas()
-              } else if (frameCount < 10) {
-                // Continuar tentando até 10 frames
-                requestAnimationFrame(checkAndConfigure)
-              } else {
-                // Timeout: configurar mesmo assim
-                console.warn('⚠️ Timeout aguardando vídeo AR estar pronto, configurando canvas mesmo assim')
-                configureCanvas()
-              }
-            }
-            requestAnimationFrame(checkAndConfigure)
+                // Tentar forçar play do vídeo após mostrar canvas
+                if (video && video.paused) {
+                  video.play().catch(e => console.warn('⚠️ Erro ao tocar vídeo após mostrar canvas:', e))
+                }
+              })
+            })
           } else {
             configureCanvas()
           }
