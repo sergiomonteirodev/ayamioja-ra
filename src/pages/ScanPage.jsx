@@ -109,6 +109,26 @@ const ScanPage = () => {
       // O MindAR já inicia automaticamente com autoStart: true no a-scene
       console.log('✅ Permissão da câmera concedida - MindAR iniciará automaticamente com autoStart: true')
       
+      // CRÍTICO: Tentar forçar inicialização do MindAR após permissão da câmera
+      setTimeout(() => {
+        const scene = sceneRef.current
+        if (scene) {
+          const mindarSystem = scene.systems && scene.systems['mindar-image-system']
+          if (mindarSystem && mindarSystem.el) {
+            const mindarComponent = mindarSystem.el.components && mindarSystem.el.components['mindar-image']
+            if (mindarComponent && mindarComponent.start) {
+              console.log('🔄 Forçando inicialização do MindAR após permissão da câmera...')
+              try {
+                mindarComponent.start()
+                console.log('✅ MindAR iniciado após permissão da câmera')
+              } catch (e) {
+                console.warn('⚠️ Erro ao iniciar MindAR após permissão:', e)
+              }
+            }
+          }
+        }
+      }, 1000)
+      
       setCameraPermissionGranted(true)
       
       // CRÍTICO: Aguardar o vídeo receber o stream da câmera
