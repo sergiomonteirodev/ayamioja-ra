@@ -502,9 +502,10 @@ const ScanPage = () => {
             canvas.style.setProperty('pointer-events', 'none', 'important')
             canvas.style.setProperty('opacity', '0', 'important') // Ocultar completamente quando não há target
           } else {
-            // Com target: canvas pode estar acima do vídeo
-            canvas.style.setProperty('z-index', '2', 'important') // Acima do vídeo (z-index: 0)
+            // Com target: canvas DEVE estar acima do vídeo para mostrar o a-video
+            canvas.style.setProperty('z-index', '3', 'important') // Acima do vídeo (z-index: 0) - aumentar para garantir
             canvas.style.setProperty('opacity', '1', 'important')
+            canvas.style.setProperty('pointer-events', 'auto', 'important') // Permitir interação quando há target
           }
           
           // SEMPRE forçar transparência no background do canvas
@@ -607,6 +608,18 @@ const ScanPage = () => {
     if (aVideo) {
       console.log(`✅ Garantindo visibilidade do a-video no target ${activeTargetIndex}`)
       
+      // CRÍTICO: Garantir que o canvas esteja visível e acima do vídeo da câmera
+      const scene = sceneRef.current
+      if (scene) {
+        const canvas = scene.querySelector('canvas')
+        if (canvas) {
+          canvas.style.setProperty('z-index', '3', 'important') // Acima do vídeo da câmera
+          canvas.style.setProperty('opacity', '1', 'important')
+          canvas.style.setProperty('pointer-events', 'auto', 'important')
+          console.log('✅ Canvas configurado para estar acima do vídeo da câmera')
+        }
+      }
+      
       // Forçar visibilidade primeiro
       aVideo.setAttribute('visible', 'true')
       aVideo.setAttribute('autoplay', 'true')
@@ -636,6 +649,15 @@ const ScanPage = () => {
         }
         // Tentar atualizar material novamente após delay
         safeUpdateMaterial(aVideo)
+        
+        // Verificar novamente o canvas
+        if (scene) {
+          const canvas = scene.querySelector('canvas')
+          if (canvas) {
+            canvas.style.setProperty('z-index', '3', 'important')
+            canvas.style.setProperty('opacity', '1', 'important')
+          }
+        }
       }, 200)
     } else {
       console.warn(`⚠️ a-video não encontrado no target ${activeTargetIndex}`)
