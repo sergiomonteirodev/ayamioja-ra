@@ -632,10 +632,17 @@ const ScanPage = () => {
                        canvas.getContext('experimental-webgl', { alpha: true })
             if (gl) {
               gl.clearColor(0, 0, 0, 0) // RGBA: transparente
-              // Android 12+: sempre forçar clear, independente de ter target ou não
-              if (isAndroid12Plus) {
+              // Sempre forçar clear quando há target ativo
+              if (hasActiveTarget) {
                 gl.clear(gl.COLOR_BUFFER_BIT)
-              } else if (hasActiveTarget) {
+                // Android 12+: múltiplos clears para garantir
+                if (isAndroid12Plus) {
+                  requestAnimationFrame(() => {
+                    gl.clear(gl.COLOR_BUFFER_BIT)
+                  })
+                }
+              } else if (isAndroid12Plus) {
+                // Android 12+: clear mesmo quando não há target para evitar área preta
                 gl.clear(gl.COLOR_BUFFER_BIT)
               }
             }
