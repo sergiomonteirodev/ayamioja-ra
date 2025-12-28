@@ -588,9 +588,16 @@ const ScanPage = () => {
           
           // CRÍTICO: Tentar acessar o WebGL context e configurar clearColor para transparente
           try {
-            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2') || canvas.getContext('experimental-webgl')
+            const gl = canvas.getContext('webgl', { alpha: true }) || 
+                       canvas.getContext('webgl2', { alpha: true }) || 
+                       canvas.getContext('experimental-webgl', { alpha: true })
             if (gl) {
               gl.clearColor(0, 0, 0, 0) // RGBA: transparente
+              // Android 12+ específico: forçar clear mais frequentemente
+              const isAndroid12Plus = detectAndroidVersion()
+              if (isAndroid12Plus && hasActiveTarget) {
+                gl.clear(gl.COLOR_BUFFER_BIT)
+              }
             }
           } catch (e) {
             // Ignorar erro se não conseguir acessar o contexto
