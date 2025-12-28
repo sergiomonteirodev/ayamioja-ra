@@ -741,8 +741,22 @@ const ScanPage = () => {
                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
           const canvasZIndex = isIOS ? '9999' : '3'
           
-          // Função para configurar canvas (com delay para Android 12+)
-          const configureCanvas = () => {
+          // CRÍTICO: Configurar canvas apenas UMA vez quando target é detectado
+          // Evitar múltiplas configurações que causam piscar
+          const configureCanvasOnce = () => {
+            // Verificar se canvas já está configurado corretamente
+            const currentZIndex = canvas.style.zIndex || window.getComputedStyle(canvas).zIndex
+            const currentDisplay = canvas.style.display || window.getComputedStyle(canvas).display
+            const currentOpacity = canvas.style.opacity || window.getComputedStyle(canvas).opacity
+            
+            // Se já está configurado corretamente, não alterar (evita piscar)
+            if (currentZIndex === canvasZIndex && 
+                currentDisplay === 'block' && 
+                currentOpacity === '1') {
+              console.log('✅ Canvas já está configurado corretamente, não alterar')
+              return
+            }
+            
             // Primeiro garantir transparência do WebGL
             try {
               const gl = canvas.getContext('webgl', { alpha: true }) || 
@@ -757,7 +771,7 @@ const ScanPage = () => {
               console.warn('⚠️ Erro ao configurar WebGL clearColor:', e)
             }
             
-            // Depois configurar estilos
+            // Depois configurar estilos (apenas se necessário)
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
             canvas.style.setProperty('display', 'block', 'important')
@@ -777,7 +791,7 @@ const ScanPage = () => {
             // Não bloquear por vídeo - mostrar canvas mesmo se vídeo não estiver pronto
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
-                configureCanvas()
+                configureCanvasOnce()
                 // Tentar forçar play do vídeo após mostrar canvas
                 if (video && video.paused) {
                   video.play().catch(e => console.warn('⚠️ Erro ao tocar vídeo após mostrar canvas:', e))
@@ -785,7 +799,7 @@ const ScanPage = () => {
               })
             })
           } else {
-            configureCanvas()
+            configureCanvasOnce()
           }
           
           // iOS específico: forçar também no a-scene
