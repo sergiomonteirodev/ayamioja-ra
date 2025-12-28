@@ -655,6 +655,31 @@ const ScanPage = () => {
     }
 
     console.log(`🎬 Target ${activeTargetIndex} detectado - forçando play do vídeo ${videoId}`)
+    
+    // CRÍTICO: Pausar outros vídeos antes de tocar o vídeo do target atual
+    for (let i = 0; i < 3; i++) {
+      if (i !== activeTargetIndex) {
+        const otherVideoId = `video${i + 1}`
+        const otherVideo = document.getElementById(otherVideoId)
+        if (otherVideo && !otherVideo.paused) {
+          otherVideo.pause()
+          console.log(`⏸️ Vídeo ${otherVideoId} pausado (outro target ativo)`)
+        }
+        
+        // Também pausar o a-video se existir
+        const otherTargetEntity = document.getElementById(`target${i}`)
+        if (otherTargetEntity) {
+          const otherAVideo = otherTargetEntity.querySelector('a-video')
+          if (otherAVideo && otherAVideo.components && otherAVideo.components.video) {
+            const otherVideoComponent = otherAVideo.components.video
+            if (otherVideoComponent.videoEl && !otherVideoComponent.videoEl.paused) {
+              otherVideoComponent.videoEl.pause()
+              console.log(`⏸️ a-video do target ${i} pausado (outro target ativo)`)
+            }
+          }
+        }
+      }
+    }
 
     // CRÍTICO: Garantir que o a-video seja visível e renderizado
     if (aVideo) {
