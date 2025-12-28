@@ -588,16 +588,35 @@ const ScanPage = () => {
             }
           } else {
             // Com target: canvas DEVE estar acima do vídeo para mostrar o a-video
-            // iOS/Safari precisa de z-index muito alto
+            // Android 12+ precisa de tratamento especial
+            const isAndroid12Plus = detectAndroidVersion()
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
             const canvasZIndex = isIOS ? '9999' : '3' // Z-index muito alto para iOS
+            
+            // Android 12+: garantir WebGL clearColor transparente ANTES de mostrar
+            if (isAndroid12Plus) {
+              try {
+                const gl = canvas.getContext('webgl', { alpha: true }) || 
+                           canvas.getContext('webgl2', { alpha: true }) || 
+                           canvas.getContext('experimental-webgl', { alpha: true })
+                if (gl) {
+                  gl.clearColor(0, 0, 0, 0) // RGBA: transparente
+                  gl.clear(gl.COLOR_BUFFER_BIT)
+                }
+              } catch (e) {
+                console.warn('⚠️ Erro ao configurar WebGL clearColor no loop:', e)
+              }
+            }
+            
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
             canvas.style.setProperty('display', 'block', 'important') // CRÍTICO: Mostrar display
             canvas.style.setProperty('visibility', 'visible', 'important') // CRÍTICO: Mostrar visibility
             canvas.style.setProperty('position', 'absolute', 'important') // CRÍTICO para iOS
             canvas.style.setProperty('pointer-events', 'auto', 'important') // Permitir interação quando há target
+            
+            console.log(`✅ Canvas configurado para target ativo (Android12+: ${isAndroid12Plus})`)
           }
           
           // SEMPRE forçar transparência no background do canvas
