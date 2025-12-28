@@ -1487,10 +1487,10 @@ const ScanPage = () => {
       {/* A-Frame Scene - SEMPRE renderizado (nunca desmontado) */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
+        mindar-image={`imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: ${mindarConfig.filterMinCF}; filterBeta: ${mindarConfig.filterBeta}; warmupTolerance: ${mindarConfig.warmupTolerance}; missTolerance: ${mindarConfig.missTolerance}; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;`}
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer="alpha: true; antialias: true; preserveDrawingBuffer: false; colorManagement: false; powerPreference: default"
+        renderer={`alpha: true; antialias: ${mindarConfig.filterBeta > 0.01 ? 'false' : 'true'}; preserveDrawingBuffer: false; colorManagement: false; powerPreference: ${mindarConfig.filterBeta > 0.01 ? 'high-performance' : 'default'}`}
         background="color: transparent"
         style={{
           position: 'fixed',
