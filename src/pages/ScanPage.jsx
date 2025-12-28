@@ -856,18 +856,41 @@ const ScanPage = () => {
         // Tentar atualizar material novamente após delay
         safeUpdateMaterial(aVideo)
         
-        // Verificar novamente o canvas (especialmente importante no iOS)
+        // Verificar novamente o canvas (especialmente importante no iOS e Android 12+)
         if (scene) {
           const canvas = scene.querySelector('canvas')
           if (canvas) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+            const isAndroid12Plus = detectAndroidVersion()
             const canvasZIndex = isIOS ? '9999' : '3'
+            
+            // Android 12+: garantir WebGL clearColor transparente ANTES de mostrar
+            if (isAndroid12Plus) {
+              try {
+                const gl = canvas.getContext('webgl', { alpha: true }) || 
+                           canvas.getContext('webgl2', { alpha: true }) || 
+                           canvas.getContext('experimental-webgl', { alpha: true })
+                if (gl) {
+                  gl.clearColor(0, 0, 0, 0)
+                  gl.clear(gl.COLOR_BUFFER_BIT)
+                  // Forçar múltiplos clears no Android 12+ para garantir
+                  requestAnimationFrame(() => {
+                    gl.clear(gl.COLOR_BUFFER_BIT)
+                  })
+                }
+              } catch (e) {
+                // Ignorar erro
+              }
+            }
+            
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
             canvas.style.setProperty('display', 'block', 'important')
             canvas.style.setProperty('visibility', 'visible', 'important')
             canvas.style.setProperty('position', 'absolute', 'important')
+            canvas.style.setProperty('background-color', 'transparent', 'important')
+            canvas.style.setProperty('background', 'transparent', 'important')
           }
         }
       }, 200)
