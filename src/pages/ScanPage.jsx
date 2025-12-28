@@ -563,11 +563,29 @@ const ScanPage = () => {
           const hasActiveTarget = sceneForCanvas.hasAttribute('data-has-active-target')
           if (!hasActiveTarget) {
             // Sem target: canvas deve estar atrás do vídeo E completamente oculto
+            // Android 12+ precisa de tratamento especial para evitar área preta
+            const isAndroid12Plus = detectAndroidVersion()
+            
             canvas.style.setProperty('z-index', '-2', 'important') // Atrás do vídeo (z-index: 1)
             canvas.style.setProperty('pointer-events', 'none', 'important')
             canvas.style.setProperty('opacity', '0', 'important') // Ocultar completamente quando não há target
             canvas.style.setProperty('display', 'none', 'important') // CRÍTICO: Ocultar display também
             canvas.style.setProperty('visibility', 'hidden', 'important') // CRÍTICO: Ocultar visibility também
+            
+            // Android 12+: forçar WebGL clearColor transparente mesmo quando oculto
+            if (isAndroid12Plus) {
+              try {
+                const gl = canvas.getContext('webgl', { alpha: true }) || 
+                           canvas.getContext('webgl2', { alpha: true }) || 
+                           canvas.getContext('experimental-webgl', { alpha: true })
+                if (gl) {
+                  gl.clearColor(0, 0, 0, 0) // RGBA: transparente
+                  gl.clear(gl.COLOR_BUFFER_BIT)
+                }
+              } catch (e) {
+                // Ignorar erro
+              }
+            }
           } else {
             // Com target: canvas DEVE estar acima do vídeo para mostrar o a-video
             // iOS/Safari precisa de z-index muito alto
@@ -587,15 +605,18 @@ const ScanPage = () => {
           canvas.style.setProperty('background', 'transparent', 'important')
           
           // CRÍTICO: Tentar acessar o WebGL context e configurar clearColor para transparente
+          // Android 12+ precisa de tratamento especial
+          const isAndroid12Plus = detectAndroidVersion()
           try {
             const gl = canvas.getContext('webgl', { alpha: true }) || 
                        canvas.getContext('webgl2', { alpha: true }) || 
                        canvas.getContext('experimental-webgl', { alpha: true })
             if (gl) {
               gl.clearColor(0, 0, 0, 0) // RGBA: transparente
-              // Android 12+ específico: forçar clear mais frequentemente
-              const isAndroid12Plus = detectAndroidVersion()
-              if (isAndroid12Plus && hasActiveTarget) {
+              // Android 12+: sempre forçar clear, independente de ter target ou não
+              if (isAndroid12Plus) {
+                gl.clear(gl.COLOR_BUFFER_BIT)
+              } else if (hasActiveTarget) {
                 gl.clear(gl.COLOR_BUFFER_BIT)
               }
             }
