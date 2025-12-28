@@ -877,7 +877,9 @@ a-scene:not([data-has-active-target]) canvas {
 
 /* Quando há target ativo, canvas pode estar acima do vídeo */
 a-scene[data-has-active-target="true"] canvas {
-    z-index: 1 !important;
+    z-index: 3 !important; /* Acima do vídeo da câmera (z-index: 0) */
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 /* REMOVIDO: Todas as regras CSS que controlam opacity/display do canvas */
