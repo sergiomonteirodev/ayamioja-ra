@@ -492,6 +492,8 @@ const ScanPage = () => {
     // Forçar play do vídeo HTML quando target é detectado
     const forcePlayVideo = async () => {
       try {
+        console.log(`🎬 Iniciando forcePlayVideo para ${videoId} (readyState: ${video.readyState})`)
+        
         // Garantir que o vídeo está configurado corretamente
         video.setAttribute('playsinline', '')
         video.setAttribute('webkit-playsinline', '')
@@ -504,29 +506,49 @@ const ScanPage = () => {
           video.muted = false
         }
 
+        // CRÍTICO: Se o vídeo não está carregado, forçar load primeiro
+        if (video.readyState === 0 || video.networkState === 3) {
+          console.log(`📦 Vídeo ${videoId} não está carregado, forçando load()...`)
+          video.load()
+        }
+
         // Se o vídeo não está pronto, aguardar
         if (video.readyState < 2) {
           console.log(`⏳ Vídeo ${videoId} não está pronto (readyState: ${video.readyState}), aguardando...`)
           const canPlayHandler = () => {
+            console.log(`✅ Vídeo ${videoId} pronto para tocar (readyState: ${video.readyState})`)
             video.removeEventListener('canplay', canPlayHandler)
-            video.play().catch(e => console.warn(`⚠️ Erro ao reproduzir ${videoId}:`, e))
+            video.removeEventListener('loadeddata', canPlayHandler)
+            video.play().then(() => {
+              console.log(`✅ Vídeo ${videoId} tocando com sucesso`)
+            }).catch(e => console.warn(`⚠️ Erro ao reproduzir ${videoId}:`, e))
           }
           video.addEventListener('canplay', canPlayHandler, { once: true })
+          video.addEventListener('loadeddata', canPlayHandler, { once: true })
           
           // Timeout de segurança
           setTimeout(() => {
             video.removeEventListener('canplay', canPlayHandler)
+            video.removeEventListener('loadeddata', canPlayHandler)
             if (video.readyState >= 2) {
-              video.play().catch(e => console.warn(`⚠️ Erro ao reproduzir ${videoId} (timeout):`, e))
+              console.log(`⏰ Timeout: tentando play do ${videoId} mesmo assim`)
+              video.play().then(() => {
+                console.log(`✅ Vídeo ${videoId} tocando após timeout`)
+              }).catch(e => console.warn(`⚠️ Erro ao reproduzir ${videoId} (timeout):`, e))
             }
           }, 3000)
         } else {
           // Vídeo está pronto, tentar play imediatamente
-          await video.play().catch(e => {
+          console.log(`▶️ Tentando play imediato do ${videoId} (readyState: ${video.readyState})`)
+          await video.play().then(() => {
+            console.log(`✅ Vídeo ${videoId} tocando imediatamente`)
+          }).catch(e => {
             console.warn(`⚠️ Erro ao reproduzir ${videoId}:`, e)
             // Retry após 500ms
             setTimeout(() => {
-              video.play().catch(e2 => console.warn(`⚠️ Erro no retry de ${videoId}:`, e2))
+              video.play().then(() => {
+                console.log(`✅ Vídeo ${videoId} tocando após retry`)
+              }).catch(e2 => console.warn(`⚠️ Erro no retry de ${videoId}:`, e2))
             }, 500)
           })
         }
