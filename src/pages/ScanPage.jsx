@@ -425,6 +425,7 @@ const ScanPage = () => {
     }
     
     // Loop para garantir que background permaneça transparente E vídeo apareça
+    // CRÍTICO: Reduzir frequência e evitar alterar canvas quando há target ativo (causa piscar)
     const keepTransparent = setInterval(() => {
       // Forçar background transparente
       document.body.style.setProperty('background-color', 'transparent', 'important')
@@ -447,17 +448,22 @@ const ScanPage = () => {
         footer.style.setProperty('background', 'transparent', 'important')
       }
       
-      // CRÍTICO: Garantir que canvas não tenha background branco
+      // CRÍTICO: NÃO alterar canvas quando há target ativo - causa piscar
+      // Apenas verificar background-color se necessário
       const scene = sceneRef.current
       if (scene) {
-        const canvas = scene.querySelector('canvas')
-        if (canvas) {
-          // Verificar computed style e forçar se necessário
-          const computedStyle = window.getComputedStyle(canvas)
-          if (computedStyle.backgroundColor !== 'transparent' && 
-              computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-            canvas.style.setProperty('background-color', 'transparent', 'important')
-            canvas.style.setProperty('background', 'transparent', 'important')
+        const hasActiveTarget = scene.hasAttribute('data-has-active-target')
+        // Se há target ativo, NÃO tocar no canvas - deixar como está
+        if (!hasActiveTarget) {
+          const canvas = scene.querySelector('canvas')
+          if (canvas) {
+            // Apenas verificar computed style e forçar se necessário (sem alterar display/opacity)
+            const computedStyle = window.getComputedStyle(canvas)
+            if (computedStyle.backgroundColor !== 'transparent' && 
+                computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+              canvas.style.setProperty('background-color', 'transparent', 'important')
+              canvas.style.setProperty('background', 'transparent', 'important')
+            }
           }
         }
       }
@@ -555,103 +561,34 @@ const ScanPage = () => {
         })))
       }
       
-      // CRÍTICO: Garantir que canvas do A-Frame não cubra o vídeo quando não há targets
+      // CRÍTICO: NÃO alterar canvas no loop quando há target ativo - causa piscar
+      // O canvas é gerenciado pelo useEffect quando activeTargetIndex muda
+      // Este loop apenas garante background transparente
       const sceneForCanvas = sceneRef.current
       if (sceneForCanvas) {
-        const canvas = sceneForCanvas.querySelector('canvas')
-        if (canvas) {
-          const hasActiveTarget = sceneForCanvas.hasAttribute('data-has-active-target')
-          if (!hasActiveTarget) {
-            // Sem target: canvas deve estar atrás do vídeo E completamente oculto
-            // Android 12+ precisa de tratamento especial para evitar área preta
-            const isAndroid12Plus = detectAndroidVersion()
+        const hasActiveTarget = sceneForCanvas.hasAttribute('data-has-active-target')
+        // Se há target ativo, NÃO tocar no canvas - deixar como está (evita piscar)
+        if (!hasActiveTarget) {
+          const canvas = sceneForCanvas.querySelector('canvas')
+          if (canvas) {
+            // Apenas quando NÃO há target: ocultar canvas
+            const currentDisplay = canvas.style.display || window.getComputedStyle(canvas).display
+            const currentOpacity = canvas.style.opacity || window.getComputedStyle(canvas).opacity
             
-            canvas.style.setProperty('z-index', '-2', 'important') // Atrás do vídeo (z-index: 1)
-            canvas.style.setProperty('pointer-events', 'none', 'important')
-            canvas.style.setProperty('opacity', '0', 'important') // Ocultar completamente quando não há target
-            canvas.style.setProperty('display', 'none', 'important') // CRÍTICO: Ocultar display também
-            canvas.style.setProperty('visibility', 'hidden', 'important') // CRÍTICO: Ocultar visibility também
-            
-            // Android 12+: forçar WebGL clearColor transparente mesmo quando oculto
-            if (isAndroid12Plus) {
-              try {
-                const gl = canvas.getContext('webgl', { alpha: true }) || 
-                           canvas.getContext('webgl2', { alpha: true }) || 
-                           canvas.getContext('experimental-webgl', { alpha: true })
-                if (gl) {
-                  gl.clearColor(0, 0, 0, 0) // RGBA: transparente
-                  gl.clear(gl.COLOR_BUFFER_BIT)
-                }
-              } catch (e) {
-                // Ignorar erro
-              }
+            // Só alterar se não estiver já oculto (evita alterações desnecessárias)
+            if (currentDisplay !== 'none' || currentOpacity !== '0') {
+              canvas.style.setProperty('z-index', '-2', 'important')
+              canvas.style.setProperty('pointer-events', 'none', 'important')
+              canvas.style.setProperty('opacity', '0', 'important')
+              canvas.style.setProperty('display', 'none', 'important')
+              canvas.style.setProperty('visibility', 'hidden', 'important')
+              canvas.style.setProperty('background-color', 'transparent', 'important')
+              canvas.style.setProperty('background', 'transparent', 'important')
             }
-          } else {
-            // Com target: canvas DEVE estar acima do vídeo para mostrar o a-video
-            // Android 12+ precisa de tratamento especial
-            const isAndroid12Plus = detectAndroidVersion()
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-            const canvasZIndex = isIOS ? '9999' : '3' // Z-index muito alto para iOS
-            
-            // Android 12+: garantir WebGL clearColor transparente ANTES de mostrar
-            if (isAndroid12Plus) {
-              try {
-                const gl = canvas.getContext('webgl', { alpha: true }) || 
-                           canvas.getContext('webgl2', { alpha: true }) || 
-                           canvas.getContext('experimental-webgl', { alpha: true })
-                if (gl) {
-                  gl.clearColor(0, 0, 0, 0) // RGBA: transparente
-                  gl.clear(gl.COLOR_BUFFER_BIT)
-                }
-              } catch (e) {
-                console.warn('⚠️ Erro ao configurar WebGL clearColor no loop:', e)
-              }
-            }
-            
-            canvas.style.setProperty('z-index', canvasZIndex, 'important')
-            canvas.style.setProperty('opacity', '1', 'important')
-            canvas.style.setProperty('display', 'block', 'important') // CRÍTICO: Mostrar display
-            canvas.style.setProperty('visibility', 'visible', 'important') // CRÍTICO: Mostrar visibility
-            canvas.style.setProperty('position', 'absolute', 'important') // CRÍTICO para iOS
-            canvas.style.setProperty('pointer-events', 'auto', 'important') // Permitir interação quando há target
-            
-            console.log(`✅ Canvas configurado para target ativo (Android12+: ${isAndroid12Plus})`)
-          }
-          
-          // SEMPRE forçar transparência no background do canvas
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-          
-          // CRÍTICO: Tentar acessar o WebGL context e configurar clearColor para transparente
-          // Android 12+ precisa de tratamento especial
-          const isAndroid12Plus = detectAndroidVersion()
-          try {
-            const gl = canvas.getContext('webgl', { alpha: true }) || 
-                       canvas.getContext('webgl2', { alpha: true }) || 
-                       canvas.getContext('experimental-webgl', { alpha: true })
-            if (gl) {
-              gl.clearColor(0, 0, 0, 0) // RGBA: transparente
-              // Sempre forçar clear quando há target ativo
-              if (hasActiveTarget) {
-                gl.clear(gl.COLOR_BUFFER_BIT)
-                // Android 12+: múltiplos clears para garantir
-                if (isAndroid12Plus) {
-                  requestAnimationFrame(() => {
-                    gl.clear(gl.COLOR_BUFFER_BIT)
-                  })
-                }
-              } else if (isAndroid12Plus) {
-                // Android 12+: clear mesmo quando não há target para evitar área preta
-                gl.clear(gl.COLOR_BUFFER_BIT)
-              }
-            }
-          } catch (e) {
-            // Ignorar erro se não conseguir acessar o contexto
           }
         }
       }
-    }, 100)
+    }, 500) // Aumentar intervalo de 100ms para 500ms para reduzir piscar
     
     return () => {
       clearInterval(keepTransparent)
