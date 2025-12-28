@@ -686,14 +686,22 @@ const ScanPage = () => {
       console.log(`✅ Garantindo visibilidade do a-video no target ${activeTargetIndex}`)
       
       // CRÍTICO: Garantir que o canvas esteja visível e acima do vídeo da câmera
+      // ESPECIALMENTE IMPORTANTE NO iOS/Safari
       const scene = sceneRef.current
       if (scene) {
         const canvas = scene.querySelector('canvas')
         if (canvas) {
-          canvas.style.setProperty('z-index', '3', 'important') // Acima do vídeo da câmera
+          // iOS/Safari precisa de z-index muito alto e display/visibility explícitos
+          canvas.style.setProperty('z-index', '9999', 'important') // Muito alto para iOS
           canvas.style.setProperty('opacity', '1', 'important')
+          canvas.style.setProperty('display', 'block', 'important') // CRÍTICO para iOS
+          canvas.style.setProperty('visibility', 'visible', 'important') // CRÍTICO para iOS
           canvas.style.setProperty('pointer-events', 'auto', 'important')
-          console.log('✅ Canvas configurado para estar acima do vídeo da câmera')
+          canvas.style.setProperty('position', 'absolute', 'important') // CRÍTICO para iOS
+          console.log('✅ Canvas configurado para estar acima do vídeo da câmera (iOS-safe)')
+          
+          // iOS específico: forçar também no a-scene
+          scene.style.setProperty('z-index', '9998', 'important')
         }
       }
       

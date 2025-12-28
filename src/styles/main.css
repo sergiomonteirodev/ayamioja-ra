@@ -883,7 +883,39 @@ a-scene:not([data-has-active-target]) canvas {
 a-scene[data-has-active-target="true"] canvas {
     z-index: 3 !important; /* Acima do vídeo da câmera (z-index: 0) */
     opacity: 1 !important;
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
     pointer-events: auto !important;
+}
+
+/* iOS/Safari específico - z-index muito alto para garantir que canvas apareça acima do vídeo */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari */
+    a-scene[data-has-active-target="true"] canvas {
+        z-index: 9999 !important; /* Z-index muito alto para iOS */
+        opacity: 1 !important;
+        display: block !important;
+        visibility: visible !important;
+        position: absolute !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Garantir que vídeo da câmera fique atrás do canvas no iOS */
+    .scan-page video[id^="mindar"],
+    .scan-page video[id*="mindar"],
+    .scan-page #arVideo,
+    .scan-page video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"]) {
+        z-index: 0 !important; /* Atrás do canvas quando há target */
+        position: fixed !important;
+    }
+    
+    /* Quando não há target, vídeo deve estar acima */
+    .scan-page:not(:has(a-scene[data-has-active-target="true"])) video[id^="mindar"],
+    .scan-page:not(:has(a-scene[data-has-active-target="true"])) video[id*="mindar"],
+    .scan-page:not(:has(a-scene[data-has-active-target="true"])) #arVideo {
+        z-index: 1 !important; /* Acima quando não há target */
+    }
 }
 
 /* REMOVIDO: Todas as regras CSS que controlam opacity/display do canvas */
