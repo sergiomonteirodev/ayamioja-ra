@@ -859,11 +859,22 @@ a-scene canvas {
     height: 100% !important;
     background-color: transparent !important;
     background: transparent !important;
+    pointer-events: none !important;
+}
+
+/* Quando não há target ativo, canvas deve estar atrás do vídeo */
+a-scene:not([data-has-active-target]) canvas {
+    z-index: -1 !important;
+}
+
+/* Quando há target ativo, canvas pode estar acima do vídeo */
+a-scene[data-has-active-target="true"] canvas {
+    z-index: 1 !important;
 }
 
 /* REMOVIDO: Todas as regras CSS que controlam opacity/display do canvas */
 /* Tocar no canvas pode quebrar o compositor WebGL no Android */
-/* Apenas z-index do a-scene é controlado dinamicamente via JavaScript */
+/* Apenas z-index do canvas é controlado dinamicamente via CSS e JavaScript */
 
 /* Container da câmera AR */
 .a-canvas {
