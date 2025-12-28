@@ -926,8 +926,32 @@ const ScanPage = () => {
               isTracking: mindarComponent.isTracking,
               isReady: mindarComponent.isReady,
               targets: mindarComponent.targets?.length,
-              allComponentKeys: Object.keys(mindarComponent)
+              allComponentKeys: Object.keys(mindarComponent),
+              componentData: mindarComponent.data,
+              el: mindarComponent.el
             })
+            
+            // Tentar acessar métodos do MindAR
+            if (mindarComponent.start) {
+              console.log('✅ Método start() disponível no MindAR')
+            }
+            if (mindarComponent.stop) {
+              console.log('✅ Método stop() disponível no MindAR')
+            }
+            
+            // Verificar se há método para iniciar manualmente
+            if (mindarComponent.el && mindarComponent.el.components) {
+              const mindarImageComponent = mindarComponent.el.components['mindar-image']
+              if (mindarImageComponent && mindarImageComponent.start) {
+                console.log('🔄 Tentando iniciar MindAR manualmente...')
+                try {
+                  mindarImageComponent.start()
+                  console.log('✅ MindAR iniciado manualmente')
+                } catch (e) {
+                  console.warn('⚠️ Erro ao iniciar MindAR manualmente:', e)
+                }
+              }
+            }
           }, 2000)
         }
       }
