@@ -1101,57 +1101,14 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* Animação de Scanning - mostra quando não há target ativo */}
-      {showScanningAnimation && (activeTargetIndex === null || activeTargetIndex === undefined) && (
-        <div 
-          className="ar-scanning-overlay" 
-          style={{
-            zIndex: 100000, 
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '100vw',
-            height: '100vh',
-            pointerEvents: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            visibility: 'visible',
-            opacity: 1,
-            backgroundColor: 'transparent',
-            background: 'transparent'
-          }}
-          onLoad={() => {
-            console.log('✅ Animação de scanning renderizada')
-            // Garantir que o background seja transparente quando a animação carregar
-            document.body.style.setProperty('background-color', 'transparent', 'important')
-            document.body.style.setProperty('background', 'transparent', 'important')
-            document.documentElement.style.setProperty('background-color', 'transparent', 'important')
-            document.documentElement.style.setProperty('background', 'transparent', 'important')
-          }}
-        >
-          <div className="scanning-circles" style={{ position: 'relative' }}>
+      {/* Animação de Scanning - mostra quando AR estiver pronto E não houver target ativo */}
+      {isArReady && showScanningAnimation && (activeTargetIndex === null || activeTargetIndex === undefined) && (
+        <div className="ar-scanning-overlay">
+          <div className="scanning-circles">
             <div className="scanning-circle-outer"></div>
             <div className="scanning-circle-inner"></div>
           </div>
-          <p 
-            className="scanning-instruction"
-            style={{
-              color: 'white',
-              fontSize: '18px',
-              textAlign: 'center',
-              marginTop: '20px',
-              fontWeight: 'bold',
-              textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
-              display: 'block',
-              visibility: 'visible',
-              opacity: 1,
-              zIndex: 100001,
-              position: 'relative'
-            }}
-          >
+          <p className="scanning-instruction">
             Aponte a câmera do celular para o livro
           </p>
         </div>
