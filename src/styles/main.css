@@ -870,9 +870,13 @@ a-scene canvas {
     pointer-events: none !important;
 }
 
-/* Quando não há target ativo, canvas deve estar atrás do vídeo */
+/* Quando não há target ativo, canvas deve estar atrás do vídeo E completamente oculto */
 a-scene:not([data-has-active-target]) canvas {
-    z-index: -1 !important;
+    z-index: -2 !important;
+    opacity: 0 !important;
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 /* Quando há target ativo, canvas pode estar acima do vídeo */

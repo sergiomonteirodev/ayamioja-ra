@@ -419,13 +419,16 @@ const ScanPage = () => {
       
       // CRÍTICO: Garantir que vídeo da câmera apareça E ocupe toda a tela E fique acima do canvas quando não há targets
       // Buscar vídeo de múltiplas formas - MindAR pode criar com diferentes IDs
+      // CRÍTICO: Encontrar APENAS o vídeo da câmera do MindAR (não os vídeos dos targets AR)
       let arVideo = document.querySelector('#arVideo') || 
                     document.querySelector('video[id^="mindar"]') ||
                     document.querySelector('video[id*="mindar"]') ||
                     Array.from(document.querySelectorAll('video')).find(v => {
                       const id = v.id || ''
+                      // Apenas vídeos que NÃO são dos targets AR e que têm srcObject (stream da câmera)
                       return id !== 'video1' && id !== 'video2' && id !== 'video3' &&
-                             (v.srcObject || v.videoWidth > 0 || v.readyState >= 2)
+                             !id.includes('target') &&
+                             (v.srcObject || (v.videoWidth > 0 && !v.src)) // Tem stream OU tem dimensões mas não tem src (é stream)
                     })
       
       // Se não encontrou, tentar encontrar qualquer vídeo que não seja dos targets AR
@@ -433,10 +436,27 @@ const ScanPage = () => {
         const allVideos = Array.from(document.querySelectorAll('video'))
         arVideo = allVideos.find(v => {
           const id = v.id || ''
+          // Apenas vídeos que têm srcObject (stream da câmera) e não são dos targets
           return !id.includes('video1') && !id.includes('video2') && !id.includes('video3') &&
-                 !id.includes('target')
+                 !id.includes('target') &&
+                 v.srcObject // CRÍTICO: Deve ter srcObject (stream da câmera)
         })
       }
+      
+      // CRÍTICO: Ocultar TODOS os outros vídeos que não são o vídeo da câmera
+      const allVideos = Array.from(document.querySelectorAll('video'))
+      allVideos.forEach(v => {
+        const id = v.id || ''
+        // Se não é o vídeo da câmera E não é um vídeo de target AR, ocultar
+        if (v !== arVideo && 
+            id !== 'video1' && id !== 'video2' && id !== 'video3' &&
+            !id.includes('target') &&
+            !v.srcObject) { // Se não tem srcObject, não é vídeo da câmera
+          v.style.setProperty('display', 'none', 'important')
+          v.style.setProperty('visibility', 'hidden', 'important')
+          v.style.setProperty('opacity', '0', 'important')
+        }
+      })
       
       if (arVideo) {
         // Remover atributos width/height fixos que impedem fullscreen
@@ -497,14 +517,18 @@ const ScanPage = () => {
         if (canvas) {
           const hasActiveTarget = sceneForCanvas.hasAttribute('data-has-active-target')
           if (!hasActiveTarget) {
-            // Sem target: canvas deve estar atrás do vídeo E transparente
+            // Sem target: canvas deve estar atrás do vídeo E completamente oculto
             canvas.style.setProperty('z-index', '-2', 'important') // Atrás do vídeo (z-index: 1)
             canvas.style.setProperty('pointer-events', 'none', 'important')
             canvas.style.setProperty('opacity', '0', 'important') // Ocultar completamente quando não há target
+            canvas.style.setProperty('display', 'none', 'important') // CRÍTICO: Ocultar display também
+            canvas.style.setProperty('visibility', 'hidden', 'important') // CRÍTICO: Ocultar visibility também
           } else {
             // Com target: canvas DEVE estar acima do vídeo para mostrar o a-video
             canvas.style.setProperty('z-index', '3', 'important') // Acima do vídeo (z-index: 0) - aumentar para garantir
             canvas.style.setProperty('opacity', '1', 'important')
+            canvas.style.setProperty('display', 'block', 'important') // CRÍTICO: Mostrar display
+            canvas.style.setProperty('visibility', 'visible', 'important') // CRÍTICO: Mostrar visibility
             canvas.style.setProperty('pointer-events', 'auto', 'important') // Permitir interação quando há target
           }
           
