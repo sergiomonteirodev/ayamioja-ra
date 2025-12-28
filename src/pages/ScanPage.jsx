@@ -865,11 +865,29 @@ const ScanPage = () => {
         return
       }
 
-      console.log('✅ Configurando listeners do MindAR...')
+      console.log('✅ Configurando listeners do MindAR...', {
+        mindarSystem: !!mindarSystem,
+        isTracking: mindarSystem.isTracking,
+        el: mindarSystem.el
+      })
+
+      // Verificar se MindAR está ativo
+      if (mindarSystem.el && mindarSystem.el.components) {
+        const mindarComponent = mindarSystem.el.components['mindar-image']
+        console.log('📊 MindAR Component:', {
+          isTracking: mindarComponent?.isTracking,
+          isReady: mindarComponent?.isReady,
+          targets: mindarComponent?.targets?.length
+        })
+      }
 
       // Listener para quando um target é encontrado
-      scene.addEventListener('targetFound', (event) => {
-        const targetIndex = event.detail?.targetIndex ?? event.detail?.index
+      const targetFoundHandler = (event) => {
+        console.log('🎯 EVENTO targetFound recebido:', event)
+        console.log('📦 Event detail:', event.detail)
+        const targetIndex = event.detail?.targetIndex ?? event.detail?.index ?? event.detail?.targetIndex
+        console.log('🔍 Target index extraído:', targetIndex)
+        
         if (targetIndex !== undefined && targetIndex !== null) {
           console.log(`🎯 Target encontrado: ${targetIndex}`)
           setActiveTargetIndex(targetIndex)
@@ -886,8 +904,12 @@ const ScanPage = () => {
               safeUpdateMaterial(aVideo)
             }
           }
+        } else {
+          console.warn('⚠️ Target index não encontrado no evento:', event)
         }
-      })
+      }
+      
+      scene.addEventListener('targetFound', targetFoundHandler)
 
       // Listener para quando um target é perdido
       scene.addEventListener('targetLost', (event) => {
@@ -910,10 +932,15 @@ const ScanPage = () => {
       ]
 
       targets.forEach((target, index) => {
-        if (!target) return
+        if (!target) {
+          console.warn(`⚠️ Target ${index} não encontrado no DOM`)
+          return
+        }
 
-        target.addEventListener('targetFound', () => {
-          console.log(`🎯 Target ${index} encontrado (via entity)`)
+        console.log(`✅ Target ${index} encontrado no DOM, adicionando listeners`)
+
+        const entityTargetFoundHandler = (event) => {
+          console.log(`🎯 Target ${index} encontrado (via entity)`, event)
           setActiveTargetIndex(index)
           activeTargetIndexRef.current = index
           
@@ -925,8 +952,12 @@ const ScanPage = () => {
             
             // Usar função helper para atualizar material de forma segura
             safeUpdateMaterial(aVideo)
+          } else {
+            console.warn(`⚠️ a-video não encontrado no target ${index}`)
           }
-        })
+        }
+
+        target.addEventListener('targetFound', entityTargetFoundHandler)
 
         target.addEventListener('targetLost', () => {
           console.log(`❌ Target ${index} perdido (via entity)`)
@@ -942,6 +973,24 @@ const ScanPage = () => {
 
     // Configurar listeners quando a cena carregar
     setupMindARListeners()
+
+    // Verificar periodicamente se MindAR está detectando targets (para debug)
+    const checkMindARStatus = setInterval(() => {
+      const mindarSystem = scene.systems && scene.systems['mindar-image-system']
+      if (mindarSystem) {
+        const mindarComponent = scene.components && scene.components['mindar-image']
+        if (mindarComponent) {
+          console.log('📊 MindAR Status Check:', {
+            isTracking: mindarComponent.isTracking,
+            isReady: mindarComponent.isReady,
+            hasTargets: !!mindarComponent.targets
+          })
+        }
+      }
+    }, 2000)
+
+    // Parar após 30 segundos
+    setTimeout(() => clearInterval(checkMindARStatus), 30000)
 
     // Detectar quando MindAR está pronto (simplificado)
     // Marcar como pronto quando a cena carregar OU após timeout curto
