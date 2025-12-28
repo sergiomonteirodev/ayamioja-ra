@@ -7,25 +7,25 @@ import AudioDescriptionAR from '../components/AudioDescriptionAR'
 
 // REMOVIDO: Interceptação de getContext e WebGL - A-Frame gerencia isso corretamente
 
-// Função para detectar Android 12+
+// Função para detectar Android 10+
 const detectAndroidVersion = () => {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera
   const androidMatch = userAgent.match(/Android\s([0-9\.]*)/)
   if (androidMatch && androidMatch[1]) {
     const version = parseFloat(androidMatch[1])
-    return version >= 12
+    return version >= 10
   }
   return false
 }
 
 // Função para obter configuração do MindAR baseada na plataforma
 // iOS e outros dispositivos usam configuração padrão
-// Apenas Android 12+ Chrome recebe configuração otimizada
+// Apenas Android 10+ Chrome recebe configuração otimizada
 const getMindARConfig = () => {
-  const isAndroid12Plus = detectAndroidVersion()
+  const isAndroid10Plus = detectAndroidVersion()
   const isChromeAndroid = /Chrome/.test(navigator.userAgent) && /Android/.test(navigator.userAgent)
   
-  // Configuração padrão (iOS, Android < 12, outros navegadores)
+  // Configuração padrão (iOS, Android < 10, outros navegadores)
   let config = {
     filterMinCF: 0.0001,
     filterBeta: 0.001,
@@ -33,16 +33,16 @@ const getMindARConfig = () => {
     missTolerance: 0
   }
   
-  // Android 12+ no Chrome: ajustes para melhor detecção em condições variáveis
+  // Android 10+ no Chrome: ajustes para melhor detecção em condições variáveis
   // NÃO afeta iOS - iOS usa configuração padrão acima
-  if (isAndroid12Plus && isChromeAndroid) {
+  if (isAndroid10Plus && isChromeAndroid) {
     config = {
       filterMinCF: 0.0001,      // Mantém baixo para detecção mais sensível
       filterBeta: 0.05,         // Aumentado de 0.001 para 0.05 - mais responsivo a mudanças
       warmupTolerance: 3,       // Reduzido de 5 para 3 - detecta mais rápido
       missTolerance: 10,        // Aumentado de 0 para 10 - mais tolerante a perdas temporárias
     }
-    console.log('📱 Configuração MindAR otimizada para Android 12+ Chrome (iOS não afetado)')
+    console.log('📱 Configuração MindAR otimizada para Android 10+ Chrome (iOS não afetado)')
   } else {
     console.log('📱 Configuração MindAR padrão (iOS e outros dispositivos)')
   }
@@ -51,7 +51,7 @@ const getMindARConfig = () => {
 }
 
 const ScanPage = () => {
-  // Obter configuração do MindAR (específica para Android 12+ Chrome, padrão para iOS)
+  // Obter configuração do MindAR (específica para Android 10+ Chrome, padrão para iOS)
   const mindarConfig = getMindARConfig()
   // REMOVIDO: Todas as interceptações de console/erros
   // Essas interceptações estavam criando problemas, não resolvendo
