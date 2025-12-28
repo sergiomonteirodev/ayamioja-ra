@@ -744,7 +744,7 @@ const ScanPage = () => {
           // CRÍTICO: Configurar canvas quando target é detectado
           // SEMPRE configurar quando target é detectado (não verificar estado para evitar bloqueios)
           const configureCanvasOnce = () => {
-            console.log(`🔧 Configurando canvas para target ${activeTargetIndex} (z-index: ${canvasZIndex})`)
+            console.log(`🔧 Configurando canvas para target ${activeTargetIndex} (z-index: ${canvasZIndex}, iOS: ${isIOS}, Android12+: ${isAndroid12Plus})`)
             
             // SEMPRE configurar - não verificar estado anterior para evitar bloqueios
             // A verificação estava impedindo a configuração inicial
