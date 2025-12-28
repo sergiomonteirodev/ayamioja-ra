@@ -395,6 +395,28 @@ const ScanPage = () => {
         scanPage.style.setProperty('background', 'transparent', 'important')
       }
       
+      // CRÍTICO: Garantir que footer também seja transparente
+      const footer = document.querySelector('.scan-footer') || document.querySelector('footer')
+      if (footer) {
+        footer.style.setProperty('background-color', 'transparent', 'important')
+        footer.style.setProperty('background', 'transparent', 'important')
+      }
+      
+      // CRÍTICO: Garantir que canvas não tenha background branco
+      const scene = sceneRef.current
+      if (scene) {
+        const canvas = scene.querySelector('canvas')
+        if (canvas) {
+          // Verificar computed style e forçar se necessário
+          const computedStyle = window.getComputedStyle(canvas)
+          if (computedStyle.backgroundColor !== 'transparent' && 
+              computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+            canvas.style.setProperty('background-color', 'transparent', 'important')
+            canvas.style.setProperty('background', 'transparent', 'important')
+          }
+        }
+      }
+      
       // CRÍTICO: Garantir que vídeo da câmera apareça E ocupe toda a tela E fique acima do canvas quando não há targets
       const arVideo = document.querySelector('#arVideo') || 
                      Array.from(document.querySelectorAll('video')).find(v => 
