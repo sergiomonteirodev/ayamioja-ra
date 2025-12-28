@@ -452,11 +452,11 @@ const ScanPage = () => {
       }
       
       // CRÍTICO: Garantir que canvas do A-Frame não cubra o vídeo quando não há targets
-      const scene = sceneRef.current
-      if (scene) {
-        const canvas = scene.querySelector('canvas')
+      const sceneForCanvas = sceneRef.current
+      if (sceneForCanvas) {
+        const canvas = sceneForCanvas.querySelector('canvas')
         if (canvas) {
-          const hasActiveTarget = scene.hasAttribute('data-has-active-target')
+          const hasActiveTarget = sceneForCanvas.hasAttribute('data-has-active-target')
           if (!hasActiveTarget) {
             // Sem target: canvas deve estar atrás do vídeo
             canvas.style.setProperty('z-index', '-1', 'important')
@@ -464,6 +464,14 @@ const ScanPage = () => {
           } else {
             // Com target: canvas pode estar acima do vídeo
             canvas.style.setProperty('z-index', '1', 'important')
+          }
+          
+          // Verificar computed style e forçar transparência se necessário
+          const computedStyle = window.getComputedStyle(canvas)
+          if (computedStyle.backgroundColor !== 'transparent' && 
+              computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+            canvas.style.setProperty('background-color', 'transparent', 'important')
+            canvas.style.setProperty('background', 'transparent', 'important')
           }
         }
       }
