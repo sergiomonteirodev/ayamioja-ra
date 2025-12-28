@@ -125,8 +125,12 @@ html.scan-page-active #root {
 }
 
 /* CRÍTICO: Garantir que TODOS os elementos na scan-page sejam transparentes */
-.scan-page,
-.scan-page * {
+.scan-page {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+.scan-page *:not(button):not(.toggle-controls):not(.scanning-instruction):not(.loading-content):not(.camera-permission-content) {
     background-color: transparent !important;
     background: transparent !important;
 }
@@ -134,7 +138,9 @@ html.scan-page-active #root {
 /* EXCEÇÃO: Elementos que precisam de background (botões, etc) */
 .scan-page button,
 .scan-page .toggle-controls,
-.scan-page .scanning-instruction {
+.scan-page .scanning-instruction,
+.scan-page .loading-content,
+.scan-page .camera-permission-content {
     background-color: initial !important;
     background: initial !important;
 }
