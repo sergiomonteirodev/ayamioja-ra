@@ -525,10 +525,15 @@ const ScanPage = () => {
             canvas.style.setProperty('visibility', 'hidden', 'important') // CRÍTICO: Ocultar visibility também
           } else {
             // Com target: canvas DEVE estar acima do vídeo para mostrar o a-video
-            canvas.style.setProperty('z-index', '3', 'important') // Acima do vídeo (z-index: 0) - aumentar para garantir
+            // iOS/Safari precisa de z-index muito alto
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+            const canvasZIndex = isIOS ? '9999' : '3' // Z-index muito alto para iOS
+            canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
             canvas.style.setProperty('display', 'block', 'important') // CRÍTICO: Mostrar display
             canvas.style.setProperty('visibility', 'visible', 'important') // CRÍTICO: Mostrar visibility
+            canvas.style.setProperty('position', 'absolute', 'important') // CRÍTICO para iOS
             canvas.style.setProperty('pointer-events', 'auto', 'important') // Permitir interação quando há target
           }
           
@@ -735,12 +740,18 @@ const ScanPage = () => {
         // Tentar atualizar material novamente após delay
         safeUpdateMaterial(aVideo)
         
-        // Verificar novamente o canvas
+        // Verificar novamente o canvas (especialmente importante no iOS)
         if (scene) {
           const canvas = scene.querySelector('canvas')
           if (canvas) {
-            canvas.style.setProperty('z-index', '3', 'important')
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+            const canvasZIndex = isIOS ? '9999' : '3'
+            canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
+            canvas.style.setProperty('display', 'block', 'important')
+            canvas.style.setProperty('visibility', 'visible', 'important')
+            canvas.style.setProperty('position', 'absolute', 'important')
           }
         }
       }, 200)
