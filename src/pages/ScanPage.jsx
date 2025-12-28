@@ -395,7 +395,7 @@ const ScanPage = () => {
         scanPage.style.setProperty('background', 'transparent', 'important')
       }
       
-      // CRÍTICO: Garantir que vídeo da câmera apareça E ocupe toda a tela
+      // CRÍTICO: Garantir que vídeo da câmera apareça E ocupe toda a tela E fique acima do canvas quando não há targets
       const arVideo = document.querySelector('#arVideo') || 
                      Array.from(document.querySelectorAll('video')).find(v => 
                        v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' &&
@@ -406,11 +406,16 @@ const ScanPage = () => {
         arVideo.removeAttribute('width')
         arVideo.removeAttribute('height')
         
+        // Verificar se há target ativo para ajustar z-index
+        const scene = sceneRef.current
+        const hasActiveTarget = scene && scene.hasAttribute('data-has-active-target')
+        const videoZIndex = '0' // Sempre z-index: 0, a-scene ajusta seu próprio z-index
+        
         // Forçar estilos para ocupar toda a tela
         arVideo.style.setProperty('display', 'block', 'important')
         arVideo.style.setProperty('visibility', 'visible', 'important')
         arVideo.style.setProperty('opacity', '1', 'important')
-        arVideo.style.setProperty('z-index', '0', 'important')
+        arVideo.style.setProperty('z-index', videoZIndex, 'important')
         arVideo.style.setProperty('position', 'absolute', 'important')
         arVideo.style.setProperty('width', '100vw', 'important')
         arVideo.style.setProperty('height', '100vh', 'important')
@@ -420,6 +425,25 @@ const ScanPage = () => {
         arVideo.style.setProperty('padding', '0', 'important')
         arVideo.style.setProperty('margin', '0', 'important')
         arVideo.style.setProperty('border', 'none', 'important')
+        arVideo.style.setProperty('background', 'transparent', 'important')
+        arVideo.style.setProperty('background-color', 'transparent', 'important')
+      }
+      
+      // CRÍTICO: Garantir que canvas do A-Frame não cubra o vídeo quando não há targets
+      const scene = sceneRef.current
+      if (scene) {
+        const canvas = scene.querySelector('canvas')
+        if (canvas) {
+          const hasActiveTarget = scene.hasAttribute('data-has-active-target')
+          if (!hasActiveTarget) {
+            // Sem target: canvas deve estar atrás do vídeo
+            canvas.style.setProperty('z-index', '-1', 'important')
+            canvas.style.setProperty('pointer-events', 'none', 'important')
+          } else {
+            // Com target: canvas pode estar acima do vídeo
+            canvas.style.setProperty('z-index', '1', 'important')
+          }
+        }
       }
     }, 100)
     
