@@ -519,8 +519,9 @@ const ScanPage = () => {
         const hasActiveTarget = scene && scene.hasAttribute('data-has-active-target')
         // CRÍTICO: Vídeo da câmera sempre deve estar visível, mas atrás do canvas quando há target
         // Quando não há target: vídeo z-index: 1 (acima do canvas que está em -2)
-        // Quando há target: vídeo z-index: -1 (atrás do canvas que está em 3 ou 9999)
-        const videoZIndex = hasActiveTarget ? '-1' : '1' // Quando há target, vídeo fica ATRÁS do canvas (z-index negativo)
+        // Quando há target: vídeo z-index: 0 (atrás do canvas que está em 3 ou 9999)
+        // NÃO usar z-index negativo muito baixo que possa interferir na detecção do MindAR
+        const videoZIndex = hasActiveTarget ? '0' : '1' // Quando há target, vídeo fica atrás do canvas (z-index: 0)
         
         // Forçar estilos para ocupar toda a tela
         arVideo.style.setProperty('display', 'block', 'important')
@@ -774,13 +775,16 @@ const ScanPage = () => {
             canvas.style.setProperty('background', 'transparent', 'important')
             
             // CRÍTICO: Garantir que o vídeo da câmera está ATRÁS do canvas
+            // Mas NÃO usar z-index negativo muito baixo que possa interferir na detecção
             const allVideos = Array.from(document.querySelectorAll('video'))
             allVideos.forEach(v => {
               const id = v.id || ''
               // Se não é um vídeo de target AR (video1, video2, video3), é o vídeo da câmera
               if (id !== 'video1' && id !== 'video2' && id !== 'video3' && !id.includes('target')) {
-                v.style.setProperty('z-index', '-1', 'important') // Atrás do canvas
-                console.log(`📹 Vídeo da câmera ${id} configurado com z-index: -1 (atrás do canvas)`)
+                // Usar z-index: 0 em vez de -1 para não interferir na detecção do MindAR
+                // O canvas com z-index: 3 ainda ficará acima
+                v.style.setProperty('z-index', '0', 'important') // Atrás do canvas (z-index: 3), mas não negativo
+                console.log(`📹 Vídeo da câmera ${id} configurado com z-index: 0 (atrás do canvas)`)
               }
             })
             
