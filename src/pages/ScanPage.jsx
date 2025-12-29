@@ -768,21 +768,12 @@ const ScanPage = () => {
             // SEMPRE configurar - não verificar estado anterior para evitar bloqueios
             // A verificação estava impedindo a configuração inicial
             
-            // Primeiro garantir transparência do WebGL
-            try {
-              const gl = canvas.getContext('webgl', { alpha: true }) || 
-                         canvas.getContext('webgl2', { alpha: true }) || 
-                         canvas.getContext('experimental-webgl', { alpha: true })
-              if (gl) {
-                gl.clearColor(0, 0, 0, 0) // RGBA: transparente
-                // Forçar clear imediatamente
-                gl.clear(gl.COLOR_BUFFER_BIT)
-              }
-            } catch (e) {
-              console.warn('⚠️ Erro ao configurar WebGL clearColor:', e)
-            }
+            // CRÍTICO: NÃO tentar obter contexto WebGL diretamente
+            // Isso interfere com o contexto WebGL do MindAR/A-Frame
+            // O A-Frame já gerencia o WebGL corretamente via renderer="alpha: true"
+            // Apenas configurar estilos do canvas
             
-            // Depois configurar estilos - SEMPRE configurar para garantir que está acima do vídeo
+            // Configurar estilos - SEMPRE configurar para garantir que está acima do vídeo
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
             canvas.style.setProperty('display', 'block', 'important')
