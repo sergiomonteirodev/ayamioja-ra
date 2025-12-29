@@ -519,8 +519,8 @@ const ScanPage = () => {
         const hasActiveTarget = scene && scene.hasAttribute('data-has-active-target')
         // CRÍTICO: Vídeo da câmera sempre deve estar visível, mas atrás do canvas quando há target
         // Quando não há target: vídeo z-index: 1 (acima do canvas que está em -2)
-        // Quando há target: vídeo z-index: 0 (atrás do canvas que está em 2)
-        const videoZIndex = hasActiveTarget ? '0' : '1' // Quando há target, vídeo fica atrás do canvas
+        // Quando há target: vídeo z-index: -1 (atrás do canvas que está em 3 ou 9999)
+        const videoZIndex = hasActiveTarget ? '-1' : '1' // Quando há target, vídeo fica ATRÁS do canvas (z-index negativo)
         
         // Forçar estilos para ocupar toda a tela
         arVideo.style.setProperty('display', 'block', 'important')
