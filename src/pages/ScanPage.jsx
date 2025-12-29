@@ -587,17 +587,20 @@ const ScanPage = () => {
         if (!hasActiveTarget) {
           const canvas = sceneForCanvas.querySelector('canvas')
           if (canvas) {
-            // Apenas quando NÃO há target: ocultar canvas
+            // CRÍTICO: NÃO usar display: none no canvas quando não há target
+            // MindAR precisa do canvas visível (mesmo que opacity: 0) para detectar targets
             const currentDisplay = canvas.style.display || window.getComputedStyle(canvas).display
             const currentOpacity = canvas.style.opacity || window.getComputedStyle(canvas).opacity
             
-            // Só alterar se não estiver já oculto (evita alterações desnecessárias)
-            if (currentDisplay !== 'none' || currentOpacity !== '0') {
+            // Só alterar se não estiver já configurado (evita alterações desnecessárias)
+            // CRÍTICO: NÃO usar display: none - isso impede MindAR de detectar targets
+            if (currentDisplay === 'none' || currentOpacity !== '0') {
               canvas.style.setProperty('z-index', '-2', 'important')
               canvas.style.setProperty('pointer-events', 'none', 'important')
               canvas.style.setProperty('opacity', '0', 'important')
-              canvas.style.setProperty('display', 'none', 'important')
-              canvas.style.setProperty('visibility', 'hidden', 'important')
+              // CRÍTICO: Manter display: block para MindAR funcionar
+              canvas.style.setProperty('display', 'block', 'important')
+              canvas.style.setProperty('visibility', 'visible', 'important')
               canvas.style.setProperty('background-color', 'transparent', 'important')
               canvas.style.setProperty('background', 'transparent', 'important')
             }
