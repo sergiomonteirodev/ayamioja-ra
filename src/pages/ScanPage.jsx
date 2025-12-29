@@ -356,9 +356,24 @@ const ScanPage = () => {
     // Usar !important para garantir que sobrescreva qualquer style inline
     if (activeTargetIndex === null || activeTargetIndex === undefined) {
       // Quando não há target: colocar a-scene atrás do vídeo (z-index: -1)
+      // CRÍTICO: NÃO ocultar completamente o canvas - MindAR precisa dele para detectar targets
       scene.style.setProperty('z-index', '-1', 'important')
       scene.removeAttribute('data-has-active-target')
-      console.log('📐 a-scene z-index: -1 (atrás do vídeo - sem targets)')
+      
+      // CRÍTICO: Canvas deve estar visível (não display: none) para MindAR funcionar
+      // Apenas ocultar visualmente com opacity e z-index baixo
+      const canvas = scene.querySelector('canvas')
+      if (canvas) {
+        // NÃO usar display: none - isso impede MindAR de detectar targets
+        canvas.style.setProperty('opacity', '0', 'important')
+        canvas.style.setProperty('z-index', '-2', 'important')
+        canvas.style.setProperty('pointer-events', 'none', 'important')
+        // Manter display: block para MindAR funcionar
+        canvas.style.setProperty('display', 'block', 'important')
+        canvas.style.setProperty('visibility', 'visible', 'important')
+      }
+      
+      console.log('📐 a-scene z-index: -1 (atrás do vídeo - sem targets, canvas visível para MindAR)')
     } else {
       // Quando há target: colocar a-scene acima do vídeo (z-index: 1)
       scene.style.setProperty('z-index', '1', 'important')
