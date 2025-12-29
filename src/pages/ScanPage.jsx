@@ -763,7 +763,7 @@ const ScanPage = () => {
               console.warn('⚠️ Erro ao configurar WebGL clearColor:', e)
             }
             
-            // Depois configurar estilos (apenas se necessário)
+            // Depois configurar estilos - SEMPRE configurar para garantir que está acima do vídeo
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
             canvas.style.setProperty('display', 'block', 'important')
@@ -772,6 +772,17 @@ const ScanPage = () => {
             canvas.style.setProperty('pointer-events', 'auto', 'important')
             canvas.style.setProperty('background-color', 'transparent', 'important')
             canvas.style.setProperty('background', 'transparent', 'important')
+            
+            // CRÍTICO: Garantir que o vídeo da câmera está ATRÁS do canvas
+            const allVideos = Array.from(document.querySelectorAll('video'))
+            allVideos.forEach(v => {
+              const id = v.id || ''
+              // Se não é um vídeo de target AR (video1, video2, video3), é o vídeo da câmera
+              if (id !== 'video1' && id !== 'video2' && id !== 'video3' && !id.includes('target')) {
+                v.style.setProperty('z-index', '-1', 'important') // Atrás do canvas
+                console.log(`📹 Vídeo da câmera ${id} configurado com z-index: -1 (atrás do canvas)`)
+              }
+            })
             
             console.log(`✅ Canvas configurado (z-index: ${canvasZIndex}, iOS: ${isIOS}, Android12+: ${isAndroid12Plus})`)
           }
