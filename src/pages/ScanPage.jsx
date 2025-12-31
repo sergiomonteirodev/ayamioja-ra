@@ -773,6 +773,19 @@ const ScanPage = () => {
             // O A-Frame já gerencia o WebGL corretamente via renderer="alpha: true"
             // Apenas configurar estilos do canvas
             
+            // CRÍTICO: Garantir que o renderer tenha clearColor transparente
+            // Isso previne o fundo branco no canvas
+            try {
+              const sceneEl = sceneRef.current
+              if (sceneEl && sceneEl.renderer) {
+                // Configurar clearColor para transparente (0x000000 com alpha 0)
+                sceneEl.renderer.setClearColor(0x000000, 0)
+                console.log('✅ Renderer clearColor configurado para transparente')
+              }
+            } catch (e) {
+              console.warn('⚠️ Erro ao configurar renderer clearColor:', e)
+            }
+            
             // Configurar estilos - SEMPRE configurar para garantir que está acima do vídeo
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
