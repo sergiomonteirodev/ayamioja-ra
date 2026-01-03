@@ -944,6 +944,9 @@ const ScanPage = () => {
             canvas.style.setProperty('background', 'transparent', 'important')
             // CRÍTICO: Usar mix-blend-mode para garantir transparência
             canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
+            // CRÍTICO: Garantir que o canvas não tenha fundo branco
+            canvas.style.setProperty('-webkit-background-clip', 'padding-box', 'important')
+            canvas.style.setProperty('background-clip', 'padding-box', 'important')
             
             console.log(`✅ Canvas configurado (z-index: ${canvasZIndex}, iOS: ${isIOS}, Android12+: ${isAndroid12Plus})`)
           }
