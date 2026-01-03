@@ -531,6 +531,35 @@ const ScanPage = () => {
                              (v.srcObject || (v.videoWidth > 0 && !v.src)) // Tem stream OU tem dimensões mas não tem src (é stream)
                     })
       
+      // CRÍTICO: Se não encontrou vídeo da câmera, tentar encontrar qualquer vídeo que não seja dos targets
+      // Isso é importante porque o MindAR pode criar o vídeo com um ID diferente
+      if (!arVideo) {
+        const allVideos = Array.from(document.querySelectorAll('video'))
+        arVideo = allVideos.find(v => {
+          const id = v.id || ''
+          return id !== 'video1' && id !== 'video2' && id !== 'video3' && !id.includes('target')
+        })
+      }
+      
+      // CRÍTICO: Log para debug
+      if (!arVideo) {
+        const allVideos = Array.from(document.querySelectorAll('video'))
+        console.warn('⚠️ Vídeo da câmera não encontrado. Vídeos disponíveis:', allVideos.map(v => ({
+          id: v.id,
+          src: v.src,
+          srcObject: !!v.srcObject,
+          videoWidth: v.videoWidth,
+          videoHeight: v.videoHeight
+        })))
+      } else {
+        console.log('✅ Vídeo da câmera encontrado:', {
+          id: arVideo.id,
+          srcObject: !!arVideo.srcObject,
+          videoWidth: arVideo.videoWidth,
+          videoHeight: arVideo.videoHeight
+        })
+      }
+      
       // Se não encontrou, tentar encontrar qualquer vídeo que não seja dos targets AR
       if (!arVideo) {
         const allVideos = Array.from(document.querySelectorAll('video'))

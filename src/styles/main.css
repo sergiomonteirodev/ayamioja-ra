@@ -105,6 +105,15 @@ body {
     /* overflow-x: hidden; REMOVIDO - quebra AR no Android */
 }
 
+/* CRÍTICO: Forçar background transparente quando scan-page está ativa */
+body.scan-page-active,
+html.scan-page-active,
+body.scan-page-active *,
+html.scan-page-active * {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
 /* CRÍTICO: Garantir que body e html sejam transparentes quando scan-page está ativa */
 body.scan-page-active,
 html.scan-page-active {
