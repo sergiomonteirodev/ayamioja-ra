@@ -775,15 +775,46 @@ const ScanPage = () => {
             
             // CRÍTICO: Garantir que o renderer tenha clearColor transparente
             // Isso previne o fundo branco no canvas
-            try {
-              const sceneEl = sceneRef.current
-              if (sceneEl && sceneEl.renderer) {
-                // Configurar clearColor para transparente (0x000000 com alpha 0)
-                sceneEl.renderer.setClearColor(0x000000, 0)
-                console.log('✅ Renderer clearColor configurado para transparente')
+            const configureRendererTransparency = () => {
+              try {
+                const sceneEl = sceneRef.current
+                if (sceneEl) {
+                  // Tentar múltiplas formas de acessar o renderer
+                  let renderer = sceneEl.renderer
+                  if (!renderer && sceneEl.systems && sceneEl.systems.renderer) {
+                    renderer = sceneEl.systems.renderer.renderer
+                  }
+                  if (!renderer && sceneEl.object3D && sceneEl.object3D.renderer) {
+                    renderer = sceneEl.object3D.renderer
+                  }
+                  
+                  if (renderer && renderer.setClearColor) {
+                    // Configurar clearColor para transparente (0x000000 com alpha 0)
+                    renderer.setClearColor(0x000000, 0)
+                    // Garantir que clearAlpha também está configurado
+                    if (renderer.setClearAlpha) {
+                      renderer.setClearAlpha(0)
+                    }
+                    console.log('✅ Renderer clearColor configurado para transparente')
+                    return true
+                  } else {
+                    console.warn('⚠️ Renderer não encontrado ou setClearColor não disponível')
+                    return false
+                  }
+                }
+              } catch (e) {
+                console.warn('⚠️ Erro ao configurar renderer clearColor:', e)
+                return false
               }
-            } catch (e) {
-              console.warn('⚠️ Erro ao configurar renderer clearColor:', e)
+              return false
+            }
+            
+            // Tentar configurar imediatamente
+            if (!configureRendererTransparency()) {
+              // Se falhar, tentar novamente após um pequeno delay
+              setTimeout(() => {
+                configureRendererTransparency()
+              }, 100)
             }
             
             // Configurar estilos - SEMPRE configurar para garantir que está acima do vídeo
