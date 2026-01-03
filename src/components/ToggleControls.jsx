@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import SafeImage from './SafeImage'
 
 const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initialLibrasActive = false, initialAudioActive = false }) => {
   const [librasActive, setLibrasActive] = useState(initialLibrasActive)
   const [audioActive, setAudioActive] = useState(initialAudioActive)
 
+  // CRÍTICO: Usar useRef para evitar loops infinitos
+  // Só chamar callbacks quando o valor realmente mudar (não a cada render)
+  const prevLibrasActive = useRef(initialLibrasActive)
+  const prevAudioActive = useRef(initialAudioActive)
+  
   useEffect(() => {
-    // Callback para notificar o componente pai sobre mudanças
-    if (onLibrasToggle) {
+    // Só chamar callback se o valor realmente mudou
+    if (prevLibrasActive.current !== librasActive && onLibrasToggle) {
+      prevLibrasActive.current = librasActive
       onLibrasToggle(librasActive)
     }
   }, [librasActive, onLibrasToggle])
 
   useEffect(() => {
-    // Callback para notificar o componente pai sobre mudanças
-    if (onAudioToggle) {
+    // Só chamar callback se o valor realmente mudou
+    if (prevAudioActive.current !== audioActive && onAudioToggle) {
+      prevAudioActive.current = audioActive
       onAudioToggle(audioActive)
     }
   }, [audioActive, onAudioToggle])
