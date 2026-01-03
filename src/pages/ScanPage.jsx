@@ -909,7 +909,31 @@ const ScanPage = () => {
               removeBackgroundElements()
             }, 500)
             
-            // Configurar estilos - SEMPRE configurar para garantir que está acima do vídeo
+            // CRÍTICO: Garantir que o vídeo da câmera está ATRÁS do canvas E VISÍVEL
+            // O vídeo deve estar sempre visível para aparecer através do canvas transparente
+            const allVideos = Array.from(document.querySelectorAll('video'))
+            allVideos.forEach(v => {
+              const id = v.id || ''
+              // Se não é um vídeo de target AR (video1, video2, video3), é o vídeo da câmera
+              if (id !== 'video1' && id !== 'video2' && id !== 'video3' && !id.includes('target')) {
+                // CRÍTICO: Vídeo da câmera deve estar SEMPRE visível, atrás do canvas
+                // z-index: 0 - atrás do canvas (z-index: 3 ou 9999), mas visível
+                v.style.setProperty('z-index', '0', 'important')
+                v.style.setProperty('display', 'block', 'important')
+                v.style.setProperty('visibility', 'visible', 'important')
+                v.style.setProperty('opacity', '1', 'important')
+                v.style.setProperty('position', 'fixed', 'important')
+                v.style.setProperty('width', '100vw', 'important')
+                v.style.setProperty('height', '100vh', 'important')
+                v.style.setProperty('object-fit', 'cover', 'important')
+                v.style.setProperty('top', '0', 'important')
+                v.style.setProperty('left', '0', 'important')
+                console.log(`📹 Vídeo da câmera ${id} configurado com z-index: 0 (atrás do canvas, mas visível)`)
+              }
+            })
+            
+            // Configurar estilos do canvas - SEMPRE configurar para garantir que está acima do vídeo
+            // CRÍTICO: Canvas deve ser transparente para que o vídeo apareça através dele
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
             canvas.style.setProperty('opacity', '1', 'important')
             canvas.style.setProperty('display', 'block', 'important')
@@ -918,20 +942,8 @@ const ScanPage = () => {
             canvas.style.setProperty('pointer-events', 'auto', 'important')
             canvas.style.setProperty('background-color', 'transparent', 'important')
             canvas.style.setProperty('background', 'transparent', 'important')
-            
-            // CRÍTICO: Garantir que o vídeo da câmera está ATRÁS do canvas
-            // Mas NÃO usar z-index negativo muito baixo que possa interferir na detecção
-            const allVideos = Array.from(document.querySelectorAll('video'))
-            allVideos.forEach(v => {
-              const id = v.id || ''
-              // Se não é um vídeo de target AR (video1, video2, video3), é o vídeo da câmera
-              if (id !== 'video1' && id !== 'video2' && id !== 'video3' && !id.includes('target')) {
-                // Usar z-index: 0 em vez de -1 para não interferir na detecção do MindAR
-                // O canvas com z-index: 3 ainda ficará acima
-                v.style.setProperty('z-index', '0', 'important') // Atrás do canvas (z-index: 3), mas não negativo
-                console.log(`📹 Vídeo da câmera ${id} configurado com z-index: 0 (atrás do canvas)`)
-              }
-            })
+            // CRÍTICO: Usar mix-blend-mode para garantir transparência
+            canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
             
             console.log(`✅ Canvas configurado (z-index: ${canvasZIndex}, iOS: ${isIOS}, Android12+: ${isAndroid12Plus})`)
           }
