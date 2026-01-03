@@ -1710,60 +1710,7 @@ const ScanPage = () => {
     if (!scene) return
 
     // Verificar periodicamente se MindAR está detectando targets (para debug)
-      // Aguardar a-scene estar pronto
-      if (!scene.hasLoaded) {
-        scene.addEventListener('loaded', setupMindARListeners, { once: true })
-        return
-      }
-
-      // Obter o sistema MindAR
-      const mindarSystem = scene.systems && scene.systems['mindar-image-system']
-      if (!mindarSystem) {
-        console.warn('⚠️ MindAR system não encontrado, tentando novamente...')
-        setTimeout(setupMindARListeners, 500)
-        return
-      }
-
-      console.log('✅ Configurando listeners do MindAR...', {
-        mindarSystem: !!mindarSystem,
-        isTracking: mindarSystem.isTracking,
-        el: mindarSystem.el
-      })
-
-      // Verificar se MindAR está ativo - tentar múltiplas formas de acessar
-      console.log('📊 MindAR System completo:', {
-        mindarSystem: mindarSystem,
-        el: mindarSystem.el,
-        isTracking: mindarSystem.isTracking,
-        isReady: mindarSystem.isReady,
-        allKeys: Object.keys(mindarSystem)
-      })
-      
-      if (mindarSystem.el) {
-        const mindarComponent = mindarSystem.el.components && mindarSystem.el.components['mindar-image']
-        const mindarData = mindarSystem.el.getAttribute && mindarSystem.el.getAttribute('mindar-image')
-        
-        console.log('📊 MindAR Component:', {
-          component: mindarComponent,
-          data: mindarData,
-          isTracking: mindarComponent?.isTracking || mindarSystem.isTracking,
-          isReady: mindarComponent?.isReady || mindarSystem.isReady,
-          targets: mindarComponent?.targets?.length || mindarSystem.targets?.length,
-          componentKeys: mindarComponent ? Object.keys(mindarComponent) : null
-        })
-        
-        // Verificar se o arquivo .mind está carregado
-        if (mindarData) {
-          console.log('📁 MindAR Config:', {
-            imageTargetSrc: mindarData.imageTargetSrc,
-            maxTrack: mindarData.maxTrack,
-            autoStart: mindarData.autoStart
-          })
-        }
-      }
-
-      // Verificar periodicamente se MindAR está detectando targets (para debug)
-      const checkMindARStatus = setInterval(() => {
+    const checkMindARStatus = setInterval(() => {
         const mindarSystem = scene.systems && scene.systems['mindar-image-system']
         if (mindarSystem) {
           // Tentar múltiplas formas de acessar propriedades
