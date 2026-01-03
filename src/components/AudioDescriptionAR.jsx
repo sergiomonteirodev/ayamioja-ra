@@ -85,29 +85,41 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
     }
   }, [activeTargetIndex, audioSource])
 
-  // CRÍTICO: Usar useRef para evitar logs repetidos
+  // CRÍTICO: Usar useRef para evitar logs repetidos e rastrear estado anterior
   const prevAudioActive = useRef(audioActive)
-  const prevVideoState = useRef(videoState)
+  const prevIsPlaying = useRef(videoState?.isPlaying)
+  const prevIsAudioReady = useRef(isAudioReady)
+  const hasLoggedNoAudio = useRef(false)
   
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) {
       // Só logar uma vez quando não há áudio
-      if (!prevAudioActive.current) {
+      if (!hasLoggedNoAudio.current) {
         console.log('❌ AudioDescriptionAR: Áudio ref não disponível')
+        hasLoggedNoAudio.current = true
       }
       return
     }
+    hasLoggedNoAudio.current = false
 
-    // Só logar quando valores realmente mudarem
-    if (prevAudioActive.current !== audioActive || prevVideoState.current !== videoState) {
-      console.log('🎧 AudioDescriptionAR - audioActive:', audioActive, 'videoState:', videoState, 'isAudioReady:', isAudioReady)
+    // Só logar quando valores realmente mudarem (não a cada mudança de currentTime)
+    const audioActiveChanged = prevAudioActive.current !== audioActive
+    const isPlayingChanged = prevIsPlaying.current !== videoState?.isPlaying
+    const isAudioReadyChanged = prevIsAudioReady.current !== isAudioReady
+    
+    if (audioActiveChanged || isPlayingChanged || isAudioReadyChanged) {
+      console.log('🎧 AudioDescriptionAR - audioActive:', audioActive, 'isPlaying:', videoState?.isPlaying, 'isAudioReady:', isAudioReady)
       prevAudioActive.current = audioActive
-      prevVideoState.current = videoState
+      prevIsPlaying.current = videoState?.isPlaying
+      prevIsAudioReady.current = isAudioReady
     }
 
     if (!isAudioReady) {
-      console.log('⏳ AudioDescriptionAR: Áudio ainda não está pronto, aguardando...')
+      // Só logar uma vez quando não está pronto
+      if (isAudioReadyChanged) {
+        console.log('⏳ AudioDescriptionAR: Áudio ainda não está pronto, aguardando...')
+      }
       return
     }
 
@@ -115,12 +127,10 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
     if (audioActive) {
       // Vídeo AR está reproduzindo
       if (videoState?.isPlaying) {
-        console.log('✅ Reproduzindo áudio de Audiodescrição AR - videoState.currentTime:', videoState.currentTime)
-        
         // Sincronizar com o vídeo AR apenas se houver diferença significativa
         const timeDiff = Math.abs(audio.currentTime - videoState.currentTime)
         if (timeDiff > 0.5) {
-          console.log('🔄 Sincronizando Audiodescrição AR - diff:', timeDiff.toFixed(2), 's')
+          // Só logar sincronização se for significativa
           audio.currentTime = videoState.currentTime
         }
         
@@ -139,7 +149,7 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
         } else {
           // Se já está reproduzindo, garantir volume e sincronização (alto para audiodescrição)
           audio.volume = 1.0
-          // Sincronizar continuamente durante reprodução
+          // Sincronizar continuamente durante reprodução (sem logar)
           const timeDiff = Math.abs(audio.currentTime - videoState.currentTime)
           if (timeDiff > 0.5) {
             audio.currentTime = videoState.currentTime
@@ -147,15 +157,21 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
         }
       } else {
         // Vídeo AR pausado/terminou - PAUSAR áudio
-        console.log('⏸️ Vídeo AR pausado - pausando áudio de Audiodescrição AR')
+        // Só logar quando realmente mudar de playing para paused
+        if (isPlayingChanged && prevIsPlaying.current === true) {
+          console.log('⏸️ Vídeo AR pausado - pausando áudio de Audiodescrição AR')
+        }
         audio.pause()
       }
     } else {
       // Audiodescrição desativado
-      console.log('❌ Pausando áudio de Audiodescrição AR (toggle desativado)')
+      // Só logar quando realmente mudar de ativo para inativo
+      if (audioActiveChanged && prevAudioActive.current === true) {
+        console.log('❌ Pausando áudio de Audiodescrição AR (toggle desativado)')
+      }
       audio.pause()
     }
-  }, [audioActive, videoState, isAudioReady])
+  }, [audioActive, videoState?.isPlaying, isAudioReady]) // Só depender de isPlaying, não de todo videoState
 
   // Não renderizar se não há target ativo
   if (!audioSource || activeTargetIndex === null) {
