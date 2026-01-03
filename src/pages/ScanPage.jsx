@@ -439,6 +439,36 @@ const ScanPage = () => {
       scanPage.style.setProperty('background', 'transparent', 'important')
     }
     
+    // Função para configurar renderer transparente
+    const configureRendererTransparency = () => {
+      try {
+        const sceneEl = sceneRef.current
+        if (sceneEl) {
+          // Tentar múltiplas formas de acessar o renderer
+          let renderer = sceneEl.renderer
+          if (!renderer && sceneEl.systems && sceneEl.systems.renderer) {
+            renderer = sceneEl.systems.renderer.renderer
+          }
+          if (!renderer && sceneEl.object3D && sceneEl.object3D.renderer) {
+            renderer = sceneEl.object3D.renderer
+          }
+          
+          if (renderer && renderer.setClearColor) {
+            // Configurar clearColor para transparente (0x000000 com alpha 0)
+            renderer.setClearColor(0x000000, 0)
+            // Garantir que clearAlpha também está configurado
+            if (renderer.setClearAlpha) {
+              renderer.setClearAlpha(0)
+            }
+            return true
+          }
+        }
+      } catch (e) {
+        // Silencioso - não logar erro repetidamente
+      }
+      return false
+    }
+    
     // Loop para garantir que background permaneça transparente E vídeo apareça
     // CRÍTICO: Reduzir frequência e evitar alterar canvas quando há target ativo (causa piscar)
     const keepTransparent = setInterval(() => {
@@ -462,6 +492,9 @@ const ScanPage = () => {
         footer.style.setProperty('background-color', 'transparent', 'important')
         footer.style.setProperty('background', 'transparent', 'important')
       }
+      
+      // CRÍTICO: Garantir que renderer permaneça transparente continuamente
+      configureRendererTransparency()
       
       // CRÍTICO: NÃO alterar canvas quando há target ativo - causa piscar
       // Apenas verificar background-color se necessário
