@@ -1013,21 +1013,15 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-    }
-    
-    /* Quando NÃO há target ativo: vídeo acima do canvas */
-    .scan-page a-scene:not([data-has-active-target="true"]) ~ video,
-    .scan-page:not(:has(a-scene[data-has-active-target="true"])) video[id^="mindar"],
-    .scan-page:not(:has(a-scene[data-has-active-target="true"])) video[id*="mindar"],
-    .scan-page:not(:has(a-scene[data-has-active-target="true"])) #arVideo {
-        z-index: 1 !important; /* z-index: 1 para ficar acima do canvas quando não há target */
+        z-index: 1 !important; /* Padrão: acima do canvas quando não há target */
     }
     
     /* Quando HÁ target ativo: vídeo atrás do canvas (mas visível) */
     .scan-page a-scene[data-has-active-target="true"] ~ video,
-    .scan-page:has(a-scene[data-has-active-target="true"]) video[id^="mindar"],
-    .scan-page:has(a-scene[data-has-active-target="true"]) video[id*="mindar"],
-    .scan-page:has(a-scene[data-has-active-target="true"]) #arVideo {
+    .scan-page a-scene[data-has-active-target="true"] + video,
+    body:has(.scan-page a-scene[data-has-active-target="true"]) .scan-page video[id^="mindar"],
+    body:has(.scan-page a-scene[data-has-active-target="true"]) .scan-page video[id*="mindar"],
+    body:has(.scan-page a-scene[data-has-active-target="true"]) .scan-page #arVideo {
         z-index: 0 !important; /* z-index: 0 - atrás do canvas (z-index: 3), mas visível */
     }
 }
