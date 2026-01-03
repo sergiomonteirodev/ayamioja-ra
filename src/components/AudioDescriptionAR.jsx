@@ -85,14 +85,26 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
     }
   }, [activeTargetIndex, audioSource])
 
+  // CRÍTICO: Usar useRef para evitar logs repetidos
+  const prevAudioActive = useRef(audioActive)
+  const prevVideoState = useRef(videoState)
+  
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) {
-      console.log('❌ AudioDescriptionAR: Áudio ref não disponível')
+      // Só logar uma vez quando não há áudio
+      if (!prevAudioActive.current) {
+        console.log('❌ AudioDescriptionAR: Áudio ref não disponível')
+      }
       return
     }
 
-    console.log('🎧 AudioDescriptionAR - audioActive:', audioActive, 'videoState:', videoState, 'isAudioReady:', isAudioReady)
+    // Só logar quando valores realmente mudarem
+    if (prevAudioActive.current !== audioActive || prevVideoState.current !== videoState) {
+      console.log('🎧 AudioDescriptionAR - audioActive:', audioActive, 'videoState:', videoState, 'isAudioReady:', isAudioReady)
+      prevAudioActive.current = audioActive
+      prevVideoState.current = videoState
+    }
 
     if (!isAudioReady) {
       console.log('⏳ AudioDescriptionAR: Áudio ainda não está pronto, aguardando...')

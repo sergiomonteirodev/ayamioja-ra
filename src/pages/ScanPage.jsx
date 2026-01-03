@@ -52,7 +52,8 @@ const getMindARConfig = () => {
 
 const ScanPage = () => {
   // Obter configuração do MindAR (específica para Android 10+ Chrome, padrão para iOS)
-  const mindarConfig = getMindARConfig()
+  // CRÍTICO: Usar useMemo para evitar recalcular a cada render
+  const mindarConfig = React.useMemo(() => getMindARConfig(), [])
   // REMOVIDO: Todas as interceptações de console/erros
   // Essas interceptações estavam criando problemas, não resolvendo
   // Deixar o A-Frame/MindAR trabalhar naturalmente
