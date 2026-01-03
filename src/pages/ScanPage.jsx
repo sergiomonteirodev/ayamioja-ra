@@ -1659,7 +1659,56 @@ const ScanPage = () => {
       let rafId = null
       const forceTransparency = () => {
         if (activeTargetIndexRef.current !== null) {
-          configureRenderer()
+          const success = configureRenderer()
+          
+          // Se não conseguiu configurar, tentar acessar o renderer de outras formas
+          if (!success) {
+            try {
+              const sceneEl = sceneRef.current
+              if (sceneEl) {
+                // Tentar acessar renderer via systems
+                const rendererSystem = sceneEl.systems?.renderer
+                if (rendererSystem) {
+                  const renderer = rendererSystem.renderer || rendererSystem
+                  if (renderer && renderer.setClearColor) {
+                    renderer.setClearColor(0x000000, 0)
+                    if (renderer.setClearAlpha) {
+                      renderer.setClearAlpha(0)
+                    }
+                    // CRÍTICO: Também configurar via renderer.state se disponível
+                    if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+                      renderer.state.buffers.color.setClear(0, 0, 0, 0)
+                    }
+                    // CRÍTICO: Garantir que o canvas também tenha background transparente
+                    if (renderer.domElement) {
+                      const canvas = renderer.domElement
+                      canvas.style.setProperty('background-color', 'transparent', 'important')
+                      canvas.style.setProperty('background', 'transparent', 'important')
+                    }
+                  }
+                }
+                
+                // CRÍTICO: Garantir que o vídeo da câmera esteja visível atrás do canvas
+                const allVideos = Array.from(document.querySelectorAll('video'))
+                allVideos.forEach(v => {
+                  const id = v.id || ''
+                  if (id !== 'video1' && id !== 'video2' && id !== 'video3' && !id.includes('target')) {
+                    v.style.setProperty('z-index', '0', 'important')
+                    v.style.setProperty('display', 'block', 'important')
+                    v.style.setProperty('visibility', 'visible', 'important')
+                    v.style.setProperty('opacity', '1', 'important')
+                    v.style.setProperty('position', 'fixed', 'important')
+                    v.style.setProperty('width', '100vw', 'important')
+                    v.style.setProperty('height', '100vh', 'important')
+                    v.style.setProperty('object-fit', 'cover', 'important')
+                  }
+                })
+              }
+            } catch (e) {
+              // Silencioso
+            }
+          }
+          
           rafId = requestAnimationFrame(forceTransparency)
         } else {
           rafId = null
