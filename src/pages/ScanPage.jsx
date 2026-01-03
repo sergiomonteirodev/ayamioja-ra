@@ -1607,19 +1607,171 @@ const ScanPage = () => {
       console.log('✅ Listeners do MindAR configurados')
     }
 
+    // CRÍTICO: Configurar renderer transparente quando a cena carregar
+    const setupRendererTransparency = () => {
+      const configureRenderer = () => {
+        try {
+          const sceneEl = sceneRef.current
+          if (!sceneEl) return false
+          
+          // Tentar múltiplas formas de acessar o renderer
+          let renderer = sceneEl.renderer
+          if (!renderer && sceneEl.systems && sceneEl.systems.renderer) {
+            renderer = sceneEl.systems.renderer.renderer || sceneEl.systems.renderer
+          }
+          
+          if (renderer && renderer.setClearColor) {
+            // Configurar clearColor para transparente
+            renderer.setClearColor(0x000000, 0)
+            if (renderer.setClearAlpha) {
+              renderer.setClearAlpha(0)
+            }
+            if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+              renderer.state.buffers.color.setClear(0, 0, 0, 0)
+            }
+            console.log('✅ Renderer clearColor configurado na inicialização')
+            return true
+          }
+        } catch (e) {
+          console.warn('⚠️ Erro ao configurar renderer na inicialização:', e)
+        }
+        return false
+      }
+      
+      // Tentar configurar imediatamente
+      if (!configureRenderer()) {
+        // Se falhar, tentar após a cena carregar
+        if (scene.hasLoaded) {
+          setTimeout(configureRenderer, 100)
+        } else {
+          scene.addEventListener('loaded', () => {
+            setTimeout(configureRenderer, 100)
+          }, { once: true })
+        }
+      }
+      
+      // CRÍTICO: Forçar clearColor continuamente quando há target ativo
+      // Isso garante que mesmo se o MindAR recriar o renderer, ele permaneça transparente
+      let rafId = null
+      const forceTransparency = () => {
+        if (activeTargetIndexRef.current !== null) {
+          configureRenderer()
+          rafId = requestAnimationFrame(forceTransparency)
+        } else {
+          rafId = null
+        }
+      }
+      
+      // Iniciar loop quando target for detectado
+      const originalSetActiveTarget = (index) => {
+        if (index !== null && rafId === null) {
+          rafId = requestAnimationFrame(forceTransparency)
+        } else if (index === null && rafId !== null) {
+          cancelAnimationFrame(rafId)
+          rafId = null
+        }
+      }
+      
+      // Monitorar mudanças em activeTargetIndex
+      const checkTarget = setInterval(() => {
+        const currentTarget = activeTargetIndexRef.current
+        if (currentTarget !== null && rafId === null) {
+          rafId = requestAnimationFrame(forceTransparency)
+        } else if (currentTarget === null && rafId !== null) {
+          cancelAnimationFrame(rafId)
+          rafId = null
+        }
+      }, 100)
+      
+      return () => {
+        clearInterval(checkTarget)
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId)
+        }
+      }
+    }
+    
+    const cleanupRenderer = setupRendererTransparency()
+
     // Configurar listeners quando a cena carregar
     setupMindARListeners()
 
+    // Cleanup function
+    return () => {
+      if (cleanupRenderer) {
+        cleanupRenderer()
+      }
+    }
+  }, [cameraPermissionGranted])
+
+  // Configurar MindAR quando o componente montar
+  useEffect(() => {
+    const scene = sceneRef.current
+    if (!scene) return
+
     // Verificar periodicamente se MindAR está detectando targets (para debug)
-    const checkMindARStatus = setInterval(() => {
+      // Aguardar a-scene estar pronto
+      if (!scene.hasLoaded) {
+        scene.addEventListener('loaded', setupMindARListeners, { once: true })
+        return
+      }
+
+      // Obter o sistema MindAR
       const mindarSystem = scene.systems && scene.systems['mindar-image-system']
-      if (mindarSystem) {
-        // Tentar múltiplas formas de acessar propriedades
-        const isTracking = mindarSystem.isTracking !== undefined ? mindarSystem.isTracking : 
-                         (mindarSystem.el?.components?.['mindar-image']?.isTracking)
-        const isReady = mindarSystem.isReady !== undefined ? mindarSystem.isReady :
-                       (mindarSystem.el?.components?.['mindar-image']?.isReady)
-        const targets = mindarSystem.targets || mindarSystem.el?.components?.['mindar-image']?.targets
+      if (!mindarSystem) {
+        console.warn('⚠️ MindAR system não encontrado, tentando novamente...')
+        setTimeout(setupMindARListeners, 500)
+        return
+      }
+
+      console.log('✅ Configurando listeners do MindAR...', {
+        mindarSystem: !!mindarSystem,
+        isTracking: mindarSystem.isTracking,
+        el: mindarSystem.el
+      })
+
+      // Verificar se MindAR está ativo - tentar múltiplas formas de acessar
+      console.log('📊 MindAR System completo:', {
+        mindarSystem: mindarSystem,
+        el: mindarSystem.el,
+        isTracking: mindarSystem.isTracking,
+        isReady: mindarSystem.isReady,
+        allKeys: Object.keys(mindarSystem)
+      })
+      
+      if (mindarSystem.el) {
+        const mindarComponent = mindarSystem.el.components && mindarSystem.el.components['mindar-image']
+        const mindarData = mindarSystem.el.getAttribute && mindarSystem.el.getAttribute('mindar-image')
+        
+        console.log('📊 MindAR Component:', {
+          component: mindarComponent,
+          data: mindarData,
+          isTracking: mindarComponent?.isTracking || mindarSystem.isTracking,
+          isReady: mindarComponent?.isReady || mindarSystem.isReady,
+          targets: mindarComponent?.targets?.length || mindarSystem.targets?.length,
+          componentKeys: mindarComponent ? Object.keys(mindarComponent) : null
+        })
+        
+        // Verificar se o arquivo .mind está carregado
+        if (mindarData) {
+          console.log('📁 MindAR Config:', {
+            imageTargetSrc: mindarData.imageTargetSrc,
+            maxTrack: mindarData.maxTrack,
+            autoStart: mindarData.autoStart
+          })
+        }
+      }
+
+      // Verificar periodicamente se MindAR está detectando targets (para debug)
+      const checkMindARStatus = setInterval(() => {
+        const mindarSystem = scene.systems && scene.systems['mindar-image-system']
+        if (mindarSystem) {
+          // Tentar múltiplas formas de acessar propriedades
+          const isTracking = mindarSystem.isTracking !== undefined ? mindarSystem.isTracking : 
+                           (mindarSystem.el?.components?.['mindar-image']?.isTracking)
+          const isReady = mindarSystem.isReady !== undefined ? mindarSystem.isReady :
+                         (mindarSystem.el?.components?.['mindar-image']?.isReady)
+          const targets = mindarSystem.targets || mindarSystem.el?.components?.['mindar-image']?.targets
         
         console.log('📊 MindAR Status Check:', {
           isTracking: isTracking,
