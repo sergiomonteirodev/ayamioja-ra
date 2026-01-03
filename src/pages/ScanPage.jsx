@@ -814,11 +814,23 @@ const ScanPage = () => {
                 if (sceneEl) {
                   // Tentar múltiplas formas de acessar o renderer
                   let renderer = sceneEl.renderer
+                  
+                  // Tentar via systems.renderer (forma mais comum no A-Frame)
                   if (!renderer && sceneEl.systems && sceneEl.systems.renderer) {
-                    renderer = sceneEl.systems.renderer.renderer
+                    renderer = sceneEl.systems.renderer.renderer || sceneEl.systems.renderer
                   }
+                  
+                  // Tentar via object3D
                   if (!renderer && sceneEl.object3D && sceneEl.object3D.renderer) {
                     renderer = sceneEl.object3D.renderer
+                  }
+                  
+                  // Tentar acessar diretamente via querySelector do canvas
+                  if (!renderer) {
+                    const canvas = sceneEl.querySelector('canvas')
+                    if (canvas && canvas.__THREE_WEBGL_RENDERER__) {
+                      renderer = canvas.__THREE_WEBGL_RENDERER__
+                    }
                   }
                   
                   if (renderer && renderer.setClearColor) {
@@ -828,10 +840,19 @@ const ScanPage = () => {
                     if (renderer.setClearAlpha) {
                       renderer.setClearAlpha(0)
                     }
-                    console.log('✅ Renderer clearColor configurado para transparente')
+                    // CRÍTICO: Também configurar via renderer.state
+                    if (renderer.state) {
+                      renderer.state.buffers.color.setClear(0, 0, 0, 0)
+                    }
+                    console.log('✅ Renderer clearColor configurado para transparente', { renderer: !!renderer })
                     return true
                   } else {
-                    console.warn('⚠️ Renderer não encontrado ou setClearColor não disponível')
+                    console.warn('⚠️ Renderer não encontrado ou setClearColor não disponível', {
+                      hasSceneEl: !!sceneEl,
+                      hasRenderer: !!sceneEl.renderer,
+                      hasSystems: !!sceneEl.systems,
+                      hasRendererSystem: !!(sceneEl.systems && sceneEl.systems.renderer)
+                    })
                     return false
                   }
                 }
@@ -842,13 +863,51 @@ const ScanPage = () => {
               return false
             }
             
+            // CRÍTICO: Remover qualquer elemento a-sky ou background do A-Frame
+            const removeBackgroundElements = () => {
+              try {
+                const sceneEl = sceneRef.current
+                if (sceneEl) {
+                  // Remover a-sky se existir
+                  const sky = sceneEl.querySelector('a-sky')
+                  if (sky) {
+                    sky.remove()
+                    console.log('✅ a-sky removido')
+                  }
+                  
+                  // Remover elementos com data-aframe-background
+                  const bgElements = sceneEl.querySelectorAll('[data-aframe-background], .a-background')
+                  bgElements.forEach(el => {
+                    el.remove()
+                    console.log('✅ Elemento de background removido')
+                  })
+                }
+              } catch (e) {
+                console.warn('⚠️ Erro ao remover elementos de background:', e)
+              }
+            }
+            
+            // Remover elementos de background primeiro
+            removeBackgroundElements()
+            
             // Tentar configurar imediatamente
             if (!configureRendererTransparency()) {
-              // Se falhar, tentar novamente após um pequeno delay
+              // Se falhar, tentar novamente após delays progressivos
               setTimeout(() => {
-                configureRendererTransparency()
+                if (!configureRendererTransparency()) {
+                  setTimeout(() => {
+                    configureRendererTransparency()
+                  }, 200)
+                }
               }, 100)
             }
+            
+            // CRÍTICO: Configurar novamente após MindAR inicializar completamente
+            // MindAR pode recriar o renderer, então precisamos reconfigurar
+            setTimeout(() => {
+              configureRendererTransparency()
+              removeBackgroundElements()
+            }, 500)
             
             // Configurar estilos - SEMPRE configurar para garantir que está acima do vídeo
             canvas.style.setProperty('z-index', canvasZIndex, 'important')
