@@ -978,6 +978,25 @@ const ScanPage = () => {
             canvas.style.setProperty('-webkit-background-clip', 'padding-box', 'important')
             canvas.style.setProperty('background-clip', 'padding-box', 'important')
             
+            // CRÍTICO: Forçar canvas transparente via atributo style também
+            const currentStyle = canvas.getAttribute('style') || ''
+            if (!currentStyle.includes('background-color: transparent')) {
+              canvas.setAttribute('style', currentStyle + '; background-color: transparent !important; background: transparent !important;')
+            }
+            
+            // CRÍTICO: Tentar acessar WebGL context diretamente para forçar clearColor
+            try {
+              const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false }) || 
+                       canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: false })
+              if (gl) {
+                gl.clearColor(0, 0, 0, 0)
+                gl.clear(gl.COLOR_BUFFER_BIT)
+                console.log('✅ WebGL clearColor configurado diretamente no canvas')
+              }
+            } catch (e) {
+              console.warn('⚠️ Não foi possível acessar WebGL context diretamente:', e)
+            }
+            
             console.log(`✅ Canvas configurado (z-index: ${canvasZIndex}, iOS: ${isIOS}, Android12+: ${isAndroid12Plus})`)
           }
           
