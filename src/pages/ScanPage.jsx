@@ -1461,7 +1461,7 @@ const ScanPage = () => {
               .then(response => {
                 if (response.ok) {
                   console.log(`✅ Arquivo .mind acessível: ${mindFileUrl} (${response.status})`)
-                } else {
+          } else {
                   console.error(`❌ Arquivo .mind não acessível: ${mindFileUrl} (${response.status})`)
                 }
               })
@@ -1474,7 +1474,7 @@ const ScanPage = () => {
         // Verificar se MindAR está realmente iniciado
         if (mindarComponent) {
           // Aguardar um pouco e verificar novamente
-          setTimeout(() => {
+      setTimeout(() => {
             console.log('📊 MindAR Status após delay:', {
               isTracking: mindarComponent.isTracking,
               isReady: mindarComponent.isReady,
@@ -1500,7 +1500,7 @@ const ScanPage = () => {
                 try {
                   mindarImageComponent.start()
                   console.log('✅ MindAR iniciado manualmente')
-                } catch (e) {
+                    } catch (e) {
                   console.warn('⚠️ Erro ao iniciar MindAR manualmente:', e)
                 }
               }
@@ -1616,7 +1616,7 @@ const ScanPage = () => {
           const videoId = `video${index + 1}`
           const video = document.getElementById(videoId)
           if (video && !video.paused) {
-            video.pause()
+              video.pause()
             console.log(`⏸️ Vídeo ${videoId} pausado (target perdido via entity)`)
           }
           
@@ -1676,7 +1676,7 @@ const ScanPage = () => {
         // Se falhar, tentar após a cena carregar
         if (scene.hasLoaded) {
           setTimeout(configureRenderer, 100)
-        } else {
+            } else {
           scene.addEventListener('loaded', () => {
             setTimeout(configureRenderer, 100)
           }, { once: true })
@@ -1711,17 +1711,52 @@ const ScanPage = () => {
                     // CRÍTICO: Garantir que o canvas também tenha background transparente
                     if (renderer.domElement) {
                       const canvas = renderer.domElement
-                      canvas.style.setProperty('background-color', 'transparent', 'important')
-                      canvas.style.setProperty('background', 'transparent', 'important')
+          canvas.style.setProperty('background-color', 'transparent', 'important')
+          canvas.style.setProperty('background', 'transparent', 'important')
                     }
+                  }
+                }
+                
+                // CRÍTICO: Tentar acessar renderer via canvas.__THREE_WEBGL_RENDERER__
+                const canvas = sceneEl.querySelector('canvas')
+                if (canvas) {
+                  // Forçar canvas transparente via atributo style também
+      canvas.style.setProperty('background-color', 'transparent', 'important')
+      canvas.style.setProperty('background', 'transparent', 'important')
+                  
+                  // Tentar acessar renderer via __THREE_WEBGL_RENDERER__
+                  if (canvas.__THREE_WEBGL_RENDERER__) {
+                    const renderer = canvas.__THREE_WEBGL_RENDERER__
+                    if (renderer && renderer.setClearColor) {
+                  renderer.setClearColor(0x000000, 0)
+                      if (renderer.setClearAlpha) {
+                        renderer.setClearAlpha(0)
+                      }
+                      if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+                        renderer.state.buffers.color.setClear(0, 0, 0, 0)
+                      }
+                    }
+                  }
+                  
+                  // CRÍTICO: Tentar acessar WebGL context diretamente para forçar clearColor
+                  try {
+                    const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+                    if (gl) {
+                      gl.clearColor(0, 0, 0, 0)
+                      gl.clear(gl.COLOR_BUFFER_BIT)
+                    }
+                  } catch (e) {
+                    // Ignorar erro - pode não ter acesso ao contexto
                   }
                 }
                 
                 // CRÍTICO: Garantir que o vídeo da câmera esteja visível atrás do canvas
                 const allVideos = Array.from(document.querySelectorAll('video'))
+                let cameraVideoFound = false
                 allVideos.forEach(v => {
                   const id = v.id || ''
                   if (id !== 'video1' && id !== 'video2' && id !== 'video3' && !id.includes('target')) {
+                    cameraVideoFound = true
                     v.style.setProperty('z-index', '0', 'important')
                     v.style.setProperty('display', 'block', 'important')
                     v.style.setProperty('visibility', 'visible', 'important')
@@ -1730,10 +1765,18 @@ const ScanPage = () => {
                     v.style.setProperty('width', '100vw', 'important')
                     v.style.setProperty('height', '100vh', 'important')
                     v.style.setProperty('object-fit', 'cover', 'important')
+                    v.style.setProperty('top', '0', 'important')
+                    v.style.setProperty('left', '0', 'important')
                   }
                 })
+                
+                // Log se vídeo da câmera não foi encontrado
+                if (!cameraVideoFound) {
+                  console.warn('⚠️ Vídeo da câmera não encontrado no loop RAF. Vídeos disponíveis:', 
+                    allVideos.map(v => ({ id: v.id, src: v.src, srcObject: !!v.srcObject })))
+                }
               }
-            } catch (e) {
+              } catch (e) {
               // Silencioso
             }
           }
@@ -1882,23 +1925,23 @@ const ScanPage = () => {
     <div className="scan-page">
       {/* Botão de voltar e ToggleControls - SEMPRE visíveis */}
       <div style={{ position: 'fixed', top: '10px', left: '10px', zIndex: 10000 }}>
-        <button 
+          <button
           onClick={handleBackClick}
-          style={{
+            style={{
             padding: '10px 20px',
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            border: 'none',
+              color: 'white',
+              border: 'none',
             borderRadius: '5px',
             cursor: 'pointer',
             fontSize: '16px',
-            fontWeight: 'bold',
+              fontWeight: 'bold',
             backdropFilter: 'blur(10px)'
-          }}
-        >
+            }}
+          >
           ← Voltar
-        </button>
-      </div>
+          </button>
+        </div>
       
       <ToggleControls 
         onLibrasToggle={handleLibrasToggle}
@@ -2000,10 +2043,10 @@ const ScanPage = () => {
       {/* Botão para solicitar permissão da câmera (se ainda não foi concedida) */}
       {!cameraPermissionGranted && !isRequestingPermission && (
         <div style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+            position: 'fixed', 
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
           zIndex: 100001,
           textAlign: 'center',
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
