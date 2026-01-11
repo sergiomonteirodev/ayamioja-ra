@@ -89,78 +89,11 @@
     box-sizing: border-box;
 }
 
-/* CRÍTICO: CSS limpo para AR no Android - sem overflow hidden ou transforms */
-html, body, #root {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: visible !important; /* NÃO hidden - quebra composição WebGL/video no Android */
-}
-
 body {
     font-family: 'RooneySans', Arial, sans-serif;
     background-color: #b36f35;
     min-height: 100vh;
-    /* overflow-x: hidden; REMOVIDO - quebra AR no Android */
-}
-
-/* CRÍTICO: Forçar background transparente quando scan-page está ativa */
-body.scan-page-active,
-html.scan-page-active,
-body.scan-page-active *,
-html.scan-page-active * {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* CRÍTICO: Garantir que body e html sejam transparentes quando scan-page está ativa */
-body.scan-page-active,
-html.scan-page-active {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* CRÍTICO: Garantir que #root seja transparente na scan page */
-#root {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-body.scan-page-active #root,
-html.scan-page-active #root {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* CRÍTICO: Garantir que TODOS os elementos na scan-page sejam transparentes */
-.scan-page {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-.scan-page *:not(button):not(.toggle-controls):not(.scanning-instruction):not(.loading-content):not(.camera-permission-content) {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* EXCEÇÃO: Elementos que precisam de background (botões, etc) */
-.scan-page button,
-.scan-page .toggle-controls,
-.scan-page .scanning-instruction,
-.scan-page .loading-content,
-.scan-page .camera-permission-content {
-    background-color: initial !important;
-    background: initial !important;
-}
-
-/* CRÍTICO: Remover transforms de containers principais no Android */
-body.scan-page-active,
-html.scan-page-active,
-#root {
-    transform: none !important;
-    -webkit-transform: none !important;
-    will-change: auto !important;
+    overflow-x: hidden;
 }
 
 /* Navigation */
@@ -665,7 +598,7 @@ html.scan-page-active,
 
 /* Interpreter Video */
 .interpreter-container {
-    position: absolute;
+    position: fixed;
   bottom: 72px;
   left: 20px;
   width: 300px;
@@ -762,61 +695,23 @@ footer {
     margin-top: auto;
 }
 
-/* Footer na scan-page deve ser transparente */
-.scan-page footer,
-.scan-page .scan-footer {
-    background-color: transparent !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
 /* ==================== SCAN PAGE STYLES ==================== */
 
 /* Scan Page Container */
 .scan-page {
+   
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: transparent !important;
-    background: transparent !important;
+    background-color: #000;
     overflow: hidden;
     z-index: 10000; /* Acima de tudo para UI funcionar, mas background transparente */
 }
 
-/* FORÇAR transparência total no Android */
-.scan-page {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* Garantir que body e html sejam transparentes na scan page */
-body.scan-page-active,
-html.scan-page-active {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* CRÍTICO: Garantir que quando animação de scanning aparece, background seja transparente */
-.scan-page .ar-scanning-overlay {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-.scan-page:has(.ar-scanning-overlay) {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-body:has(.ar-scanning-overlay),
-html:has(.ar-scanning-overlay) {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
 /* Toggles na Scan Page */
 .scan-page .toggle-controls {
-    position: absolute;
+    position: fixed;
     top: 10px;
     left: 0;
     right: 0;
@@ -828,7 +723,7 @@ html:has(.ar-scanning-overlay) {
 
 /* Botão Voltar como Overlay - Sem Fundo */
 .back-button-overlay {
-    position: absolute;
+    position: fixed;
     bottom: 70px;
     right: 20px;
     z-index: 100000 !important; /* Acima da câmera (9998) e canvas (9999) */
@@ -849,104 +744,28 @@ html:has(.ar-scanning-overlay) {
 }
 
 /* A-Frame Scene */
-/* CORREÇÃO: NÃO usar embedded em SPA React - causa inicialização dupla do WebGL */
-/* Usar position: fixed e deixar A-Frame gerenciar o canvas completamente */
 a-scene {
     position: fixed !important;
-    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: -1 !important; /* Por padrão, atrás do vídeo - será ajustado dinamicamente */
-    background-color: transparent !important;
-    background: transparent !important;
+    z-index: 1 !important;
 }
 
-/* Quando há target ativo, a-scene deve ficar acima do vídeo */
-.scan-page a-scene[data-has-active-target="true"] {
-    z-index: 1 !important; /* Acima do vídeo quando há target ativo */
-}
-
-/* Canvas do A-Frame - DEVE ser transparente - SEM background branco */
-/* CRÍTICO: Garantir que o canvas seja transparente para mostrar o vídeo da câmera */
-a-scene canvas,
-.scan-page a-scene canvas,
-canvas.a-canvas {
-    background: transparent !important;
-    background-color: transparent !important;
-    background-image: none !important;
-    /* CRÍTICO: Remover qualquer background branco */
-    -webkit-background-clip: padding-box !important;
-    background-clip: padding-box !important;
-}
-
-/* Canvas do A-Frame - Deixar A-Frame gerenciar completamente */
-/* CRÍTICO: NÃO tocar no canvas via CSS - pode quebrar o compositor WebGL */
+/* Canvas do A-Frame - Garantir que ocupe 100% */
 a-scene canvas {
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    background-color: transparent !important;
-    background: transparent !important;
-    pointer-events: none !important;
+    object-fit: cover !important;
 }
-
-/* Quando não há target ativo, canvas deve estar atrás do vídeo E completamente oculto */
-a-scene:not([data-has-active-target]) canvas {
-    z-index: -2 !important;
-    opacity: 0 !important;
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-}
-
-/* Quando há target ativo, canvas pode estar acima do vídeo */
-a-scene[data-has-active-target="true"] canvas {
-    z-index: 3 !important; /* Acima do vídeo da câmera (z-index: 0) */
-    opacity: 1 !important;
-    display: block !important;
-    visibility: visible !important;
-    position: absolute !important;
-    pointer-events: auto !important;
-}
-
-/* iOS/Safari específico - z-index muito alto para garantir que canvas apareça acima do vídeo */
-@supports (-webkit-touch-callout: none) {
-    /* iOS Safari */
-    a-scene[data-has-active-target="true"] canvas {
-        z-index: 9999 !important; /* Z-index muito alto para iOS */
-        opacity: 1 !important;
-        display: block !important;
-        visibility: visible !important;
-        position: absolute !important;
-        pointer-events: auto !important;
-    }
-    
-    /* Garantir que vídeo da câmera fique atrás do canvas no iOS */
-    .scan-page video[id^="mindar"],
-    .scan-page video[id*="mindar"],
-    .scan-page #arVideo,
-    .scan-page video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"]) {
-        z-index: 0 !important; /* Atrás do canvas quando há target */
-        position: fixed !important;
-    }
-    
-    /* Quando não há target, vídeo deve estar acima */
-    .scan-page:not(:has(a-scene[data-has-active-target="true"])) video[id^="mindar"],
-    .scan-page:not(:has(a-scene[data-has-active-target="true"])) video[id*="mindar"],
-    .scan-page:not(:has(a-scene[data-has-active-target="true"])) #arVideo {
-        z-index: 1 !important; /* Acima quando não há target */
-    }
-}
-
-/* REMOVIDO: Todas as regras CSS que controlam opacity/display do canvas */
-/* Tocar no canvas pode quebrar o compositor WebGL no Android */
-/* Apenas z-index do canvas é controlado dinamicamente via CSS e JavaScript */
 
 /* Container da câmera AR */
 .a-canvas {
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     width: 100vw !important;
@@ -954,37 +773,19 @@ a-scene[data-has-active-target="true"] canvas {
 }
 
 /* Vídeo da câmera AR do MindAR */
-/* CRÍTICO: Usar fixed para garantir fullscreen e cobrir qualquer background branco */
-/* CRÍTICO: z-index: 1 - sempre acima do canvas quando não há targets (canvas tem z-index: -2) */
-/* Quando há targets, canvas tem z-index: 2 e fica acima do vídeo */
 #arVideo,
-video[id^="mindar"],
-video[id*="mindar"],
-video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"]) {
-    position: fixed !important; /* Fixed para garantir fullscreen */
+video[id^="mindar"] {
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    min-width: 100vw !important;
-    min-height: 100vh !important;
     object-fit: cover !important;
-    z-index: 1 !important; /* z-index: 1 - acima do canvas quando não há targets (canvas: -2) */
+    z-index: -2 !important;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     background-color: transparent !important;
-    background: transparent !important;
-    transform: none !important; /* CRÍTICO: Sem transforms no vídeo */
-    -webkit-transform: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    /* CRÍTICO: Remover width/height fixos do HTML */
-    max-width: none !important;
-    max-height: none !important;
 }
 
 /* Correção específica para Android - Canvas transparente */
@@ -993,109 +794,42 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
     a-scene canvas {
         background-color: transparent !important;
         background: transparent !important;
+        opacity: 1 !important;
         mix-blend-mode: normal !important;
         pointer-events: none !important;
     }
     
-    /* Forçar transparência no Android - ocultar quando não há target */
+    /* Forçar transparência no Android */
     .scan-page a-scene canvas {
         background-color: transparent !important;
         background: transparent !important;
-        opacity: 0 !important; /* Ocultar completamente quando não há target */
-        display: none !important; /* CRÍTICO: Ocultar display no Android */
-        visibility: hidden !important; /* CRÍTICO: Ocultar visibility no Android */
-        z-index: -2 !important; /* Atrás do vídeo quando oculto */
+        opacity: 1 !important;
     }
     
-    /* Mostrar canvas quando há target ativo no Android */
-    .scan-page a-scene[data-has-active-target="true"] canvas {
-        opacity: 1 !important; /* Mostrar quando há target */
-        display: block !important; /* CRÍTICO: Mostrar display quando há target */
-        visibility: visible !important; /* CRÍTICO: Mostrar visibility quando há target */
-        z-index: 3 !important; /* Acima do vídeo da câmera (z-index: 0) para AR */
-        pointer-events: auto !important;
-        background-color: transparent !important;
-        background: transparent !important;
-        /* CRÍTICO: Usar mix-blend-mode para garantir transparência */
-        mix-blend-mode: normal !important;
-        /* CRÍTICO: Garantir que o canvas não tenha fundo branco */
-        -webkit-background-clip: padding-box !important;
-        background-clip: padding-box !important;
-    }
-    
-    /* Garantir que o vídeo da câmera esteja sempre visível */
+    /* Garantir que o vídeo da câmera esteja atrás do canvas */
     .scan-page video[id^="mindar"],
-    .scan-page video[id*="mindar"],
     .scan-page #arVideo {
-        position: fixed !important; /* Fixed para garantir fullscreen */
+        z-index: -2 !important;
+        position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
         object-fit: cover !important;
-        transform: none !important; /* CRÍTICO: Sem transforms */
-        -webkit-transform: none !important;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 1 !important; /* Padrão: acima do canvas quando não há target */
-    }
-    
-    /* Quando HÁ target ativo: vídeo atrás do canvas (mas visível) */
-    .scan-page a-scene[data-has-active-target="true"] ~ video,
-    .scan-page a-scene[data-has-active-target="true"] + video,
-    body:has(.scan-page a-scene[data-has-active-target="true"]) .scan-page video[id^="mindar"],
-    body:has(.scan-page a-scene[data-has-active-target="true"]) .scan-page video[id*="mindar"],
-    body:has(.scan-page a-scene[data-has-active-target="true"]) .scan-page #arVideo {
-        z-index: 0 !important; /* z-index: 0 - atrás do canvas (z-index: 3), mas visível */
     }
 }
 
 /* Android específico - garantir que não há fundo preto */
 @media screen and (-webkit-min-device-pixel-ratio: 0) {
-    .scan-page {
-        background: transparent !important;
-        background-color: transparent !important;
-    }
-    
     a-scene canvas {
         background: transparent !important;
         background-color: transparent !important;
         opacity: 1 !important;
     }
     
-    /* Canvas SEMPRE visível no Android - apenas controlar z-index */
-    /* CRÍTICO: NÃO usar display: none - quebra MindAR e pode causar background branco */
-    .scan-page a-scene canvas {
-        display: block !important; /* SEMPRE visível para MindAR funcionar */
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: -1 !important; /* Atrás do vídeo por padrão */
-        background-color: transparent !important;
-        background: transparent !important;
-    }
-    
-    /* Canvas acima do vídeo quando há target ativo */
-    .scan-page a-scene[data-has-active-target="true"] canvas {
-        display: block !important; /* Sempre visível */
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 3 !important; /* Acima do vídeo para AR */
-        background-color: transparent !important;
-        background: transparent !important;
-    }
-    
     /* Forçar vídeo atrás do canvas no Android */
     video:not([id="video1"]):not([id="video2"]):not([id="video3"]) {
-        z-index: 0 !important; /* Vídeo da câmera atrás do canvas quando visível */
-    }
-    
-    body:has(.scan-page),
-    html:has(.scan-page) {
-        background: transparent !important;
-        background-color: transparent !important;
+        z-index: -2 !important;
     }
 }
 
@@ -1109,33 +843,6 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
     }
 }
 
-/* Android/Chrome - Correção ULTRA AGRESSIVA para área preta */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-    /* Forçar que NENHUM elemento dentro do a-scene tenha background preto */
-    a-scene *:not(canvas):not(video) {
-        background-color: transparent !important;
-        background: transparent !important;
-    }
-    
-    /* Garantir que o canvas seja sempre transparente */
-    a-scene canvas {
-        background-color: transparent !important;
-        background: transparent !important;
-        opacity: 1 !important;
-        mix-blend-mode: normal !important;
-        pointer-events: none !important;
-    }
-    
-    /* Remover qualquer elemento de background do A-Frame */
-    a-scene [data-aframe-background],
-    a-scene .a-background,
-    a-scene a-sky {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-    }
-}
-
 /* Esconder UI padrão do MindAR */
 .mindar-ui-overlay,
 .mindar-ui-loading,
@@ -1146,7 +853,7 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
 
 /* Footer da Scan Page */
 .scan-footer {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
@@ -1165,10 +872,9 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: transparent !important;
-    background-color: transparent !important;
+    width: 100%;
+    height: 100%;
+    background: rgba(179, 111, 53, 0.95);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1178,10 +884,6 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
 .loading-content {
     text-align: center;
     color: white;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 30px;
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
 }
 
 .loading-spinner {
@@ -1209,18 +911,13 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 100000;
+    z-index: 100;
     pointer-events: none;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     gap: 30px;
     animation: fadeIn 0.5s ease-in;
-    background-color: transparent !important;
-    background: transparent !important;
-    width: 100vw;
-    height: 100vh;
 }
 
 @keyframes fadeIn {
@@ -1270,19 +967,12 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
     font-size: 18px;
     font-weight: 700;
     text-align: center;
-    margin: 20px 0 0 0;
+    margin: 0;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
     background-color: rgba(0, 0, 0, 0.5);
     padding: 10px 25px;
     border-radius: 25px;
     backdrop-filter: blur(5px);
-    /* Garantir que o texto não tenha background branco */
-    background: rgba(0, 0, 0, 0.5) !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 100001;
-    position: relative;
 }
 
 /* Animações */
@@ -1454,7 +1144,7 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
 
 /* Member Modal */
 .member-modal {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -1833,7 +1523,7 @@ body.modal-open {
         bottom: 72px;
         left: 30px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -1849,7 +1539,7 @@ body.modal-open {
         bottom: 72px;
         right: 0px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -1951,7 +1641,7 @@ body.modal-open {
         bottom: 72px;
         left: 20px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -1967,7 +1657,7 @@ body.modal-open {
         bottom: 72px;
         right: 0px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -2090,7 +1780,7 @@ body.modal-open {
         flex-direction: column;
         gap: 10px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -2110,7 +1800,7 @@ body.modal-open {
         bottom: 72px;
         left: 20px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -2297,7 +1987,7 @@ body.modal-open {
         bottom: 72px;
         left: 15px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -2313,7 +2003,7 @@ body.modal-open {
         bottom: 72px;
         right: 0px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -2487,7 +2177,7 @@ body.modal-open {
         bottom: 72px;
         left: 10px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -2503,7 +2193,7 @@ body.modal-open {
         bottom: 72px;
         right: 0px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .logo-container img {
@@ -2643,7 +2333,7 @@ body.modal-open {
         bottom: 72px;
         left: 8px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .paused-content svg {
@@ -2659,7 +2349,7 @@ body.modal-open {
         bottom: 72px;
         right: 0px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
 
     .btn-primary, .btn-secondary {
@@ -2914,7 +2604,7 @@ body.modal-open {
     }
     
     .action-buttons {
-        position: absolute !important;
+        position: fixed !important;
         bottom: 72px !important;
         right: 0px !important;
         display: flex !important;
@@ -2977,7 +2667,7 @@ body.modal-open {
         bottom: 72px !important;
         left: 10px !important;
         z-index: 150 !important;
-        position: absolute !important;
+        position: fixed !important;
     }
 }
 
@@ -3098,7 +2788,7 @@ body.modal-open {
         right: 0px;
         gap: 8px;
         z-index: 150;
-        position: absolute;
+        position: fixed;
     }
     
     .action-button {
@@ -3121,7 +2811,7 @@ body.modal-open {
         left: 8px !important;
         border-width: 2px !important;
         z-index: 150 !important;
-        position: absolute !important;
+        position: fixed !important;
     }
     
     .interpreter-video {
