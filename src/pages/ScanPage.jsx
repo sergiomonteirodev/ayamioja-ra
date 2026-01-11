@@ -1911,6 +1911,43 @@ const ScanPage = () => {
       // Aguardar evento loaded
       scene.addEventListener('loaded', () => {
         console.log('✅ a-scene carregado')
+        
+        // CRÍTICO: Forçar canvas transparente imediatamente após carregar
+        const forceCanvasTransparent = () => {
+          const canvas = scene.querySelector('canvas')
+          if (canvas) {
+            canvas.style.setProperty('background-color', 'transparent', 'important')
+            canvas.style.setProperty('background', 'transparent', 'important')
+            
+            // Tentar acessar renderer via canvas
+            if (canvas.__THREE_WEBGL_RENDERER__) {
+              const renderer = canvas.__THREE_WEBGL_RENDERER__
+              if (renderer && renderer.setClearColor) {
+                renderer.setClearColor(0x000000, 0)
+                if (renderer.setClearAlpha) {
+                  renderer.setClearAlpha(0)
+                }
+                console.log('✅✅✅ Renderer transparente FORÇADO via canvas.__THREE_WEBGL_RENDERER__')
+              }
+            }
+            
+            // Tentar acessar WebGL context diretamente
+            try {
+              const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false }) || 
+                       canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: false })
+              if (gl) {
+                gl.clearColor(0, 0, 0, 0)
+                console.log('✅✅✅ WebGL clearColor FORÇADO diretamente no canvas')
+              }
+            } catch (e) {
+              console.warn('⚠️ Erro ao configurar WebGL clearColor:', e)
+            }
+          }
+        }
+        
+        // Forçar imediatamente
+        forceCanvasTransparent()
+        
         setTimeout(markArReady, 1000)
       }, { once: true })
     }
@@ -1938,6 +1975,172 @@ const ScanPage = () => {
     // O A-Frame gerencia o contexto WebGL - não devemos tocá-lo
 
     // REMOVIDO: makeRendererTransparent - A-Frame gerencia transparência via atributos
+  }, [])
+
+  // CRÍTICO: Interceptar criação do WebGLRenderer ANTES do MindAR/A-Frame usá-lo
+  // Executar IMEDIATAMENTE quando o componente montar (sem esperar useEffect)
+  useEffect(() => {
+    // Interceptar THREE.WebGLRenderer para garantir transparência desde a criação
+    if (window.THREE && window.THREE.WebGLRenderer) {
+      // Verificar se já foi interceptado
+      if (window.THREE.WebGLRenderer.__transparencyIntercepted) {
+        return
+      }
+      
+      const OriginalWebGLRenderer = window.THREE.WebGLRenderer
+      
+      window.THREE.WebGLRenderer = function(...args) {
+        const renderer = new OriginalWebGLRenderer(...args)
+        
+        // CRÍTICO: Forçar transparência imediatamente após criação
+        if (renderer.setClearColor) {
+          renderer.setClearColor(0x000000, 0)
+          if (renderer.setClearAlpha) {
+            renderer.setClearAlpha(0)
+          }
+        }
+        
+        // CRÍTICO: Configurar via state.buffers se disponível
+        if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+          renderer.state.buffers.color.setClear(0, 0, 0, 0)
+        }
+        
+        // Interceptar setClearColor para garantir que nunca seja opaco
+        const originalSetClearColor = renderer.setClearColor.bind(renderer)
+        renderer.setClearColor = function(color, alpha) {
+          // SEMPRE forçar alpha para 0 (transparente)
+          originalSetClearColor(color || 0x000000, 0)
+        }
+        
+        // Interceptar render para garantir clearColor antes de cada frame
+        const originalRender = renderer.render.bind(renderer)
+        renderer.render = function(scene, camera) {
+          // Garantir transparência antes de renderizar
+          if (renderer.setClearColor) {
+            renderer.setClearColor(0x000000, 0)
+          }
+          if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+            renderer.state.buffers.color.setClear(0, 0, 0, 0)
+          }
+          originalRender(scene, camera)
+        }
+        
+        console.log('✅✅✅ WebGLRenderer interceptado e configurado para transparência')
+        return renderer
+      }
+      
+      // Marcar como interceptado
+      window.THREE.WebGLRenderer.__transparencyIntercepted = true
+      
+      // Copiar propriedades estáticas
+      Object.setPrototypeOf(window.THREE.WebGLRenderer, OriginalWebGLRenderer)
+      Object.assign(window.THREE.WebGLRenderer, OriginalWebGLRenderer)
+    } else {
+      // Se THREE ainda não estiver disponível, tentar novamente após um delay
+      const checkThree = setInterval(() => {
+        if (window.THREE && window.THREE.WebGLRenderer && !window.THREE.WebGLRenderer.__transparencyIntercepted) {
+          clearInterval(checkThree)
+          // Recursivamente chamar o useEffect (mas isso não funciona, então vamos fazer inline)
+          const OriginalWebGLRenderer = window.THREE.WebGLRenderer
+          window.THREE.WebGLRenderer = function(...args) {
+            const renderer = new OriginalWebGLRenderer(...args)
+            if (renderer.setClearColor) {
+              renderer.setClearColor(0x000000, 0)
+              if (renderer.setClearAlpha) {
+                renderer.setClearAlpha(0)
+              }
+            }
+            if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+              renderer.state.buffers.color.setClear(0, 0, 0, 0)
+            }
+            console.log('✅✅✅ WebGLRenderer interceptado (retry)')
+            return renderer
+          }
+          window.THREE.WebGLRenderer.__transparencyIntercepted = true
+          Object.setPrototypeOf(window.THREE.WebGLRenderer, OriginalWebGLRenderer)
+          Object.assign(window.THREE.WebGLRenderer, OriginalWebGLRenderer)
+        }
+      }, 100)
+      
+      // Limpar após 5 segundos
+      setTimeout(() => clearInterval(checkThree), 5000)
+    }
+  }, [])
+
+  // CRÍTICO: Forçar transparência do canvas continuamente usando requestAnimationFrame
+  useEffect(() => {
+    let rafId = null
+    
+    const forceTransparencyLoop = () => {
+      const scene = sceneRef.current
+      if (!scene) {
+        rafId = requestAnimationFrame(forceTransparencyLoop)
+        return
+      }
+      
+      const canvas = scene.querySelector('canvas')
+      if (canvas) {
+        // Forçar canvas transparente via CSS
+        canvas.style.setProperty('background-color', 'transparent', 'important')
+        canvas.style.setProperty('background', 'transparent', 'important')
+        
+        // Forçar renderer transparente via canvas.__THREE_WEBGL_RENDERER__
+        if (canvas.__THREE_WEBGL_RENDERER__) {
+          const renderer = canvas.__THREE_WEBGL_RENDERER__
+          if (renderer && renderer.setClearColor) {
+            renderer.setClearColor(0x000000, 0)
+            if (renderer.setClearAlpha) {
+              renderer.setClearAlpha(0)
+            }
+            // CRÍTICO: Também forçar via state.buffers se disponível
+            if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+              renderer.state.buffers.color.setClear(0, 0, 0, 0)
+            }
+          }
+        }
+        
+        // Tentar acessar renderer via scene.systems
+        const rendererSystem = scene.systems?.renderer
+        if (rendererSystem) {
+          const renderer = rendererSystem.renderer || rendererSystem
+          if (renderer && renderer.setClearColor) {
+            renderer.setClearColor(0x000000, 0)
+            if (renderer.setClearAlpha) {
+              renderer.setClearAlpha(0)
+            }
+            // CRÍTICO: Também forçar via state.buffers se disponível
+            if (renderer.state && renderer.state.buffers && renderer.state.buffers.color) {
+              renderer.state.buffers.color.setClear(0, 0, 0, 0)
+            }
+          }
+        }
+        
+        // Forçar WebGL context transparente ANTES de cada clear
+        try {
+          const gl = canvas.getContext('webgl', { alpha: true }) || 
+                   canvas.getContext('webgl2', { alpha: true })
+          if (gl) {
+            gl.clearColor(0, 0, 0, 0)
+            // CRÍTICO: Limpar o buffer de cor com alpha 0
+            gl.clear(gl.COLOR_BUFFER_BIT)
+          }
+        } catch (e) {
+          // Ignorar erro
+        }
+      }
+      
+      rafId = requestAnimationFrame(forceTransparencyLoop)
+    }
+    
+    // Iniciar loop
+    rafId = requestAnimationFrame(forceTransparencyLoop)
+    
+    // Cleanup
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
+    }
   }, [])
 
   return (
@@ -1974,7 +2177,7 @@ const ScanPage = () => {
         mindar-image={`imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: ${mindarConfig.filterMinCF}; filterBeta: ${mindarConfig.filterBeta}; warmupTolerance: ${mindarConfig.warmupTolerance}; missTolerance: ${mindarConfig.missTolerance}; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;`}
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer={`alpha: true; antialias: ${mindarConfig.filterBeta > 0.01 ? 'false' : 'true'}; colorManagement: false; sortObjects: false; preserveDrawingBuffer: false; logarithmicDepthBuffer: false`}
+        renderer={`alpha: true; antialias: ${mindarConfig.filterBeta > 0.01 ? 'false' : 'true'}; colorManagement: false; sortObjects: false; preserveDrawingBuffer: false; logarithmicDepthBuffer: false; clearColor: 0x000000; clearAlpha: 0`}
         background="color: transparent"
         style={{
           position: 'fixed',

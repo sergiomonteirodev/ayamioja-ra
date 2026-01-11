@@ -866,6 +866,19 @@ a-scene {
     z-index: 1 !important; /* Acima do vídeo quando há target ativo */
 }
 
+/* Canvas do A-Frame - DEVE ser transparente - SEM background branco */
+/* CRÍTICO: Garantir que o canvas seja transparente para mostrar o vídeo da câmera */
+a-scene canvas,
+.scan-page a-scene canvas,
+canvas.a-canvas {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    /* CRÍTICO: Remover qualquer background branco */
+    -webkit-background-clip: padding-box !important;
+    background-clip: padding-box !important;
+}
+
 /* Canvas do A-Frame - Deixar A-Frame gerenciar completamente */
 /* CRÍTICO: NÃO tocar no canvas via CSS - pode quebrar o compositor WebGL */
 a-scene canvas {
@@ -1053,18 +1066,25 @@ video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id*="target"
         opacity: 1 !important;
     }
     
-    /* Canvas oculto por padrão no Android - só mostrar quando há target */
+    /* Canvas SEMPRE visível no Android - apenas controlar z-index */
+    /* CRÍTICO: NÃO usar display: none - quebra MindAR e pode causar background branco */
     .scan-page a-scene canvas {
-        display: none !important; /* Ocultar por padrão */
-        z-index: -1 !important; /* Atrás do vídeo */
+        display: block !important; /* SEMPRE visível para MindAR funcionar */
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: -1 !important; /* Atrás do vídeo por padrão */
+        background-color: transparent !important;
+        background: transparent !important;
     }
     
-    /* Mostrar canvas quando há target ativo */
+    /* Canvas acima do vídeo quando há target ativo */
     .scan-page a-scene[data-has-active-target="true"] canvas {
-        display: block !important; /* Mostrar quando há target */
-        visibility: visible !important; /* CRÍTICO: Mostrar visibility quando há target */
-        opacity: 1 !important; /* CRÍTICO: Mostrar opacity quando há target */
+        display: block !important; /* Sempre visível */
+        visibility: visible !important;
+        opacity: 1 !important;
         z-index: 3 !important; /* Acima do vídeo para AR */
+        background-color: transparent !important;
+        background: transparent !important;
     }
     
     /* Forçar vídeo atrás do canvas no Android */
