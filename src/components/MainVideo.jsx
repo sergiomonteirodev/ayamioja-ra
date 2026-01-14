@@ -330,9 +330,20 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handleLoadStart = () => {
       console.log('⏳ Iniciando carregamento do vídeo')
+      console.log('📋 URL do vídeo:', video.src || video.currentSrc)
+      console.log('📋 NetworkState:', video.networkState)
       setShowLoading(true)
       progressRef.current = 2
       setLoadingProgress(2) // Mostrar 2% quando iniciar (mais que 1% para indicar início)
+      
+      // Verificar se o vídeo está realmente tentando carregar
+      setTimeout(() => {
+        if (video.networkState === 3) {
+          console.error('❌ NetworkState = 3 (NO_SOURCE) - vídeo não encontrou fonte')
+        } else if (video.networkState === 0) {
+          console.warn('⚠️ NetworkState = 0 (EMPTY) - vídeo ainda não iniciou carregamento')
+        }
+      }, 1000)
     }
 
     const handleWaiting = () => {
@@ -356,25 +367,40 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     
     // Verificar progresso periodicamente mesmo sem eventos
     // Para Android/Chrome, verificar mais frequentemente e simular progresso gradual
-    const progressCheckInterval = isAndroidChrome ? 300 : 500
+    const progressCheckInterval = isAndroidChrome ? 200 : 400
     let simulatedProgress = 2 // Começar em 2% após loadstart
     let lastRealProgress = 2
+    let checkCount = 0
     
     const progressInterval = setInterval(() => {
+      checkCount++
       handleProgress()
       
-      // Se o progresso real não mudou, simular progresso gradual (especialmente para Android/Chrome)
+      // Log de diagnóstico a cada 5 verificações
+      if (checkCount % 5 === 0) {
+        console.log('🔍 Diagnóstico de progresso:', {
+          currentProgress: progressRef.current,
+          lastRealProgress,
+          simulatedProgress,
+          networkState: video.networkState,
+          readyState: video.readyState,
+          buffered: video.buffered.length,
+          duration: video.duration,
+          error: video.error
+        })
+      }
+      
+      // Se o progresso real não mudou, simular progresso gradual
       const currentProgress = progressRef.current
-      if (currentProgress === lastRealProgress && currentProgress < 50) {
-        // Incrementar progresso simulado gradualmente
-        if (video.networkState === 2 || video.readyState > 0) {
-          // Se está carregando ou tem algum readyState, incrementar
-          simulatedProgress = Math.min(simulatedProgress + 0.5, 50) // Máximo 50% simulado
-          const newProgress = Math.max(currentProgress, Math.round(simulatedProgress))
-          progressRef.current = newProgress
-          setLoadingProgress(newProgress)
-          console.log(`📊 Progresso simulado: ${Math.round(simulatedProgress)}%`)
-        }
+      if (currentProgress === lastRealProgress && currentProgress < 80) {
+        // SEMPRE incrementar progresso simulado se não houver progresso real
+        // Incremento mais agressivo no Android/Chrome
+        const increment = isAndroidChrome ? 1 : 0.5
+        simulatedProgress = Math.min(simulatedProgress + increment, 80) // Máximo 80% simulado
+        const newProgress = Math.max(currentProgress, Math.round(simulatedProgress))
+        progressRef.current = newProgress
+        setLoadingProgress(newProgress)
+        console.log(`📊 Progresso simulado: ${Math.round(simulatedProgress)}% (networkState: ${video.networkState}, readyState: ${video.readyState})`)
       } else {
         // Progresso real mudou, atualizar referências
         lastRealProgress = currentProgress
@@ -384,7 +410,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     // Fallback melhorado: forçar vídeo a aparecer mais rápido
     // Para Android/Chrome, usar timeout mais longo devido a latência de rede
-    const fallbackDelay = isAndroidChrome ? 3000 : 2000
+    const fallbackDelay = isAndroidChrome ? 5000 : 3000
     const fallbackTimeout = setTimeout(() => {
       console.log(`⚠️ Fallback: forçando vídeo a aparecer após ${fallbackDelay}ms`)
       console.log('📊 Estado do vídeo:', {
