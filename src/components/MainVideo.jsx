@@ -9,11 +9,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [userInteracted, setUserInteracted] = useState(false)
   const videoRef = useRef(null)
 
-  // Detectar iOS/iPhone/Safari
+  // Detectar dispositivos e navegadores
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
   const isAppleDevice = isIOS || isSafari
+  const isAndroid = /Android/i.test(navigator.userAgent)
+  const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
+  const isAndroidChrome = isAndroid && isChrome
 
   // Detectar interação do usuário para ativar áudio em dispositivos Apple
   useEffect(() => {
@@ -97,9 +100,38 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const video = videoRef.current
     if (!video) return
 
+    // Configurações específicas para Android/Chrome
+    if (isAndroidChrome) {
+      console.log('📱 Android/Chrome detectado - aplicando otimizações')
+      try {
+        video.setAttribute('playsinline', '')
+        video.setAttribute('webkit-playsinline', '')
+      } catch (e) {
+        console.warn('⚠️ Erro ao definir playsinline:', e)
+      }
+      video.playsInline = true
+    }
+
     // FORÇAR CARREGAMENTO IMEDIATO DO VÍDEO
-    console.log('🚀 Forçando carregamento imediato do vídeo')
-    video.load()
+    // Para Android, verificar networkState antes de chamar load()
+    const shouldLoad = !isAndroidChrome || video.networkState === 0 || video.networkState === 3 || video.readyState === 0
+    if (shouldLoad) {
+      console.log('🚀 Forçando carregamento imediato do vídeo', {
+        networkState: video.networkState,
+        readyState: video.readyState,
+        isAndroidChrome
+      })
+      try {
+        video.load()
+      } catch (e) {
+        console.warn('⚠️ Erro ao chamar video.load():', e)
+      }
+    } else {
+      console.log('⏳ Vídeo já está carregando, pulando load()', {
+        networkState: video.networkState,
+        readyState: video.readyState
+      })
+    }
 
     // Configurar vídeo - SEM LOOP
     video.loop = false
@@ -127,7 +159,23 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       // Iniciar reprodução automática apenas na primeira vez
       if (!hasEnded && video.paused && video.currentTime === 0) {
         console.log('🎬 Iniciando reprodução automática inicial')
-        video.play().catch(e => console.log('❌ Erro ao iniciar autoplay:', e))
+        const playPromise = video.play()
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('✅ Autoplay iniciado com sucesso')
+            })
+            .catch(e => {
+              console.log('❌ Erro ao iniciar autoplay:', e)
+              // Para Android/Chrome, tentar novamente após um delay
+              if (isAndroidChrome) {
+                setTimeout(() => {
+                  console.log('🔄 Tentando autoplay novamente no Android/Chrome')
+                  video.play().catch(err => console.log('❌ Erro no retry:', err))
+                }, 500)
+              }
+            })
+        }
       }
     }
 
@@ -229,12 +277,34 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.error('Código de erro:', video.error?.code)
       console.error('Mensagem:', video.error?.message)
       console.error('URL do vídeo:', video.src || video.currentSrc)
+      console.error('NetworkState:', video.networkState)
+      console.error('ReadyState:', video.readyState)
       
-      // Tentar carregar novamente após 2 segundos
-      setTimeout(() => {
-        console.log('🔄 Tentando recarregar vídeo após erro')
-        video.load()
-      }, 2000)
+      // Para Android/Chrome, tentar recarregar mais agressivamente
+      const retryDelay = isAndroidChrome ? 1000 : 2000
+      const maxRetries = isAndroidChrome ? 3 : 2
+      
+      let retryCount = 0
+      const retryLoad = () => {
+        retryCount++
+        if (retryCount <= maxRetries) {
+          console.log(`🔄 Tentando recarregar vídeo após erro (tentativa ${retryCount}/${maxRetries})`)
+          setTimeout(() => {
+            try {
+              video.load()
+            } catch (err) {
+              console.error('❌ Erro ao recarregar:', err)
+              if (retryCount < maxRetries) {
+                retryLoad()
+              }
+            }
+          }, retryDelay)
+        } else {
+          console.error('❌ Máximo de tentativas de recarregamento atingido')
+        }
+      }
+      
+      retryLoad()
     }
 
     const handleLoadStart = () => {
@@ -268,14 +338,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }, 500) // Verificar a cada 500ms
 
     // Fallback melhorado: forçar vídeo a aparecer mais rápido
+    // Para Android/Chrome, usar timeout mais longo devido a latência de rede
+    const fallbackDelay = isAndroidChrome ? 3000 : 2000
     const fallbackTimeout = setTimeout(() => {
-      console.log('⚠️ Fallback: forçando vídeo a aparecer após 2s')
+      console.log(`⚠️ Fallback: forçando vídeo a aparecer após ${fallbackDelay}ms`)
       console.log('📊 Estado do vídeo:', {
         readyState: video.readyState,
         networkState: video.networkState,
         error: video.error,
         src: video.src || video.currentSrc,
-        duration: video.duration
+        duration: video.duration,
+        isAndroidChrome
       })
 
       // Garantir que o vídeo está visível mesmo se ainda não carregou completamente
@@ -285,25 +358,53 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         // Tentar reproduzir APENAS se for a primeira vez (não terminou ainda)
         if (!hasEnded && video.paused && video.currentTime === 0) {
           console.log('🎬 Fallback: iniciando reprodução inicial')
-          video.play().catch(e => {
-            console.log('❌ Erro ao reproduzir no fallback:', e)
-            // Se falhar, manter loading visível
-            setShowLoading(true)
-          })
+          const playPromise = video.play()
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('✅ Reprodução iniciada no fallback')
+              })
+              .catch(e => {
+                console.log('❌ Erro ao reproduzir no fallback:', e)
+                // Para Android/Chrome, tentar novamente
+                if (isAndroidChrome) {
+                  setTimeout(() => {
+                    console.log('🔄 Retry de reprodução no Android/Chrome')
+                    video.play().catch(err => {
+                      console.log('❌ Erro no retry:', err)
+                      setShowLoading(true)
+                    })
+                  }, 500)
+                } else {
+                  setShowLoading(true)
+                }
+              })
+          }
         }
       } else {
         // Se ainda não tem metadados, forçar load novamente
         console.log('🔄 Fallback: forçando load novamente - readyState:', video.readyState)
-        video.load()
+        try {
+          video.load()
+        } catch (e) {
+          console.error('❌ Erro ao chamar load() no fallback:', e)
+        }
         // Aguardar mais um pouco antes de esconder loading
+        const retryDelay = isAndroidChrome ? 1500 : 1000
         setTimeout(() => {
           if (video.readyState >= 1) {
             setShowLoading(false)
             if (!hasEnded && video.paused && video.currentTime === 0) {
               video.play().catch(e => console.log('❌ Erro ao reproduzir após segundo load:', e))
             }
+          } else {
+            // Se ainda não carregou, mostrar vídeo mesmo assim no Android/Chrome
+            if (isAndroidChrome) {
+              console.log('⚠️ Android/Chrome: mostrando vídeo mesmo sem metadados completos')
+              setShowLoading(false)
+            }
           }
-        }, 1000)
+        }, retryDelay)
       }
 
       // Para iOS, ativar áudio
@@ -315,7 +416,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           console.log('🔊 Áudio ativado no fallback iOS')
         }, 500)
       }
-    }, 2000) // Aumentado para 2s para dar mais tempo ao carregamento
+    }, fallbackDelay)
 
     // Cleanup
     return () => {
@@ -334,7 +435,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       clearInterval(progressInterval)
       clearTimeout(fallbackTimeout)
     }
-    }, [isAppleDevice, userInteracted, onVideoStateChange, hasEnded, audioActive])
+    }, [isAppleDevice, isAndroidChrome, userInteracted, onVideoStateChange, hasEnded, audioActive])
 
   const handleVideoClick = () => {
     const video = videoRef.current
