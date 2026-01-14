@@ -97,6 +97,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const video = videoRef.current
     if (!video) return
 
+    // FORÇAR CARREGAMENTO IMEDIATO DO VÍDEO
+    console.log('🚀 Forçando carregamento imediato do vídeo')
+    video.load()
+
     // Configurar vídeo - SEM LOOP
     video.loop = false
     if (isAppleDevice && !userInteracted) {
@@ -229,15 +233,22 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     video.addEventListener('progress', handleProgress)
     video.addEventListener('waiting', handleWaiting)
 
-    // Fallback: forçar vídeo a aparecer após 2 segundos
+    // Fallback melhorado: forçar vídeo a aparecer mais rápido
     const fallbackTimeout = setTimeout(() => {
-      console.log('⚠️ Fallback: forçando vídeo a aparecer após 2s')
+      console.log('⚠️ Fallback: forçando vídeo a aparecer após 1s')
       setShowLoading(false)
 
-      // Tentar reproduzir APENAS se for a primeira vez (não terminou ainda)
-      if (!hasEnded && video.paused && video.readyState >= 2 && video.currentTime === 0) {
-        console.log('🎬 Fallback: iniciando reprodução inicial')
-        video.play().catch(e => console.log('❌ Erro ao reproduzir no fallback:', e))
+      // Garantir que o vídeo está visível mesmo se ainda não carregou completamente
+      if (video.readyState >= 1) { // HAVE_METADATA - pelo menos metadados carregados
+        // Tentar reproduzir APENAS se for a primeira vez (não terminou ainda)
+        if (!hasEnded && video.paused && video.currentTime === 0) {
+          console.log('🎬 Fallback: iniciando reprodução inicial')
+          video.play().catch(e => console.log('❌ Erro ao reproduzir no fallback:', e))
+        }
+      } else {
+        // Se ainda não tem metadados, forçar load novamente
+        console.log('🔄 Fallback: forçando load novamente')
+        video.load()
       }
 
       // Para iOS, ativar áudio
@@ -249,7 +260,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           console.log('🔊 Áudio ativado no fallback iOS')
         }, 500)
       }
-    }, 2000)
+    }, 1000) // Reduzido de 2000ms para 1000ms
 
     // Cleanup
     return () => {
