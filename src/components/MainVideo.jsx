@@ -201,19 +201,46 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
 
     const handleProgress = () => {
+      // Atualizar progresso baseado no buffer
       if (video.buffered.length > 0) {
         const bufferedEnd = video.buffered.end(video.buffered.length - 1)
         const duration = video.duration
-        if (duration > 0) {
+        if (duration > 0 && !isNaN(duration)) {
           const percent = (bufferedEnd / duration) * 100
-          setLoadingProgress(percent)
+          setLoadingProgress(Math.min(percent, 99)) // Limitar a 99% até estar totalmente carregado
+          console.log(`📊 Progresso: ${Math.round(percent)}%`)
         }
+      } else if (video.readyState >= 1) {
+        // Se temos metadados mas ainda não há buffer, mostrar pelo menos 5%
+        setLoadingProgress(5)
       }
+    }
+
+    const handleLoadedMetadata = () => {
+      console.log('📋 Metadados do vídeo carregados')
+      if (video.duration > 0) {
+        console.log(`⏱️ Duração do vídeo: ${video.duration}s`)
+        setLoadingProgress(10) // Mostrar 10% quando metadados carregarem
+      }
+    }
+
+    const handleError = (e) => {
+      console.error('❌ Erro ao carregar vídeo:', e)
+      console.error('Código de erro:', video.error?.code)
+      console.error('Mensagem:', video.error?.message)
+      console.error('URL do vídeo:', video.src || video.currentSrc)
+      
+      // Tentar carregar novamente após 2 segundos
+      setTimeout(() => {
+        console.log('🔄 Tentando recarregar vídeo após erro')
+        video.load()
+      }, 2000)
     }
 
     const handleLoadStart = () => {
       console.log('⏳ Iniciando carregamento do vídeo')
       setShowLoading(true)
+      setLoadingProgress(1) // Mostrar 1% quando iniciar
     }
 
     const handleWaiting = () => {
@@ -223,6 +250,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     // Adicionar event listeners
     video.addEventListener('loadstart', handleLoadStart)
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
     video.addEventListener('loadeddata', handleLoadedData)
     video.addEventListener('canplay', handleCanPlay)
     video.addEventListener('canplaythrough', handleCanPlayThrough)
@@ -232,23 +260,50 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     video.addEventListener('ended', handleEnded)
     video.addEventListener('progress', handleProgress)
     video.addEventListener('waiting', handleWaiting)
+    video.addEventListener('error', handleError)
+    
+    // Verificar progresso periodicamente mesmo sem eventos
+    const progressInterval = setInterval(() => {
+      handleProgress()
+    }, 500) // Verificar a cada 500ms
 
     // Fallback melhorado: forçar vídeo a aparecer mais rápido
     const fallbackTimeout = setTimeout(() => {
-      console.log('⚠️ Fallback: forçando vídeo a aparecer após 1s')
-      setShowLoading(false)
+      console.log('⚠️ Fallback: forçando vídeo a aparecer após 2s')
+      console.log('📊 Estado do vídeo:', {
+        readyState: video.readyState,
+        networkState: video.networkState,
+        error: video.error,
+        src: video.src || video.currentSrc,
+        duration: video.duration
+      })
 
       // Garantir que o vídeo está visível mesmo se ainda não carregou completamente
       if (video.readyState >= 1) { // HAVE_METADATA - pelo menos metadados carregados
+        // Esconder loading e tentar reproduzir
+        setShowLoading(false)
         // Tentar reproduzir APENAS se for a primeira vez (não terminou ainda)
         if (!hasEnded && video.paused && video.currentTime === 0) {
           console.log('🎬 Fallback: iniciando reprodução inicial')
-          video.play().catch(e => console.log('❌ Erro ao reproduzir no fallback:', e))
+          video.play().catch(e => {
+            console.log('❌ Erro ao reproduzir no fallback:', e)
+            // Se falhar, manter loading visível
+            setShowLoading(true)
+          })
         }
       } else {
         // Se ainda não tem metadados, forçar load novamente
-        console.log('🔄 Fallback: forçando load novamente')
+        console.log('🔄 Fallback: forçando load novamente - readyState:', video.readyState)
         video.load()
+        // Aguardar mais um pouco antes de esconder loading
+        setTimeout(() => {
+          if (video.readyState >= 1) {
+            setShowLoading(false)
+            if (!hasEnded && video.paused && video.currentTime === 0) {
+              video.play().catch(e => console.log('❌ Erro ao reproduzir após segundo load:', e))
+            }
+          }
+        }, 1000)
       }
 
       // Para iOS, ativar áudio
@@ -260,11 +315,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           console.log('🔊 Áudio ativado no fallback iOS')
         }, 500)
       }
-    }, 1000) // Reduzido de 2000ms para 1000ms
+    }, 2000) // Aumentado para 2s para dar mais tempo ao carregamento
 
     // Cleanup
     return () => {
       video.removeEventListener('loadstart', handleLoadStart)
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
       video.removeEventListener('loadeddata', handleLoadedData)
       video.removeEventListener('canplay', handleCanPlay)
       video.removeEventListener('canplaythrough', handleCanPlayThrough)
@@ -274,6 +330,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('progress', handleProgress)
       video.removeEventListener('waiting', handleWaiting)
+      video.removeEventListener('error', handleError)
+      clearInterval(progressInterval)
       clearTimeout(fallbackTimeout)
     }
     }, [isAppleDevice, userInteracted, onVideoStateChange, hasEnded, audioActive])
@@ -356,6 +414,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             preload="auto"
             loop={false}
             onClick={handleVideoClick}
+            style={{ 
+              opacity: showLoading ? 0 : 1,
+              transition: 'opacity 0.3s ease'
+            }}
           >
             <source src="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
