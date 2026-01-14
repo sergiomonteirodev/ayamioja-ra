@@ -2510,9 +2510,9 @@ body.modal-open {
         flex-direction: column !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        padding-top: 140px !important;
+        padding-top: 100px !important; /* Reduzido de 140px para 100px */
         width: 100%;
-        gap: 15px !important;
+        gap: 10px !important; /* Reduzido de 15px para 10px */
         padding-bottom: 100px !important;
         min-height: 100vh;
     }
@@ -2521,6 +2521,7 @@ body.modal-open {
         text-align: center;
         width: 100%;
         margin: 0 !important;
+        margin-bottom: 5px !important; /* Adicionado para reduzir espaço */
         padding: 0 !important;
     }
     
@@ -2537,6 +2538,7 @@ body.modal-open {
         width: 100%;
         position: relative;
         margin: 0 !important;
+        margin-top: -20px !important; /* Reduzido de -40px para -20px */
         padding: 0 !important;
     }
     
@@ -2578,6 +2580,8 @@ body.modal-open {
         z-index: 2 !important;
         margin: 0 !important;
         padding: 0 !important;
+        opacity: 1 !important; /* Garantir que o vídeo seja visível */
+        visibility: visible !important; /* Garantir visibilidade */
     }
     
     .video-loading {
