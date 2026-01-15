@@ -373,58 +373,55 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     
     // Verificar progresso periodicamente mesmo sem eventos
     // Para Android/Chrome, verificar mais frequentemente e simular progresso gradual
-    const progressCheckInterval = isAndroidChrome ? 200 : 400
+    const progressCheckInterval = isAndroidChrome ? 150 : 300
     let simulatedProgress = 2 // Começar em 2% após loadstart
-    let lastRealProgress = 2
     let checkCount = 0
-    let lastUpdateTime = Date.now()
+    const startTime = Date.now()
     
+    // SEMPRE incrementar progresso simulado, independente de qualquer condição
     const progressInterval = setInterval(() => {
       checkCount++
-      const now = Date.now()
-      const timeSinceLastUpdate = now - lastUpdateTime
+      const elapsed = Date.now() - startTime
       
-      // Primeiro, verificar progresso real
+      // Primeiro, verificar progresso real (mas não deixar resetar)
+      const progressBefore = progressRef.current
       handleProgress()
+      const progressAfter = progressRef.current
       
-      // Log de diagnóstico a cada 5 verificações
-      if (checkCount % 5 === 0) {
+      // Se handleProgress não mudou nada, usar progresso simulado
+      let currentProgress = progressRef.current
+      
+      // SEMPRE incrementar progresso simulado se estiver abaixo de 80
+      if (currentProgress < 80) {
+        // Incremento baseado no tempo decorrido e dispositivo
+        const baseIncrement = isAndroidChrome ? 2 : 1
+        const timeBasedIncrement = Math.min(elapsed / 100, 1) // Máximo 1% por segundo baseado em tempo
+        const increment = baseIncrement + timeBasedIncrement
+        
+        simulatedProgress = Math.min(simulatedProgress + increment, 80)
+        const newProgress = Math.max(currentProgress, Math.round(simulatedProgress))
+        
+        // SEMPRE atualizar se o novo progresso for maior
+        if (newProgress > currentProgress) {
+          progressRef.current = newProgress
+          setLoadingProgress(newProgress)
+          console.log(`📊 Progresso simulado: ${Math.round(simulatedProgress)}% → ${newProgress}% (elapsed: ${Math.round(elapsed/1000)}s, networkState: ${video.networkState}, readyState: ${video.readyState})`)
+        }
+      }
+      
+      // Log de diagnóstico a cada 10 verificações
+      if (checkCount % 10 === 0) {
         console.log('🔍 Diagnóstico de progresso:', {
           currentProgress: progressRef.current,
-          lastRealProgress,
-          simulatedProgress,
+          simulatedProgress: Math.round(simulatedProgress),
           networkState: video.networkState,
           readyState: video.readyState,
           buffered: video.buffered.length,
           duration: video.duration,
           error: video.error,
-          timeSinceLastUpdate
+          elapsed: Math.round(elapsed/1000) + 's',
+          checkCount
         })
-      }
-      
-      // Sempre incrementar progresso simulado se não houver progresso real
-      const currentProgress = progressRef.current
-      
-      // Se o progresso não mudou desde a última verificação, incrementar simulado
-      if (currentProgress <= lastRealProgress && currentProgress < 80) {
-        // Incremento baseado no tempo decorrido
-        const increment = isAndroidChrome ? 1.5 : 0.8
-        simulatedProgress = Math.min(simulatedProgress + increment, 80)
-        const newProgress = Math.max(currentProgress, Math.round(simulatedProgress))
-        
-        // Só atualizar se realmente mudou
-        if (newProgress > progressRef.current) {
-          progressRef.current = newProgress
-          setLoadingProgress(newProgress)
-          lastUpdateTime = now
-          console.log(`📊 Progresso simulado: ${Math.round(simulatedProgress)}% → ${newProgress}% (networkState: ${video.networkState}, readyState: ${video.readyState})`)
-        }
-      } else if (currentProgress > lastRealProgress) {
-        // Progresso real mudou, atualizar referências
-        lastRealProgress = currentProgress
-        simulatedProgress = currentProgress
-        lastUpdateTime = now
-        console.log(`✅ Progresso real atualizado: ${currentProgress}%`)
       }
     }, progressCheckInterval)
 
