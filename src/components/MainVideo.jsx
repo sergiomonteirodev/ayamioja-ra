@@ -260,12 +260,16 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         if (duration > 0 && !isNaN(duration)) {
           const percent = (bufferedEnd / duration) * 100
           const newProgress = Math.min(percent, 99) // Limitar a 99% até estar totalmente carregado
-          progressRef.current = newProgress
-          setLoadingProgress(newProgress)
-          console.log(`📊 Progresso (buffer): ${Math.round(newProgress)}%`)
+          // Só atualizar se for maior que o progresso atual (não resetar)
+          if (newProgress > progressRef.current) {
+            progressRef.current = newProgress
+            setLoadingProgress(newProgress)
+            console.log(`📊 Progresso (buffer): ${Math.round(newProgress)}%`)
+          }
         }
       } else if (video.readyState >= 1) {
         // Se temos metadados mas ainda não há buffer, mostrar pelo menos 10%
+        // Mas não resetar se já estiver acima
         if (progressRef.current < 10) {
           progressRef.current = 10
           setLoadingProgress(10)
@@ -273,12 +277,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         }
       } else if (video.readyState === 0 && video.networkState === 2) {
         // Se está carregando mas ainda não tem metadados, incrementar gradualmente
+        // Mas não resetar se já estiver acima
         if (progressRef.current < 5) {
           progressRef.current = 5
           setLoadingProgress(5)
           console.log('📊 Progresso (carregando): 5%')
         }
       }
+      // NÃO fazer nada se não houver buffer e readyState = 0, deixar o progresso simulado funcionar
     }
 
     const handleLoadedMetadata = () => {
@@ -371,9 +377,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     let simulatedProgress = 2 // Começar em 2% após loadstart
     let lastRealProgress = 2
     let checkCount = 0
+    let lastUpdateTime = Date.now()
     
     const progressInterval = setInterval(() => {
       checkCount++
+      const now = Date.now()
+      const timeSinceLastUpdate = now - lastUpdateTime
+      
+      // Primeiro, verificar progresso real
       handleProgress()
       
       // Log de diagnóstico a cada 5 verificações
@@ -386,25 +397,34 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           readyState: video.readyState,
           buffered: video.buffered.length,
           duration: video.duration,
-          error: video.error
+          error: video.error,
+          timeSinceLastUpdate
         })
       }
       
-      // Se o progresso real não mudou, simular progresso gradual
+      // Sempre incrementar progresso simulado se não houver progresso real
       const currentProgress = progressRef.current
-      if (currentProgress === lastRealProgress && currentProgress < 80) {
-        // SEMPRE incrementar progresso simulado se não houver progresso real
-        // Incremento mais agressivo no Android/Chrome
-        const increment = isAndroidChrome ? 1 : 0.5
-        simulatedProgress = Math.min(simulatedProgress + increment, 80) // Máximo 80% simulado
+      
+      // Se o progresso não mudou desde a última verificação, incrementar simulado
+      if (currentProgress <= lastRealProgress && currentProgress < 80) {
+        // Incremento baseado no tempo decorrido
+        const increment = isAndroidChrome ? 1.5 : 0.8
+        simulatedProgress = Math.min(simulatedProgress + increment, 80)
         const newProgress = Math.max(currentProgress, Math.round(simulatedProgress))
-        progressRef.current = newProgress
-        setLoadingProgress(newProgress)
-        console.log(`📊 Progresso simulado: ${Math.round(simulatedProgress)}% (networkState: ${video.networkState}, readyState: ${video.readyState})`)
-      } else {
+        
+        // Só atualizar se realmente mudou
+        if (newProgress > progressRef.current) {
+          progressRef.current = newProgress
+          setLoadingProgress(newProgress)
+          lastUpdateTime = now
+          console.log(`📊 Progresso simulado: ${Math.round(simulatedProgress)}% → ${newProgress}% (networkState: ${video.networkState}, readyState: ${video.readyState})`)
+        }
+      } else if (currentProgress > lastRealProgress) {
         // Progresso real mudou, atualizar referências
         lastRealProgress = currentProgress
         simulatedProgress = currentProgress
+        lastUpdateTime = now
+        console.log(`✅ Progresso real atualizado: ${currentProgress}%`)
       }
     }, progressCheckInterval)
 
