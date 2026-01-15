@@ -9,6 +9,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [userInteracted, setUserInteracted] = useState(false)
   const videoRef = useRef(null)
   const progressRef = useRef(0) // Ref para rastrear progresso atual
+  const intervalRef = useRef(null) // Ref para o intervalo
 
   // Detectar dispositivos e navegadores
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
@@ -378,18 +379,27 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     let checkCount = 0
     const startTime = Date.now()
     
+    console.log('🚀 Iniciando intervalo de progresso simulado', {
+      interval: progressCheckInterval,
+      isAndroidChrome,
+      initialProgress: progressRef.current
+    })
+    
     // SEMPRE incrementar progresso simulado, independente de qualquer condição
-    const progressInterval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       checkCount++
       const elapsed = Date.now() - startTime
+      const currentProgress = progressRef.current
+      
+      // Log a cada iteração para debug
+      console.log(`🔄 Intervalo executado #${checkCount}`, {
+        currentProgress,
+        simulatedProgress: Math.round(simulatedProgress),
+        elapsed: Math.round(elapsed/1000) + 's'
+      })
       
       // Primeiro, verificar progresso real (mas não deixar resetar)
-      const progressBefore = progressRef.current
       handleProgress()
-      const progressAfter = progressRef.current
-      
-      // Se handleProgress não mudou nada, usar progresso simulado
-      let currentProgress = progressRef.current
       
       // SEMPRE incrementar progresso simulado se estiver abaixo de 80
       if (currentProgress < 80) {
@@ -403,15 +413,20 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         
         // SEMPRE atualizar se o novo progresso for maior
         if (newProgress > currentProgress) {
+          console.log(`📊 ATUALIZANDO PROGRESSO: ${currentProgress}% → ${newProgress}%`)
           progressRef.current = newProgress
           setLoadingProgress(newProgress)
-          console.log(`📊 Progresso simulado: ${Math.round(simulatedProgress)}% → ${newProgress}% (elapsed: ${Math.round(elapsed/1000)}s, networkState: ${video.networkState}, readyState: ${video.readyState})`)
+          console.log(`✅ Progresso atualizado para: ${newProgress}%`)
+        } else {
+          console.log(`⚠️ Progresso não atualizado: ${newProgress} não é maior que ${currentProgress}`)
         }
+      } else {
+        console.log('✅ Progresso atingiu 80%, parando incremento simulado')
       }
       
-      // Log de diagnóstico a cada 10 verificações
-      if (checkCount % 10 === 0) {
-        console.log('🔍 Diagnóstico de progresso:', {
+      // Log de diagnóstico a cada 5 verificações
+      if (checkCount % 5 === 0) {
+        console.log('🔍 Diagnóstico completo:', {
           currentProgress: progressRef.current,
           simulatedProgress: Math.round(simulatedProgress),
           networkState: video.networkState,
@@ -520,7 +535,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.removeEventListener('progress', handleProgress)
       video.removeEventListener('waiting', handleWaiting)
       video.removeEventListener('error', handleError)
-      if (progressInterval) clearInterval(progressInterval)
+      if (intervalRef.current) {
+        console.log('🧹 Limpando intervalo de progresso')
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
       clearTimeout(fallbackTimeout)
     }
     }, [isAppleDevice, isAndroidChrome, userInteracted, onVideoStateChange, hasEnded, audioActive])
