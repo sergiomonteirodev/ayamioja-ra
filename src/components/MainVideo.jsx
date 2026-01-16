@@ -7,9 +7,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
   const [userInteracted, setUserInteracted] = useState(false)
+  const [isBlocked, setIsBlocked] = useState(false) // Estado para detectar bloqueio
   const videoRef = useRef(null)
   const progressRef = useRef(0) // Ref para rastrear progresso atual
   const intervalRef = useRef(null) // Ref para o intervalo
+  const blockCheckTimeoutRef = useRef(null) // Ref para timeout de verificação de bloqueio
 
   // Detectar dispositivos e navegadores
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
@@ -154,6 +156,41 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.removeEventListener('ended', handleEnded)
     }
   }, [onVideoStateChange])
+
+  // Função para tentar carregar vídeo via fetch/blob URL (bypass bloqueador)
+  const loadVideoViaFetch = async (videoUrl) => {
+    try {
+      console.log('🔄 Tentando carregar vídeo via fetch (bypass bloqueador):', videoUrl)
+      const response = await fetch(videoUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'video/mp4, video/*, */*'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      console.log('✅ Vídeo carregado via fetch - criando blob URL')
+      
+      const video = videoRef.current
+      if (video) {
+        video.src = blobUrl
+        video.load()
+        // Limpar blob URL quando vídeo terminar
+        video.addEventListener('ended', () => {
+          URL.revokeObjectURL(blobUrl)
+        }, { once: true })
+        return true
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar vídeo via fetch:', error)
+      return false
+    }
+  }
 
   useEffect(() => {
     const video = videoRef.current
@@ -385,26 +422,26 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       // Verificar se é erro de bloqueio (code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED ou rede)
       if (errorCode === 4 || video.networkState === 3) {
         console.error('🚨 ERRO: Vídeo bloqueado ou fonte não suportada!')
-        console.error('💡 Possíveis causas:')
-        console.error('  1. Bloqueador de conteúdo (AdBlock, uBlock, etc.)')
-        console.error('  2. Extensão de privacidade bloqueando requisições')
-        console.error('  3. Arquivo não existe no servidor')
-        console.error('  4. Problema de CORS')
-        console.error('  5. URL incorreta')
+        setIsBlocked(true)
         
-        // Tentar URL absoluta como fallback
-        const absoluteUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
-        if (!currentSrc.includes(absoluteUrl)) {
-          console.log('🔄 Tentando URL absoluta como fallback:', absoluteUrl)
-          const source = video.querySelector('source')
-          if (source) {
-            source.src = absoluteUrl
-            video.load()
+        // Tentar carregar via fetch/blob URL primeiro
+        const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
+        loadVideoViaFetch(videoUrl).then(success => {
+          if (!success) {
+            // Se fetch também falhar, tentar URL absoluta normal
+            console.log('🔄 Tentando URL absoluta como fallback:', videoUrl)
+            const source = video.querySelector('source')
+            if (source) {
+              source.src = videoUrl
+              video.load()
+            } else {
+              video.src = videoUrl
+              video.load()
+            }
           } else {
-            video.src = absoluteUrl
-            video.load()
+            setIsBlocked(false)
           }
-        }
+        })
       }
       
       // Para Android/Chrome, tentar recarregar mais agressivamente
@@ -468,7 +505,15 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           setTimeout(() => {
             if (video.readyState === 0 && video.networkState === 2) {
               console.error('🚨 POSSÍVEL BLOQUEIO: Vídeo está "carregando" mas sem receber dados')
-              console.error('💡 Verifique o console de rede (F12 > Network) para ver se a requisição está sendo bloqueada')
+              setIsBlocked(true)
+              
+              // Tentar carregar via fetch
+              const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
+              loadVideoViaFetch(videoUrl).then(success => {
+                if (success) {
+                  setIsBlocked(false)
+                }
+              })
             }
           }, 3000)
         }
@@ -937,17 +982,67 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           {/* Loading Placeholder */}
           {showLoading && (
             <div id="video-loading" className="video-loading">
-              <div className="loading-spinner"></div>
-              <div className="loading-progress">
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${loadingProgress}%` }}
-                  ></div>
+              {isBlocked ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  color: '#fff', 
+                  padding: '20px',
+                  backgroundColor: 'rgba(139, 69, 19, 0.9)',
+                  borderRadius: '10px',
+                  maxWidth: '300px'
+                }}>
+                  <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>
+                    ⚠️ Vídeo bloqueado
+                  </p>
+                  <p style={{ fontSize: '14px', marginBottom: '15px' }}>
+                    O vídeo não está carregando. Isso geralmente acontece quando há um bloqueador de conteúdo ativo.
+                  </p>
+                  <p style={{ fontSize: '12px', marginBottom: '10px' }}>
+                    💡 <strong>Solução:</strong>
+                  </p>
+                  <ol style={{ fontSize: '12px', textAlign: 'left', display: 'inline-block', margin: '0' }}>
+                    <li>Desative temporariamente bloqueadores (AdBlock, uBlock, etc.)</li>
+                    <li>Recarregue a página</li>
+                  </ol>
+                  <button 
+                    onClick={() => {
+                      setIsBlocked(false)
+                      const video = videoRef.current
+                      if (video) {
+                        const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
+                        loadVideoViaFetch(videoUrl)
+                      }
+                    }}
+                    style={{
+                      marginTop: '15px',
+                      padding: '10px 20px',
+                      backgroundColor: '#8B4513',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Tentar novamente
+                  </button>
                 </div>
-                <p className="loading-percentage">{Math.round(loadingProgress)}%</p>
-              </div>
-              <p className="loading-text">Carregando vídeo...</p>
+              ) : (
+                <>
+                  <div className="loading-spinner"></div>
+                  <div className="loading-progress">
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${loadingProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="loading-percentage">{Math.round(loadingProgress)}%</p>
+                  </div>
+                  <p className="loading-text">Carregando vídeo...</p>
+                </>
+              )}
             </div>
           )}
           
