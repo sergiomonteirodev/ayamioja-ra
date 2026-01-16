@@ -659,23 +659,28 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     if (!video) return
 
     if (!showLoading) {
-      // Quando loading é ocultado, FORÇAR vídeo a aparecer
+      // Quando loading é ocultado, FORÇAR vídeo a aparecer via DOM
       console.log('🔧 showLoading mudou para false - forçando vídeo a aparecer')
-      video.style.opacity = '1'
-      video.style.visibility = 'visible'
-      video.style.display = 'block'
-      video.style.zIndex = '2'
-      console.log('✅ Vídeo forçado a aparecer quando showLoading = false')
+      // Usar setAttribute para forçar estilos com !important
+      video.style.setProperty('opacity', '1', 'important')
+      video.style.setProperty('visibility', 'visible', 'important')
+      video.style.setProperty('display', 'block', 'important')
+      video.style.setProperty('z-index', '2', 'important')
+      video.style.setProperty('position', 'absolute', 'important')
+      video.style.setProperty('pointer-events', 'auto', 'important')
+      console.log('✅ Vídeo forçado a aparecer quando showLoading = false (com !important)')
       console.log('📊 Estado do vídeo:', {
-        opacity: video.style.opacity,
-        visibility: video.style.visibility,
-        display: video.style.display,
-        zIndex: video.style.zIndex,
+        opacity: window.getComputedStyle(video).opacity,
+        visibility: window.getComputedStyle(video).visibility,
+        display: window.getComputedStyle(video).display,
+        zIndex: window.getComputedStyle(video).zIndex,
         readyState: video.readyState,
         networkState: video.networkState,
         paused: video.paused,
         currentTime: video.currentTime,
-        duration: video.duration
+        duration: video.duration,
+        src: video.src || video.currentSrc,
+        error: video.error
       })
     }
   }, [showLoading])
@@ -762,7 +767,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               opacity: showLoading ? 0 : 1,
               visibility: showLoading ? 'hidden' : 'visible',
               display: showLoading ? 'none' : 'block',
-              transition: 'opacity 0.3s ease, visibility 0.3s ease'
+              zIndex: showLoading ? 1 : 2,
+              transition: 'opacity 0.3s ease, visibility 0.3s ease',
+              position: 'absolute',
+              pointerEvents: showLoading ? 'none' : 'auto'
             }}
           >
             <source src="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" />
