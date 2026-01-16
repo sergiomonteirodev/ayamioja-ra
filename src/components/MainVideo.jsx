@@ -896,6 +896,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             preload="auto"
             loop={false}
             onClick={handleVideoClick}
+            crossOrigin="anonymous"
             style={{ 
               // SEMPRE tentar mostrar vídeo - será forçado pelo useEffect se estiver pronto
               opacity: showLoading ? 0.3 : 1, // 0.3 para ainda ser visível mas indicar loading
@@ -910,7 +911,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               objectFit: 'cover' // Garantir que o vídeo preencha o espaço
             }}
           >
-            <source src="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" />
+            <source src="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" crossOrigin="anonymous" />
+            <source src={`${window.location.origin}/ayamioja-ra/videos/anim_ayo.mp4`} type="video/mp4" crossOrigin="anonymous" />
             Seu navegador não suporta vídeos HTML5.
           </video>
           
