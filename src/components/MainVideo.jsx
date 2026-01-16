@@ -410,32 +410,40 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         console.log(`🔄 Sincronizando progresso simulado: ${Math.round(simulatedProgress)}%`)
       }
       
-      // Incrementar progresso simulado apenas se não houver progresso real significativo
+      // Incrementar progresso simulado sempre que estiver abaixo de 95%
       const currentProgress = progressRef.current
-      if (currentProgress < 95) {
-        // Se o progresso real não avançou desde a última verificação, incrementar simulado
-        if (currentProgress === progressBeforeCheck || currentProgress < realProgress + 10) {
-          // Incremento baseado no tempo e dispositivo
-          const timeSeconds = elapsed / 1000
-          const baseIncrement = isAndroidChrome ? 2 : 1
-          const timeBasedIncrement = Math.min(timeSeconds * 0.3, 0.3) // Máximo 0.3% por segundo
-          const increment = (baseIncrement + timeBasedIncrement) * (progressCheckInterval / 1000)
-          
-          // Garantir que simulatedProgress nunca diminua
-          simulatedProgress = Math.max(simulatedProgress, currentProgress)
-          simulatedProgress = Math.min(simulatedProgress + increment, 95)
-          
-          const newProgress = Math.round(simulatedProgress)
-          
-          // Só atualizar se for maior que o atual
-          if (newProgress > currentProgress) {
-            progressRef.current = newProgress
-            setLoadingProgress(newProgress)
-            // Log apenas ocasionalmente para não poluir
-            if (checkCount % 10 === 0) {
-              console.log(`📈 Progresso: ${currentProgress}% → ${newProgress}% (${Math.round(timeSeconds)}s)`)
-            }
+      
+      // Garantir que simulatedProgress nunca seja menor que currentProgress
+      simulatedProgress = Math.max(simulatedProgress, currentProgress)
+      
+      // SEMPRE incrementar progresso simulado se estiver abaixo de 95%
+      // e o progresso real não estiver avançando rapidamente
+      if (currentProgress < 95 && (currentProgress === progressBeforeCheck || realProgress <= currentProgress + 5)) {
+        // Incremento baseado no tempo e dispositivo
+        const timeSeconds = elapsed / 1000
+        // Incremento mais agressivo para garantir que sempre avance
+        const baseIncrement = isAndroidChrome ? 3 : 1.5
+        const timeBasedIncrement = Math.min(timeSeconds * 0.5, 0.5) // Máximo 0.5% por segundo
+        // Incremento por intervalo (ajustado pelo intervalo de verificação)
+        const incrementPerInterval = (baseIncrement + timeBasedIncrement) * (progressCheckInterval / 1000)
+        
+        // Incrementar simulatedProgress
+        simulatedProgress = simulatedProgress + incrementPerInterval
+        simulatedProgress = Math.min(simulatedProgress, 95) // Limitar a 95%
+        
+        const newProgress = Math.round(simulatedProgress)
+        
+        // SEMPRE atualizar se for maior que o atual
+        if (newProgress > currentProgress) {
+          progressRef.current = newProgress
+          setLoadingProgress(newProgress)
+          // Log a cada 5 iterações para monitorar
+          if (checkCount % 5 === 0) {
+            console.log(`📈 Progresso SIMULADO: ${currentProgress}% → ${newProgress}% (tempo: ${Math.round(timeSeconds)}s, incremento: ${Math.round(incrementPerInterval * 100)/100}%)`)
           }
+        } else if (checkCount % 20 === 0) {
+          // Se não atualizou, log de diagnóstico
+          console.log(`⚠️ Progresso não atualizado: current=${currentProgress}, new=${newProgress}, simulated=${Math.round(simulatedProgress * 100)/100}`)
         }
       }
       
