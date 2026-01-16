@@ -204,10 +204,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handlePlaying = () => {
       console.log('✅ Vídeo REALMENTE reproduzindo - escondendo loading definitivamente')
+      // FORÇAR ocultação do loading quando vídeo realmente está reproduzindo
       setShowLoading(false)
       setIsVideoPlaying(true)
       setShowReplay(false)
       setHasEnded(false)
+      // Parar intervalo se ainda estiver rodando
+      if (intervalRef.current) {
+        console.log('🧹 Parando intervalo - vídeo está reproduzindo')
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
     }
 
     const handlePlay = () => {
@@ -362,7 +369,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handleWaiting = () => {
       console.log('⏳ Vídeo aguardando buffer')
-      setShowLoading(true)
+      // Só mostrar loading se o vídeo ainda não estiver pronto para reproduzir
+      // Se já está pronto (readyState >= 3), não reativar loading para evitar loops
+      if (video.readyState < 3) {
+        setShowLoading(true)
+        console.log('⏳ Reativando loading - vídeo ainda não está pronto')
+      } else {
+        console.log('✅ Vídeo já está pronto - não reativando loading')
+      }
     }
 
     // Adicionar event listeners
@@ -447,10 +461,26 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         }
       }
       
-      // Verificar se vídeo está pronto e ocultar loading
-      if (video.readyState >= 3 && currentProgress >= 50 && showLoading) {
-        console.log('✅ Vídeo pronto - ocultando loading')
+      // Verificar se vídeo está pronto e ocultar loading FORÇADAMENTE
+      // Se readyState >= 3 (HAVE_FUTURE_DATA), o vídeo está pronto para reproduzir
+      if (video.readyState >= 3 && showLoading) {
+        console.log('✅ Vídeo PRONTO - FORÇANDO ocultação do loading (readyState >= 3)')
         setShowLoading(false)
+        // Garantir que o vídeo apareça
+        setIsVideoPlaying(true)
+        // Parar o intervalo se o vídeo já está pronto
+        if (intervalRef.current) {
+          console.log('🧹 Parando intervalo - vídeo já está pronto')
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
+      }
+      
+      // Se o progresso chegou a 100% e o vídeo está pronto, garantir que loading esteja oculto
+      if (currentProgress >= 100 && video.readyState >= 2 && showLoading) {
+        console.log('✅ Progresso 100% e vídeo pronto - forçando ocultação do loading')
+        setShowLoading(false)
+        setIsVideoPlaying(true)
       }
       
       // Log de diagnóstico a cada 20 verificações
