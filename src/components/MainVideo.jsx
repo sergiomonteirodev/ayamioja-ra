@@ -681,7 +681,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             onClick={handleVideoClick}
             style={{ 
               opacity: showLoading ? 0 : 1,
-              transition: 'opacity 0.3s ease'
+              visibility: showLoading ? 'hidden' : 'visible',
+              display: showLoading ? 'none' : 'block',
+              transition: 'opacity 0.3s ease, visibility 0.3s ease'
             }}
           >
             <source src="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" />
