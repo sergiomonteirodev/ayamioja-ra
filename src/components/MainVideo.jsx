@@ -173,19 +173,107 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
       
       const blob = await response.blob()
+      console.log('✅ Blob criado:', {
+        size: blob.size,
+        type: blob.type,
+        sizeMB: (blob.size / 1024 / 1024).toFixed(2)
+      })
+      
       const blobUrl = URL.createObjectURL(blob)
-      console.log('✅ Vídeo carregado via fetch - criando blob URL')
+      console.log('✅ Blob URL criada:', blobUrl)
       
       const video = videoRef.current
-      if (video) {
-        video.src = blobUrl
+      if (!video) {
+        console.error('❌ Elemento de vídeo não encontrado')
+        URL.revokeObjectURL(blobUrl)
+        return false
+      }
+      
+      // Remover todas as tags <source> antes de definir blob URL
+      const sources = video.querySelectorAll('source')
+      sources.forEach(source => {
+        console.log('🗑️ Removendo source tag:', source.src)
+        source.remove()
+      })
+      
+      // Aguardar um pouco antes de definir o src para garantir que as sources foram removidas
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Definir blob URL diretamente no elemento vídeo
+      video.src = blobUrl
+      console.log('📹 Blob URL definida no vídeo:', video.src)
+      
+      // Remover crossOrigin quando usar blob (não é necessário)
+      video.removeAttribute('crossorigin')
+      
+      // Aguardar eventos de carregamento
+      return new Promise((resolve) => {
+        let resolved = false
+        
+        const handleLoadedMetadata = () => {
+          if (!resolved) {
+            resolved = true
+            console.log('✅ Vídeo blob carregou metadados:', {
+              duration: video.duration,
+              readyState: video.readyState,
+              networkState: video.networkState
+            })
+            setIsBlocked(false)
+            setShowLoading(false)
+            resolve(true)
+          }
+        }
+        
+        const handleCanPlay = () => {
+          if (!resolved) {
+            resolved = true
+            console.log('✅ Vídeo blob pode reproduzir:', {
+              readyState: video.readyState,
+              networkState: video.networkState
+            })
+            setIsBlocked(false)
+            setShowLoading(false)
+            resolve(true)
+          }
+        }
+        
+        const handleError = (e) => {
+          if (!resolved) {
+            resolved = true
+            console.error('❌ Erro ao carregar blob no vídeo:', {
+              error: video.error,
+              networkState: video.networkState,
+              readyState: video.readyState
+            })
+            URL.revokeObjectURL(blobUrl)
+            resolve(false)
+          }
+        }
+        
+        // Timeout de 10 segundos
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true
+            console.error('⏱️ Timeout ao carregar blob no vídeo')
+            URL.revokeObjectURL(blobUrl)
+            resolve(false)
+          }
+        }, 10000)
+        
+        video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true })
+        video.addEventListener('canplay', handleCanPlay, { once: true })
+        video.addEventListener('error', handleError, { once: true })
+        
+        // Forçar load()
+        console.log('🔄 Chamando video.load() com blob URL')
         video.load()
+        
         // Limpar blob URL quando vídeo terminar
         video.addEventListener('ended', () => {
+          console.log('🧹 Revogando blob URL após término do vídeo')
           URL.revokeObjectURL(blobUrl)
         }, { once: true })
-        return true
-      }
+      })
     } catch (error) {
       console.error('❌ Erro ao carregar vídeo via fetch:', error)
       return false
