@@ -495,85 +495,36 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
     }, progressCheckInterval)
 
-    // Fallback melhorado: forçar vídeo a aparecer mais rápido
-    // Para Android/Chrome, usar timeout mais longo devido a latência de rede
-    const fallbackDelay = isAndroidChrome ? 5000 : 3000
+    // Fallback AGRESSIVO: sempre mostrar vídeo após 2 segundos
+    const fallbackDelay = 2000
     const fallbackTimeout = setTimeout(() => {
-      console.log(`⚠️ Fallback: forçando vídeo a aparecer após ${fallbackDelay}ms`)
+      console.log(`🚀 Fallback AGRESSIVO: forçando vídeo a aparecer após ${fallbackDelay}ms`)
       console.log('📊 Estado do vídeo:', {
         readyState: video.readyState,
         networkState: video.networkState,
         error: video.error,
         src: video.src || video.currentSrc,
-        duration: video.duration,
-        isAndroidChrome
+        duration: video.duration
       })
-
-      // Garantir que o vídeo está visível mesmo se ainda não carregou completamente
-      if (video.readyState >= 1) { // HAVE_METADATA - pelo menos metadados carregados
-        // Esconder loading e tentar reproduzir
-        setShowLoading(false)
-        // Tentar reproduzir APENAS se for a primeira vez (não terminou ainda)
-        if (!hasEnded && video.paused && video.currentTime === 0) {
-          console.log('🎬 Fallback: iniciando reprodução inicial')
-          const playPromise = video.play()
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log('✅ Reprodução iniciada no fallback')
-              })
-              .catch(e => {
-                console.log('❌ Erro ao reproduzir no fallback:', e)
-                // Para Android/Chrome, tentar novamente
-                if (isAndroidChrome) {
-                  setTimeout(() => {
-                    console.log('🔄 Retry de reprodução no Android/Chrome')
-                    video.play().catch(err => {
-                      console.log('❌ Erro no retry:', err)
-                      setShowLoading(true)
-                    })
-                  }, 500)
-                } else {
-                  setShowLoading(true)
-                }
-              })
-          }
-        }
-      } else {
-        // Se ainda não tem metadados, forçar load novamente
-        console.log('🔄 Fallback: forçando load novamente - readyState:', video.readyState)
-        try {
-          video.load()
-        } catch (e) {
-          console.error('❌ Erro ao chamar load() no fallback:', e)
-        }
-        // Aguardar mais um pouco antes de esconder loading
-        const retryDelay = isAndroidChrome ? 1500 : 1000
-        setTimeout(() => {
-          if (video.readyState >= 1) {
-            setShowLoading(false)
-            if (!hasEnded && video.paused && video.currentTime === 0) {
-              video.play().catch(e => console.log('❌ Erro ao reproduzir após segundo load:', e))
-            }
-          } else {
-            // Se ainda não carregou, mostrar vídeo mesmo assim no Android/Chrome
-            if (isAndroidChrome) {
-              console.log('⚠️ Android/Chrome: mostrando vídeo mesmo sem metadados completos')
-              setShowLoading(false)
-            }
-          }
-        }, retryDelay)
+      
+      // SEMPRE esconder loading e mostrar vídeo após 2 segundos
+      setShowLoading(false)
+      setIsVideoPlaying(true)
+      // FORÇAR vídeo a aparecer via DOM com !important
+      video.style.setProperty('opacity', '1', 'important')
+      video.style.setProperty('visibility', 'visible', 'important')
+      video.style.setProperty('display', 'block', 'important')
+      video.style.setProperty('z-index', '2', 'important')
+      video.style.setProperty('position', 'absolute', 'important')
+      
+      // Tentar reproduzir
+      if (!hasEnded && video.paused) {
+        video.play()
+          .then(() => console.log('✅ Vídeo iniciado no fallback'))
+          .catch(e => console.log('⚠️ Erro ao reproduzir (vídeo ainda aparece):', e))
       }
-
-      // Para iOS, ativar áudio
-      if (isIOS && video.muted) {
-        setTimeout(() => {
-          video.muted = false
-          // Volume baixo se audiodescrição estiver ativa, normal caso contrário
-          video.volume = audioActive ? 0.2 : 0.7
-          console.log('🔊 Áudio ativado no fallback iOS')
-        }, 500)
-      }
+      
+      console.log('✅ Fallback: vídeo FORÇADO a aparecer')
     }, fallbackDelay)
 
     // Cleanup
