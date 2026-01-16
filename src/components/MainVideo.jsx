@@ -149,16 +149,22 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     // Event listeners
     const handleLoadedData = () => {
       console.log('✅ Vídeo carregado - escondendo loading')
-      progressRef.current = 100
+      // Só atualizar se for maior (nunca resetar)
+      if (100 > progressRef.current) {
+        progressRef.current = 100
+        setLoadingProgress(100)
+      }
       setShowLoading(false)
-      setLoadingProgress(100)
     }
 
     const handleCanPlay = () => {
       console.log('✅ Vídeo pode reproduzir - escondendo loading')
-      progressRef.current = 100
+      // Só atualizar se for maior (nunca resetar)
+      if (100 > progressRef.current) {
+        progressRef.current = 100
+        setLoadingProgress(100)
+      }
       setShowLoading(false)
-      setLoadingProgress(100)
       
       // Iniciar reprodução automática apenas na primeira vez
       if (!hasEnded && video.paused && video.currentTime === 0) {
@@ -253,50 +259,47 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('✅ Vídeo completamente parado - aguardando ação do usuário')
     }
 
-    const handleProgress = () => {
+    const handleProgress = (skipUpdate = false) => {
       // Atualizar progresso baseado no buffer
-      if (video.buffered.length > 0) {
+      // IMPORTANTE: Só atualizar se o progresso real for MAIOR que o atual
+      // Isso evita loops onde o buffer varia e causa reset do progresso
+      if (video.buffered.length > 0 && video.duration > 0) {
         const bufferedEnd = video.buffered.end(video.buffered.length - 1)
-        const duration = video.duration
-        if (duration > 0 && !isNaN(duration)) {
-          const percent = (bufferedEnd / duration) * 100
-          const newProgress = Math.min(percent, 99) // Limitar a 99% até estar totalmente carregado
-          // Só atualizar se for maior que o progresso atual (não resetar)
-          if (newProgress > progressRef.current) {
-            progressRef.current = newProgress
+        const percent = (bufferedEnd / video.duration) * 100
+        const newProgress = Math.min(Math.round(percent), 99) // Limitar a 99% até estar totalmente carregado
+        
+        // CRÍTICO: Só atualizar se for pelo menos 5% maior que o atual
+        // Isso evita variações pequenas do buffer causarem loops
+        if (newProgress >= progressRef.current + 5 || (newProgress > progressRef.current && progressRef.current < 10)) {
+          progressRef.current = newProgress
+          if (!skipUpdate) {
             setLoadingProgress(newProgress)
-            console.log(`📊 Progresso (buffer): ${Math.round(newProgress)}%`)
           }
-        }
-      } else if (video.readyState >= 1) {
-        // Se temos metadados mas ainda não há buffer, mostrar pelo menos 10%
-        // Mas não resetar se já estiver acima
-        if (progressRef.current < 10) {
-          progressRef.current = 10
-          setLoadingProgress(10)
-          console.log('📊 Progresso (metadados): 10%')
-        }
-      } else if (video.readyState === 0 && video.networkState === 2) {
-        // Se está carregando mas ainda não tem metadados, incrementar gradualmente
-        // Mas não resetar se já estiver acima
-        if (progressRef.current < 5) {
-          progressRef.current = 5
-          setLoadingProgress(5)
-          console.log('📊 Progresso (carregando): 5%')
+          console.log(`📊 Progresso REAL (buffer): ${newProgress}%`)
+          return newProgress
         }
       }
-      // NÃO fazer nada se não houver buffer e readyState = 0, deixar o progresso simulado funcionar
+      // Retornar o progresso atual, não resetar
+      return progressRef.current
     }
 
     const handleLoadedMetadata = () => {
       console.log('📋 Metadados do vídeo carregados')
       if (video.duration > 0) {
         console.log(`⏱️ Duração do vídeo: ${video.duration}s`)
-        progressRef.current = 15
-        setLoadingProgress(15) // Mostrar 15% quando metadados carregarem
+        // Só atualizar se for maior que o atual (não resetar)
+        if (15 > progressRef.current) {
+          progressRef.current = 15
+          setLoadingProgress(15)
+          simulatedProgress = Math.max(simulatedProgress, 15) // Sincronizar
+        }
       } else {
-        progressRef.current = 10
-        setLoadingProgress(10) // Pelo menos 10% se metadados carregaram mas sem duração
+        // Só atualizar se for maior que o atual (não resetar)
+        if (10 > progressRef.current) {
+          progressRef.current = 10
+          setLoadingProgress(10)
+          simulatedProgress = Math.max(simulatedProgress, 10) // Sincronizar
+        }
       }
     }
 
@@ -340,8 +343,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('📋 URL do vídeo:', video.src || video.currentSrc)
       console.log('📋 NetworkState:', video.networkState)
       setShowLoading(true)
-      progressRef.current = 2
-      setLoadingProgress(2) // Mostrar 2% quando iniciar (mais que 1% para indicar início)
+      // Só resetar para 2% se o progresso atual for menor
+      if (2 > progressRef.current) {
+        progressRef.current = 2
+        setLoadingProgress(2) // Mostrar 2% quando iniciar (mais que 1% para indicar início)
+      }
       
       // Verificar se o vídeo está realmente tentando carregar
       setTimeout(() => {
@@ -385,57 +391,69 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       initialProgress: progressRef.current
     })
     
-    // SEMPRE incrementar progresso simulado, independente de qualquer condição
+    // Incrementar progresso simulado gradualmente
+    // IMPORTANTE: Sincronizar simulatedProgress com progressRef.current no início
+    simulatedProgress = Math.max(simulatedProgress, progressRef.current)
+    
     intervalRef.current = setInterval(() => {
       checkCount++
       const elapsed = Date.now() - startTime
-      const currentProgress = progressRef.current
+      const progressBeforeCheck = progressRef.current
       
-      // Log a cada iteração para debug
-      console.log(`🔄 Intervalo executado #${checkCount}`, {
-        currentProgress,
-        simulatedProgress: Math.round(simulatedProgress),
-        elapsed: Math.round(elapsed/1000) + 's'
-      })
+      // Verificar progresso REAL do buffer (sem atualizar estado)
+      const realProgress = handleProgress(true) // skipUpdate = true
       
-      // Primeiro, verificar progresso real (mas não deixar resetar)
-      handleProgress()
-      
-      // SEMPRE incrementar progresso simulado se estiver abaixo de 80
-      if (currentProgress < 80) {
-        // Incremento baseado no tempo decorrido e dispositivo
-        const baseIncrement = isAndroidChrome ? 2 : 1
-        const timeBasedIncrement = Math.min(elapsed / 100, 1) // Máximo 1% por segundo baseado em tempo
-        const increment = baseIncrement + timeBasedIncrement
-        
-        simulatedProgress = Math.min(simulatedProgress + increment, 80)
-        const newProgress = Math.max(currentProgress, Math.round(simulatedProgress))
-        
-        // SEMPRE atualizar se o novo progresso for maior
-        if (newProgress > currentProgress) {
-          console.log(`📊 ATUALIZANDO PROGRESSO: ${currentProgress}% → ${newProgress}%`)
-          progressRef.current = newProgress
-          setLoadingProgress(newProgress)
-          console.log(`✅ Progresso atualizado para: ${newProgress}%`)
-        } else {
-          console.log(`⚠️ Progresso não atualizado: ${newProgress} não é maior que ${currentProgress}`)
-        }
-      } else {
-        console.log('✅ Progresso atingiu 80%, parando incremento simulado')
+      // Sincronizar simulatedProgress se o progresso real avançou significativamente
+      if (realProgress > simulatedProgress + 5) {
+        simulatedProgress = realProgress
+        console.log(`🔄 Sincronizando progresso simulado: ${Math.round(simulatedProgress)}%`)
       }
       
-      // Log de diagnóstico a cada 5 verificações
-      if (checkCount % 5 === 0) {
-        console.log('🔍 Diagnóstico completo:', {
-          currentProgress: progressRef.current,
-          simulatedProgress: Math.round(simulatedProgress),
+      // Incrementar progresso simulado apenas se não houver progresso real significativo
+      const currentProgress = progressRef.current
+      if (currentProgress < 95) {
+        // Se o progresso real não avançou desde a última verificação, incrementar simulado
+        if (currentProgress === progressBeforeCheck || currentProgress < realProgress + 10) {
+          // Incremento baseado no tempo e dispositivo
+          const timeSeconds = elapsed / 1000
+          const baseIncrement = isAndroidChrome ? 2 : 1
+          const timeBasedIncrement = Math.min(timeSeconds * 0.3, 0.3) // Máximo 0.3% por segundo
+          const increment = (baseIncrement + timeBasedIncrement) * (progressCheckInterval / 1000)
+          
+          // Garantir que simulatedProgress nunca diminua
+          simulatedProgress = Math.max(simulatedProgress, currentProgress)
+          simulatedProgress = Math.min(simulatedProgress + increment, 95)
+          
+          const newProgress = Math.round(simulatedProgress)
+          
+          // Só atualizar se for maior que o atual
+          if (newProgress > currentProgress) {
+            progressRef.current = newProgress
+            setLoadingProgress(newProgress)
+            // Log apenas ocasionalmente para não poluir
+            if (checkCount % 10 === 0) {
+              console.log(`📈 Progresso: ${currentProgress}% → ${newProgress}% (${Math.round(timeSeconds)}s)`)
+            }
+          }
+        }
+      }
+      
+      // Verificar se vídeo está pronto e ocultar loading
+      if (video.readyState >= 3 && currentProgress >= 50 && showLoading) {
+        console.log('✅ Vídeo pronto - ocultando loading')
+        setShowLoading(false)
+      }
+      
+      // Log de diagnóstico a cada 20 verificações
+      if (checkCount % 20 === 0) {
+        console.log('🔍 Diagnóstico:', {
+          progresso: Math.round(progressRef.current) + '%',
+          real: Math.round(realProgress) + '%',
+          simulado: Math.round(simulatedProgress) + '%',
           networkState: video.networkState,
           readyState: video.readyState,
           buffered: video.buffered.length,
-          duration: video.duration,
-          error: video.error,
-          elapsed: Math.round(elapsed/1000) + 's',
-          checkCount
+          tempo: Math.round(elapsed/1000) + 's'
         })
       }
     }, progressCheckInterval)
