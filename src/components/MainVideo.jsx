@@ -594,37 +594,48 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [showLoading, loadingProgress]) // Dependências: showLoading e loadingProgress
 
-  // useEffect adicional para garantir que vídeo seja visível quando showLoading muda
+  // useEffect PERMANENTE para SEMPRE mostrar vídeo quando estiver pronto
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
-    if (!showLoading) {
-      // Quando loading é ocultado, FORÇAR vídeo a aparecer via DOM
-      console.log('🔧 showLoading mudou para false - forçando vídeo a aparecer')
-      // Usar setAttribute para forçar estilos com !important
-      video.style.setProperty('opacity', '1', 'important')
-      video.style.setProperty('visibility', 'visible', 'important')
-      video.style.setProperty('display', 'block', 'important')
-      video.style.setProperty('z-index', '2', 'important')
-      video.style.setProperty('position', 'absolute', 'important')
-      video.style.setProperty('pointer-events', 'auto', 'important')
-      console.log('✅ Vídeo forçado a aparecer quando showLoading = false (com !important)')
-      console.log('📊 Estado do vídeo:', {
-        opacity: window.getComputedStyle(video).opacity,
-        visibility: window.getComputedStyle(video).visibility,
-        display: window.getComputedStyle(video).display,
-        zIndex: window.getComputedStyle(video).zIndex,
-        readyState: video.readyState,
-        networkState: video.networkState,
-        paused: video.paused,
-        currentTime: video.currentTime,
-        duration: video.duration,
-        src: video.src || video.currentSrc,
-        error: video.error
-      })
+    const forceVideoVisible = () => {
+      // Se vídeo tem metadados (readyState >= 1), SEMPRE forçar a aparecer
+      if (video.readyState >= 1) {
+        const computedStyle = window.getComputedStyle(video)
+        const isVisible = computedStyle.opacity !== '0' && 
+                         computedStyle.visibility !== 'hidden' && 
+                         computedStyle.display !== 'none'
+        
+        if (!isVisible) {
+          console.log('🚨 Vídeo está pronto mas INVISÍVEL - FORÇANDO a aparecer!')
+          video.style.setProperty('opacity', '1', 'important')
+          video.style.setProperty('visibility', 'visible', 'important')
+          video.style.setProperty('display', 'block', 'important')
+          video.style.setProperty('z-index', '2', 'important')
+          video.style.setProperty('position', 'absolute', 'important')
+          video.style.setProperty('pointer-events', 'auto', 'important')
+          setShowLoading(false) // Garantir que loading também está oculto
+          console.log('✅ Vídeo FORÇADO a aparecer!')
+        }
+      }
     }
-  }, [showLoading])
+
+    // Verificar imediatamente
+    forceVideoVisible()
+
+    // Verificar a cada 500ms
+    const checkInterval = setInterval(forceVideoVisible, 500)
+
+    // Também verificar quando showLoading muda
+    if (!showLoading) {
+      forceVideoVisible()
+    }
+
+    return () => {
+      clearInterval(checkInterval)
+    }
+  }, [showLoading]) // Dependência em showLoading para reagir a mudanças
 
   const handleVideoClick = () => {
     const video = videoRef.current
