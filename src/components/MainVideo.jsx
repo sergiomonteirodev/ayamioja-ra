@@ -343,10 +343,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('📋 URL do vídeo:', video.src || video.currentSrc)
       console.log('📋 NetworkState:', video.networkState)
       setShowLoading(true)
-      // Só resetar para 2% se o progresso atual for menor
-      if (2 > progressRef.current) {
+      // Só definir progresso inicial se for menor que 2% (não resetar se já estiver maior)
+      if (progressRef.current < 2) {
         progressRef.current = 2
         setLoadingProgress(2) // Mostrar 2% quando iniciar (mais que 1% para indicar início)
+        simulatedProgress = 2 // Sincronizar progresso simulado no início
       }
       
       // Verificar se o vídeo está realmente tentando carregar
