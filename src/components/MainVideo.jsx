@@ -349,20 +349,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('⏳ Iniciando carregamento do vídeo')
       console.log('📋 URL do vídeo:', video.src || video.currentSrc)
       console.log('📋 NetworkState:', video.networkState)
-      // CRÍTICO: Só mostrar loading se o vídeo ainda não estiver pronto
-      // Se readyState >= 3, o vídeo já está pronto e não precisa mostrar loading novamente
-      if (video.readyState < 3) {
-        setShowLoading(true)
-        console.log('⏳ Mostrando loading - vídeo ainda não está pronto')
-      } else {
-        console.log('✅ Vídeo já está pronto - não mostrando loading novamente')
-        // Mesmo que loadstart seja disparado, não resetar loading se vídeo já está pronto
-      }
-      // Só definir progresso inicial se for menor que 2% (não resetar se já estiver maior)
+      // NÃO mostrar loading automaticamente - deixar o vídeo tentar aparecer
+      // Só definir progresso inicial se for menor que 2%
       if (progressRef.current < 2) {
         progressRef.current = 2
-        setLoadingProgress(2) // Mostrar 2% quando iniciar (mais que 1% para indicar início)
-        simulatedProgress = 2 // Sincronizar progresso simulado no início
+        setLoadingProgress(2)
+        simulatedProgress = 2
       }
       
       // Verificar se o vídeo está realmente tentando carregar
@@ -377,14 +369,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handleWaiting = () => {
       console.log('⏳ Vídeo aguardando buffer')
-      // Só mostrar loading se o vídeo ainda não estiver pronto para reproduzir
-      // Se já está pronto (readyState >= 3), não reativar loading para evitar loops
-      if (video.readyState < 3) {
-        setShowLoading(true)
-        console.log('⏳ Reativando loading - vídeo ainda não está pronto')
-      } else {
-        console.log('✅ Vídeo já está pronto - não reativando loading')
-      }
+      // NÃO reativar loading - deixar vídeo tentar continuar reproduzindo
     }
 
     // Adicionar event listeners
@@ -469,26 +454,31 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         }
       }
       
-      // Verificar se vídeo está pronto e ocultar loading FORÇADAMENTE
-      // Se readyState >= 3 (HAVE_FUTURE_DATA), o vídeo está pronto para reproduzir
-      if (video.readyState >= 3 && showLoading) {
-        console.log('✅ Vídeo PRONTO - FORÇANDO ocultação do loading (readyState >= 3)')
+      // FORÇAR ocultação do loading e mostrar vídeo quando estiver pronto
+      if (video.readyState >= 1 && showLoading) {
+        console.log('✅ Vídeo tem metadados - FORÇANDO ocultação do loading e aparecendo vídeo')
         setShowLoading(false)
-        // Garantir que o vídeo apareça
         setIsVideoPlaying(true)
-        // Parar o intervalo se o vídeo já está pronto
-        if (intervalRef.current) {
-          console.log('🧹 Parando intervalo - vídeo já está pronto')
-          clearInterval(intervalRef.current)
-          intervalRef.current = null
+        // FORÇAR vídeo a aparecer
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '2', 'important')
+        // Tentar reproduzir
+        if (video.paused && !hasEnded) {
+          video.play().catch(e => console.log('⚠️ Erro ao tentar reproduzir:', e))
         }
       }
       
-      // Se o progresso chegou a 100% e o vídeo está pronto, garantir que loading esteja oculto
-      if (currentProgress >= 100 && video.readyState >= 2 && showLoading) {
-        console.log('✅ Progresso 100% e vídeo pronto - forçando ocultação do loading')
+      // Se progresso >= 80%, mostrar vídeo mesmo que não esteja completamente pronto
+      if (currentProgress >= 80 && showLoading) {
+        console.log('✅ Progresso >= 80% - FORÇANDO vídeo a aparecer')
         setShowLoading(false)
         setIsVideoPlaying(true)
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '2', 'important')
       }
       
       // Log de diagnóstico a cada 20 verificações
