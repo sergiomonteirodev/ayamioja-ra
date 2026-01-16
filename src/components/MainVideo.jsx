@@ -349,7 +349,15 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('⏳ Iniciando carregamento do vídeo')
       console.log('📋 URL do vídeo:', video.src || video.currentSrc)
       console.log('📋 NetworkState:', video.networkState)
-      setShowLoading(true)
+      // CRÍTICO: Só mostrar loading se o vídeo ainda não estiver pronto
+      // Se readyState >= 3, o vídeo já está pronto e não precisa mostrar loading novamente
+      if (video.readyState < 3) {
+        setShowLoading(true)
+        console.log('⏳ Mostrando loading - vídeo ainda não está pronto')
+      } else {
+        console.log('✅ Vídeo já está pronto - não mostrando loading novamente')
+        // Mesmo que loadstart seja disparado, não resetar loading se vídeo já está pronto
+      }
       // Só definir progresso inicial se for menor que 2% (não resetar se já estiver maior)
       if (progressRef.current < 2) {
         progressRef.current = 2
