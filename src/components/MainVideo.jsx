@@ -622,6 +622,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         console.log('🔧 FORÇANDO ocultação do loading via useEffect (readyState >= 3)')
         setShowLoading(false)
         setIsVideoPlaying(true)
+        // FORÇAR vídeo a aparecer via DOM direto
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        console.log('✅ Vídeo forçado a aparecer via DOM')
       }
       
       // Se progresso chegou a 100% e vídeo tem pelo menos metadados, forçar ocultação
@@ -629,6 +634,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         console.log('🔧 FORÇANDO ocultação do loading via useEffect (progresso 100%)')
         setShowLoading(false)
         setIsVideoPlaying(true)
+        // FORÇAR vídeo a aparecer via DOM direto
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        console.log('✅ Vídeo forçado a aparecer via DOM (progresso 100%)')
       }
     }
 
@@ -642,6 +652,33 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       clearInterval(checkInterval)
     }
   }, [showLoading, loadingProgress]) // Dependências: showLoading e loadingProgress
+
+  // useEffect adicional para garantir que vídeo seja visível quando showLoading muda
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    if (!showLoading) {
+      // Quando loading é ocultado, FORÇAR vídeo a aparecer
+      console.log('🔧 showLoading mudou para false - forçando vídeo a aparecer')
+      video.style.opacity = '1'
+      video.style.visibility = 'visible'
+      video.style.display = 'block'
+      video.style.zIndex = '2'
+      console.log('✅ Vídeo forçado a aparecer quando showLoading = false')
+      console.log('📊 Estado do vídeo:', {
+        opacity: video.style.opacity,
+        visibility: video.style.visibility,
+        display: video.style.display,
+        zIndex: video.style.zIndex,
+        readyState: video.readyState,
+        networkState: video.networkState,
+        paused: video.paused,
+        currentTime: video.currentTime,
+        duration: video.duration
+      })
+    }
+  }, [showLoading])
 
   const handleVideoClick = () => {
     const video = videoRef.current
