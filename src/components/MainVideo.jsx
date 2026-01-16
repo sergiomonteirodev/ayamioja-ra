@@ -369,11 +369,43 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handleError = (e) => {
       console.error('❌ Erro ao carregar vídeo:', e)
-      console.error('Código de erro:', video.error?.code)
-      console.error('Mensagem:', video.error?.message)
-      console.error('URL do vídeo:', video.src || video.currentSrc)
-      console.error('NetworkState:', video.networkState)
-      console.error('ReadyState:', video.readyState)
+      const errorCode = video.error?.code
+      const errorMessage = video.error?.message
+      const currentSrc = video.src || video.currentSrc
+      
+      console.error('❌ Erro detalhado:', {
+        code: errorCode,
+        message: errorMessage,
+        networkState: video.networkState,
+        readyState: video.readyState,
+        src: currentSrc,
+        errorObject: video.error
+      })
+
+      // Verificar se é erro de bloqueio (code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED ou rede)
+      if (errorCode === 4 || video.networkState === 3) {
+        console.error('🚨 ERRO: Vídeo bloqueado ou fonte não suportada!')
+        console.error('💡 Possíveis causas:')
+        console.error('  1. Bloqueador de conteúdo (AdBlock, uBlock, etc.)')
+        console.error('  2. Extensão de privacidade bloqueando requisições')
+        console.error('  3. Arquivo não existe no servidor')
+        console.error('  4. Problema de CORS')
+        console.error('  5. URL incorreta')
+        
+        // Tentar URL absoluta como fallback
+        const absoluteUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
+        if (!currentSrc.includes(absoluteUrl)) {
+          console.log('🔄 Tentando URL absoluta como fallback:', absoluteUrl)
+          const source = video.querySelector('source')
+          if (source) {
+            source.src = absoluteUrl
+            video.load()
+          } else {
+            video.src = absoluteUrl
+            video.load()
+          }
+        }
+      }
       
       // Para Android/Chrome, tentar recarregar mais agressivamente
       const retryDelay = isAndroidChrome ? 1000 : 2000
@@ -396,6 +428,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           }, retryDelay)
         } else {
           console.error('❌ Máximo de tentativas de recarregamento atingido')
+          console.error('💡 Ação recomendada: Verifique o console para erros de rede (F12 > Network)')
         }
       }
       
@@ -403,9 +436,44 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
 
     const handleLoadStart = () => {
+      const currentSrc = video.src || video.currentSrc
       console.log('⏳ Iniciando carregamento do vídeo')
-      console.log('📋 URL do vídeo:', video.src || video.currentSrc)
+      console.log('📋 URL do vídeo:', currentSrc)
       console.log('📋 NetworkState:', video.networkState)
+      console.log('📋 ReadyState:', video.readyState)
+      
+      // Verificar se há bloqueio imediatamente
+      const checkForBlockage = () => {
+        if (video.networkState === 3) {
+          console.error('❌ NetworkState = 3 (NO_SOURCE) - vídeo não encontrou fonte')
+          console.error('💡 Isso geralmente indica:')
+          console.error('   - Bloqueador de conteúdo ativo')
+          console.error('   - Arquivo não existe no servidor')
+          console.error('   - Problema de CORS')
+          
+          // Tentar URL alternativa
+          const alternativeUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
+          if (!currentSrc.includes(alternativeUrl)) {
+            console.log('🔄 Tentando URL alternativa:', alternativeUrl)
+            const source = video.querySelector('source')
+            if (source) {
+              source.src = alternativeUrl
+              video.load()
+            }
+          }
+        } else if (video.networkState === 0) {
+          console.warn('⚠️ NetworkState = 0 (EMPTY) - vídeo ainda não iniciou carregamento')
+        } else if (video.readyState === 0 && video.networkState === 2) {
+          // NetworkState 2 = LOADING mas readyState 0 = sem dados após alguns segundos indica bloqueio
+          setTimeout(() => {
+            if (video.readyState === 0 && video.networkState === 2) {
+              console.error('🚨 POSSÍVEL BLOQUEIO: Vídeo está "carregando" mas sem receber dados')
+              console.error('💡 Verifique o console de rede (F12 > Network) para ver se a requisição está sendo bloqueada')
+            }
+          }, 3000)
+        }
+      }
+      
       // NÃO mostrar loading automaticamente - deixar o vídeo tentar aparecer
       // Só definir progresso inicial se for menor que 2%
       if (progressRef.current < 2) {
@@ -415,13 +483,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
       
       // Verificar se o vídeo está realmente tentando carregar
-      setTimeout(() => {
-        if (video.networkState === 3) {
-          console.error('❌ NetworkState = 3 (NO_SOURCE) - vídeo não encontrou fonte')
-        } else if (video.networkState === 0) {
-          console.warn('⚠️ NetworkState = 0 (EMPTY) - vídeo ainda não iniciou carregamento')
-        }
-      }, 1000)
+      setTimeout(checkForBlockage, 1000)
+      setTimeout(checkForBlockage, 3000)
     }
 
     const handleWaiting = () => {
