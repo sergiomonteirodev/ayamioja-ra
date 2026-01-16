@@ -705,10 +705,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             loop={false}
             onClick={handleVideoClick}
             style={{ 
-              opacity: showLoading ? 0 : 1,
+              // SEMPRE tentar mostrar vídeo - se showLoading está true mas vídeo está pronto, será forçado pelo useEffect
+              opacity: showLoading ? 0.01 : 1, // 0.01 em vez de 0 para evitar display:none
               visibility: showLoading ? 'hidden' : 'visible',
-              display: showLoading ? 'none' : 'block',
-              zIndex: showLoading ? 1 : 2,
+              display: 'block', // SEMPRE block, nunca none
+              zIndex: 2, // Sempre z-index alto
               transition: 'opacity 0.3s ease, visibility 0.3s ease',
               position: 'absolute',
               pointerEvents: showLoading ? 'none' : 'auto'
