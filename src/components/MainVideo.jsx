@@ -495,8 +495,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
     }, progressCheckInterval)
 
-    // Fallback AGRESSIVO: sempre mostrar vídeo após 2 segundos
-    const fallbackDelay = 2000
+    // Fallback AGRESSIVO: sempre mostrar vídeo após 1.5 segundos
+    const fallbackDelay = 1500
     const fallbackTimeout = setTimeout(() => {
       console.log(`🚀 Fallback AGRESSIVO: forçando vídeo a aparecer após ${fallbackDelay}ms`)
       console.log('📊 Estado do vídeo:', {
@@ -504,12 +504,33 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         networkState: video.networkState,
         error: video.error,
         src: video.src || video.currentSrc,
-        duration: video.duration
+        duration: video.duration,
+        showLoading: showLoading
       })
       
-      // SEMPRE esconder loading e mostrar vídeo após 2 segundos
+      // SEMPRE esconder loading e mostrar vídeo após delay
       setShowLoading(false)
       setIsVideoPlaying(true)
+      
+      // Forçar visibilidade via DOM
+      video.style.setProperty('opacity', '1', 'important')
+      video.style.setProperty('visibility', 'visible', 'important')
+      video.style.setProperty('display', 'block', 'important')
+      video.style.setProperty('z-index', '999', 'important')
+      
+      // Garantir dimensões
+      const rect = video.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) {
+        const container = video.parentElement
+        if (container) {
+          const containerRect = container.getBoundingClientRect()
+          const size = Math.min(containerRect.width, containerRect.height) || 300
+          video.style.setProperty('width', `${size}px`, 'important')
+          video.style.setProperty('height', `${size}px`, 'important')
+        }
+      }
+      
+      console.log('✅ Fallback: vídeo FORÇADO a aparecer!')
       // FORÇAR vídeo a aparecer via DOM com !important
       video.style.setProperty('opacity', '1', 'important')
       video.style.setProperty('visibility', 'visible', 'important')
@@ -603,20 +624,75 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       // Se vídeo tem metadados (readyState >= 1), SEMPRE forçar a aparecer
       if (video.readyState >= 1) {
         const computedStyle = window.getComputedStyle(video)
-        const isVisible = computedStyle.opacity !== '0' && 
+        const rect = video.getBoundingClientRect()
+        const videoWidth = rect.width
+        const videoHeight = rect.height
+        
+        const isVisible = parseFloat(computedStyle.opacity) > 0.5 && 
                          computedStyle.visibility !== 'hidden' && 
-                         computedStyle.display !== 'none'
+                         computedStyle.display !== 'none' &&
+                         videoWidth > 0 &&
+                         videoHeight > 0
         
         if (!isVisible) {
-          console.log('🚨 Vídeo está pronto mas INVISÍVEL - FORÇANDO a aparecer!')
+          console.log('🚨 Vídeo está pronto mas INVISÍVEL ou SEM DIMENSÕES!', {
+            opacity: computedStyle.opacity,
+            visibility: computedStyle.visibility,
+            display: computedStyle.display,
+            width: videoWidth,
+            height: videoHeight,
+            readyState: video.readyState,
+            showLoading: showLoading
+          })
+          
+          // FORÇAR visibilidade e dimensões
           video.style.setProperty('opacity', '1', 'important')
           video.style.setProperty('visibility', 'visible', 'important')
           video.style.setProperty('display', 'block', 'important')
-          video.style.setProperty('z-index', '2', 'important')
+          video.style.setProperty('z-index', '999', 'important')
           video.style.setProperty('position', 'absolute', 'important')
           video.style.setProperty('pointer-events', 'auto', 'important')
-          setShowLoading(false) // Garantir que loading também está oculto
+          
+          // Garantir dimensões mínimas
+          if (videoWidth === 0 || videoHeight === 0) {
+            const container = video.parentElement
+            if (container) {
+              const containerRect = container.getBoundingClientRect()
+              const size = Math.min(containerRect.width, containerRect.height) || 300
+              video.style.setProperty('width', `${size}px`, 'important')
+              video.style.setProperty('height', `${size}px`, 'important')
+              console.log('📐 Dimensões forçadas:', { width: size, height: size })
+            }
+          }
+          
+          // SEMPRE esconder loading quando vídeo está pronto
+          setShowLoading(false)
+          setIsVideoPlaying(true)
+          
+          // Tentar reproduzir se estiver pausado
+          if (video.paused && video.readyState >= 2) {
+            video.play().catch(err => {
+              console.log('⚠️ Não foi possível reproduzir automaticamente:', err)
+            })
+          }
+          
           console.log('✅ Vídeo FORÇADO a aparecer!')
+          
+          // Log final do estado
+          setTimeout(() => {
+            const finalRect = video.getBoundingClientRect()
+            const finalStyle = window.getComputedStyle(video)
+            console.log('📊 Estado final do vídeo:', {
+              opacity: finalStyle.opacity,
+              visibility: finalStyle.visibility,
+              display: finalStyle.display,
+              width: finalRect.width,
+              height: finalRect.height,
+              top: finalRect.top,
+              left: finalRect.left,
+              zIndex: finalStyle.zIndex
+            })
+          }, 100)
         }
       }
     }
@@ -624,8 +700,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     // Verificar imediatamente
     forceVideoVisible()
 
-    // Verificar a cada 500ms
-    const checkInterval = setInterval(forceVideoVisible, 500)
+    // Verificar a cada 200ms (mais frequente)
+    const checkInterval = setInterval(forceVideoVisible, 200)
 
     // Também verificar quando showLoading muda
     if (!showLoading) {
@@ -716,14 +792,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             loop={false}
             onClick={handleVideoClick}
             style={{ 
-              // SEMPRE tentar mostrar vídeo - se showLoading está true mas vídeo está pronto, será forçado pelo useEffect
-              opacity: showLoading ? 0.01 : 1, // 0.01 em vez de 0 para evitar display:none
-              visibility: showLoading ? 'hidden' : 'visible',
+              // SEMPRE tentar mostrar vídeo - será forçado pelo useEffect se estiver pronto
+              opacity: showLoading ? 0.3 : 1, // 0.3 para ainda ser visível mas indicar loading
+              visibility: 'visible', // SEMPRE visible
               display: 'block', // SEMPRE block, nunca none
-              zIndex: 2, // Sempre z-index alto
-              transition: 'opacity 0.3s ease, visibility 0.3s ease',
+              zIndex: 999, // z-index muito alto
+              transition: 'opacity 0.3s ease',
               position: 'absolute',
-              pointerEvents: showLoading ? 'none' : 'auto'
+              pointerEvents: showLoading ? 'none' : 'auto',
+              width: '100%', // Garantir largura
+              height: '100%', // Garantir altura
+              objectFit: 'cover' // Garantir que o vídeo preencha o espaço
             }}
           >
             <source src="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" />
