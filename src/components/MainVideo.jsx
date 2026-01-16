@@ -609,6 +609,40 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
     }, [isAppleDevice, isAndroidChrome, userInteracted, onVideoStateChange, hasEnded, audioActive])
 
+  // useEffect separado para FORÇAR ocultação do loading quando vídeo estiver pronto
+  // Isso garante que mesmo se outros handlers falharem, o loading será ocultado
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    // Verificar periodicamente se o vídeo está pronto e forçar ocultação do loading
+    const checkVideoReady = () => {
+      // Se vídeo está pronto (readyState >= 3) e loading ainda está visível, FORÇAR ocultação
+      if (video.readyState >= 3 && showLoading) {
+        console.log('🔧 FORÇANDO ocultação do loading via useEffect (readyState >= 3)')
+        setShowLoading(false)
+        setIsVideoPlaying(true)
+      }
+      
+      // Se progresso chegou a 100% e vídeo tem pelo menos metadados, forçar ocultação
+      if (loadingProgress >= 100 && video.readyState >= 1 && showLoading) {
+        console.log('🔧 FORÇANDO ocultação do loading via useEffect (progresso 100%)')
+        setShowLoading(false)
+        setIsVideoPlaying(true)
+      }
+    }
+
+    // Verificar imediatamente
+    checkVideoReady()
+
+    // Verificar periodicamente a cada 500ms
+    const checkInterval = setInterval(checkVideoReady, 500)
+
+    return () => {
+      clearInterval(checkInterval)
+    }
+  }, [showLoading, loadingProgress]) // Dependências: showLoading e loadingProgress
+
   const handleVideoClick = () => {
     const video = videoRef.current
     if (!video) return
