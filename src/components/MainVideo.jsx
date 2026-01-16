@@ -653,16 +653,64 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           video.style.setProperty('position', 'absolute', 'important')
           video.style.setProperty('pointer-events', 'auto', 'important')
           
-          // Garantir dimensões mínimas
+          // Garantir dimensões mínimas - verificar containers até encontrar um com dimensões
           if (videoWidth === 0 || videoHeight === 0) {
-            const container = video.parentElement
-            if (container) {
+            let container = video.parentElement
+            let size = 0
+            let attempts = 0
+            const maxAttempts = 5 // Verificar até 5 níveis de container
+            
+            while (container && attempts < maxAttempts) {
               const containerRect = container.getBoundingClientRect()
-              const size = Math.min(containerRect.width, containerRect.height) || 300
-              video.style.setProperty('width', `${size}px`, 'important')
-              video.style.setProperty('height', `${size}px`, 'important')
-              console.log('📐 Dimensões forçadas:', { width: size, height: size })
+              const containerWidth = containerRect.width
+              const containerHeight = containerRect.height
+              
+              if (containerWidth > 0 && containerHeight > 0) {
+                size = Math.min(containerWidth, containerHeight)
+                console.log('📐 Container encontrado com dimensões:', {
+                  className: container.className,
+                  width: containerWidth,
+                  height: containerHeight,
+                  size: size
+                })
+                break
+              }
+              
+              container = container.parentElement
+              attempts++
             }
+            
+            // Se não encontrou, usar valores padrão baseados em media queries
+            if (size === 0) {
+              const viewportWidth = window.innerWidth
+              if (viewportWidth <= 430) {
+                size = 300 // Mobile pequeno
+              } else if (viewportWidth <= 600) {
+                size = 450
+              } else if (viewportWidth <= 768) {
+                size = 520
+              } else {
+                size = 700 // Desktop
+              }
+              console.log('📐 Usando tamanho padrão baseado em viewport:', { viewportWidth, size })
+            }
+            
+            // Forçar dimensões no vídeo
+            video.style.setProperty('width', `${size}px`, 'important')
+            video.style.setProperty('height', `${size}px`, 'important')
+            
+            // Também garantir que o container tenha dimensões
+            if (video.parentElement) {
+              const parent = video.parentElement
+              const parentRect = parent.getBoundingClientRect()
+              if (parentRect.width === 0 || parentRect.height === 0) {
+                parent.style.setProperty('width', `${size}px`, 'important')
+                parent.style.setProperty('height', `${size}px`, 'important')
+                console.log('📐 Dimensões forçadas no container pai também')
+              }
+            }
+            
+            console.log('📐 Dimensões forçadas no vídeo:', { width: size, height: size })
           }
           
           // SEMPRE esconder loading quando vídeo está pronto
