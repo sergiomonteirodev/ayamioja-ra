@@ -62,6 +62,63 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [audioActive, isAppleDevice, userInteracted])
 
+  // useEffect inicial - garantir que vídeo está no DOM e visível
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) {
+      console.log('⚠️ Vídeo ainda não existe no DOM')
+      return
+    }
+
+    console.log('🎬 MainVideo montado - configurando vídeo inicialmente')
+    
+    // Forçar estilos iniciais imediatamente
+    video.style.setProperty('display', 'block', 'important')
+    video.style.setProperty('visibility', 'visible', 'important')
+    video.style.setProperty('opacity', '1', 'important')
+    video.style.setProperty('z-index', '999', 'important')
+    video.style.setProperty('position', 'absolute', 'important')
+    video.style.setProperty('width', '100%', 'important')
+    video.style.setProperty('height', '100%', 'important')
+    video.style.setProperty('object-fit', 'cover', 'important')
+    
+    // Verificar se está no DOM e visível
+    const checkVisibility = () => {
+      const rect = video.getBoundingClientRect()
+      const computedStyle = window.getComputedStyle(video)
+      console.log('🔍 Estado inicial do vídeo:', {
+        noDOM: document.body.contains(video),
+        width: rect.width,
+        height: rect.height,
+        opacity: computedStyle.opacity,
+        visibility: computedStyle.visibility,
+        display: computedStyle.display,
+        zIndex: computedStyle.zIndex,
+        top: rect.top,
+        left: rect.left
+      })
+      
+      // Se não tem dimensões, forçar
+      if (rect.width === 0 || rect.height === 0) {
+        console.log('⚠️ Vídeo sem dimensões - forçando...')
+        const viewportWidth = window.innerWidth
+        let size = 300
+        if (viewportWidth <= 430) size = 300
+        else if (viewportWidth <= 600) size = 450
+        else if (viewportWidth <= 768) size = 520
+        else size = 700
+        
+        video.style.setProperty('width', `${size}px`, 'important')
+        video.style.setProperty('height', `${size}px`, 'important')
+      }
+    }
+    
+    // Verificar imediatamente e depois de um pequeno delay
+    checkVisibility()
+    setTimeout(checkVisibility, 100)
+    setTimeout(checkVisibility, 500)
+  }, []) // Executar apenas uma vez no mount
+
   // Atualizar estado do vídeo continuamente
   useEffect(() => {
     const video = videoRef.current
