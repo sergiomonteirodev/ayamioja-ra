@@ -208,6 +208,23 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.playsInline = true
     }
 
+    // Verificar bloqueio após 3 segundos se readyState ainda for 0
+    blockCheckTimeoutRef.current = setTimeout(() => {
+      if (video.readyState === 0 && video.networkState === 2) {
+        console.error('🚨 BLOQUEIO DETECTADO: Vídeo não recebeu dados após 3 segundos')
+        setIsBlocked(true)
+        
+        // Tentar carregar via fetch como fallback
+        const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
+        loadVideoViaFetch(videoUrl).then(success => {
+          if (success) {
+            setIsBlocked(false)
+            console.log('✅ Vídeo carregado com sucesso via fetch!')
+          }
+        })
+      }
+    }, 3000)
+
     // FORÇAR CARREGAMENTO IMEDIATO DO VÍDEO
     // Para Android, verificar networkState antes de chamar load()
     const shouldLoad = !isAndroidChrome || video.networkState === 0 || video.networkState === 3 || video.readyState === 0
@@ -733,6 +750,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         intervalRef.current = null
       }
       clearTimeout(fallbackTimeout)
+      if (blockCheckTimeoutRef.current) {
+        clearTimeout(blockCheckTimeoutRef.current)
+      }
     }
     }, [isAppleDevice, isAndroidChrome, userInteracted, onVideoStateChange, hasEnded, audioActive])
 
