@@ -11,6 +11,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [useBlobUrl, setUseBlobUrl] = useState(false) // Estado para rastrear se estamos usando blob URL
   const videoRef = useRef(null)
   const isLoadingViaFetchRef = useRef(false) // Ref para evitar múltiplas chamadas simultâneas
+  const hasTriedAlternativeUrlRef = useRef(false) // Ref para evitar loop de tentativas de URL alternativa
   const progressRef = useRef(0) // Ref para rastrear progresso atual
   const intervalRef = useRef(null) // Ref para o intervalo
   const blockCheckTimeoutRef = useRef(null) // Ref para timeout de verificação de bloqueio
@@ -612,8 +613,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       })
 
       // Verificar se é erro de bloqueio (code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED ou rede)
-      if (errorCode === 4 || video.networkState === 3) {
+      // Não tentar novamente se já está usando blob URL ou já tentamos
+      if ((errorCode === 4 || video.networkState === 3) && !useBlobUrl && !isLoadingViaFetchRef.current) {
         console.error('🚨 ERRO: Vídeo bloqueado ou fonte não suportada!')
+        
+        // Marcar que já tentamos para evitar loop
+        hasTriedAlternativeUrlRef.current = true
         
         // Tentar carregar via fetch/blob URL primeiro (SEM definir isBlocked ainda)
         const videoUrl = videoPath
@@ -624,17 +629,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           } else {
             // Só mostrar mensagem de bloqueio se fetch também falhar
             setIsBlocked(true)
-            // Tentar URL absoluta normal como último recurso
-            console.log('🔄 Tentando URL absoluta como fallback:', videoUrl)
-            const source = video.querySelector('source')
-            if (source) {
-              source.src = videoUrl
-              video.load()
-            } else {
-              video.src = videoUrl
-              video.load()
-            }
           }
+        }).catch(() => {
+          setIsBlocked(true)
         })
       }
       
@@ -675,6 +672,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       
       // Verificar se há bloqueio imediatamente
       const checkForBlockage = () => {
+        // Não tentar URL alternativa se já está usando blob URL ou já tentamos
+        if (useBlobUrl || hasTriedAlternativeUrlRef.current || isLoadingViaFetchRef.current) {
+          return
+        }
+        
         if (video.networkState === 3) {
           console.error('❌ NetworkState = 3 (NO_SOURCE) - vídeo não encontrou fonte')
           console.error('💡 Isso geralmente indica:')
@@ -682,15 +684,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           console.error('   - Arquivo não existe no servidor')
           console.error('   - Problema de CORS')
           
-          // Tentar URL alternativa
-          const alternativeUrl = videoPath
-          if (!currentSrc.includes(alternativeUrl)) {
-            console.log('🔄 Tentando URL alternativa:', alternativeUrl)
-            const source = video.querySelector('source')
-            if (source) {
-              source.src = alternativeUrl
-              video.load()
-            }
+          // Marcar que já tentamos para evitar loop
+          hasTriedAlternativeUrlRef.current = true
+          
+          // Se não está usando blob URL ainda, tentar carregar via fetch
+          if (!useBlobUrl) {
+            const videoUrl = videoPath
+            console.log('🔄 Tentando carregar via fetch após NetworkState 3')
+            loadVideoViaFetch(videoUrl).catch(() => {
+              // Se fetch falhar, marcar como bloqueado
+              setIsBlocked(true)
+            })
           }
         } else if (video.networkState === 0) {
           console.warn('⚠️ NetworkState = 0 (EMPTY) - vídeo ainda não iniciou carregamento')
