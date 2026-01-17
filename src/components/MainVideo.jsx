@@ -206,15 +206,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       // Marcar que estamos usando blob URL (isso evitará React criar tag <source>)
       setUseBlobUrl(true)
       
-      // Limpar qualquer src anterior do vídeo para evitar conflitos
-      if (video.src) {
-        video.src = ''
-      }
-      
       // Aguardar um tick para React processar a mudança de estado
       await new Promise(resolve => setTimeout(resolve, 10))
       
       // Definir blob URL diretamente no elemento vídeo
+      // IMPORTANTE: Não limpar video.src = '' pois isso pode fazer o navegador usar URL base como fallback
+      // Se houver um src anterior (blob URL antiga), ela será substituída automaticamente
       video.src = blobUrl
       console.log('📹 Blob URL definida no vídeo:', video.src)
       
@@ -635,32 +632,43 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         })
       }
       
-      // Para Android/Chrome, tentar recarregar mais agressivamente
-      const retryDelay = isAndroidChrome ? 1000 : 2000
-      const maxRetries = isAndroidChrome ? 3 : 2
-      
-      let retryCount = 0
-      const retryLoad = () => {
-        retryCount++
-        if (retryCount <= maxRetries) {
-          console.log(`🔄 Tentando recarregar vídeo após erro (tentativa ${retryCount}/${maxRetries})`)
-          setTimeout(() => {
-            try {
-              video.load()
-            } catch (err) {
-              console.error('❌ Erro ao recarregar:', err)
-              if (retryCount < maxRetries) {
-                retryLoad()
+      // NÃO tentar recarregar se já estamos usando blob URL
+      // O blob URL já foi definido e não precisa ser recarregado
+      if (!useBlobUrl) {
+        // Para Android/Chrome, tentar recarregar mais agressivamente
+        const retryDelay = isAndroidChrome ? 1000 : 2000
+        const maxRetries = isAndroidChrome ? 3 : 2
+        
+        let retryCount = 0
+        const retryLoad = () => {
+          retryCount++
+          if (retryCount <= maxRetries) {
+            console.log(`🔄 Tentando recarregar vídeo após erro (tentativa ${retryCount}/${maxRetries})`)
+            setTimeout(() => {
+              try {
+                // Verificar se o src está correto antes de recarregar
+                if (video.src && (video.src.startsWith('blob:') || video.src.includes(videoPath))) {
+                  video.load()
+                } else {
+                  console.warn('⚠️ video.src está incorreto, pulando reload')
+                }
+              } catch (err) {
+                console.error('❌ Erro ao recarregar:', err)
+                if (retryCount < maxRetries) {
+                  retryLoad()
+                }
               }
-            }
-          }, retryDelay)
-        } else {
-          console.error('❌ Máximo de tentativas de recarregamento atingido')
-          console.error('💡 Ação recomendada: Verifique o console para erros de rede (F12 > Network)')
+            }, retryDelay)
+          } else {
+            console.error('❌ Máximo de tentativas de recarregamento atingido')
+            console.error('💡 Ação recomendada: Verifique o console para erros de rede (F12 > Network)')
+          }
         }
+        
+        retryLoad()
+      } else {
+        console.log('⏸️ Ignorando retryLoad() - já usando blob URL')
       }
-      
-      retryLoad()
     }
 
     const handleLoadStart = () => {
