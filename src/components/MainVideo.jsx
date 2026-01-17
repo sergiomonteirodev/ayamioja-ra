@@ -220,6 +220,22 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             })
             setIsBlocked(false)
             setShowLoading(false)
+            setIsVideoPlaying(true)
+            
+            // FORÇAR vídeo a aparecer via DOM
+            video.style.setProperty('opacity', '1', 'important')
+            video.style.setProperty('visibility', 'visible', 'important')
+            video.style.setProperty('display', 'block', 'important')
+            video.style.setProperty('z-index', '999', 'important')
+            
+            // Tentar reproduzir
+            setTimeout(() => {
+              video.play().catch(err => {
+                console.log('⚠️ Erro ao reproduzir blob:', err)
+              })
+            }, 100)
+            
+            clearTimeout(timeout)
             resolve(true)
           }
         }
@@ -233,6 +249,20 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             })
             setIsBlocked(false)
             setShowLoading(false)
+            setIsVideoPlaying(true)
+            
+            // FORÇAR vídeo a aparecer via DOM
+            video.style.setProperty('opacity', '1', 'important')
+            video.style.setProperty('visibility', 'visible', 'important')
+            video.style.setProperty('display', 'block', 'important')
+            video.style.setProperty('z-index', '999', 'important')
+            
+            // Tentar reproduzir
+            video.play().catch(err => {
+              console.log('⚠️ Erro ao reproduzir blob:', err)
+            })
+            
+            clearTimeout(timeout)
             resolve(true)
           }
         }
