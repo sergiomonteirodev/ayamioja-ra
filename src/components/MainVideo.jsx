@@ -8,6 +8,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [hasEnded, setHasEnded] = useState(false)
   const [userInteracted, setUserInteracted] = useState(false)
   const [isBlocked, setIsBlocked] = useState(false) // Estado para detectar bloqueio
+  const [useBlobUrl, setUseBlobUrl] = useState(false) // Estado para rastrear se estamos usando blob URL
   const videoRef = useRef(null)
   const progressRef = useRef(0) // Ref para rastrear progresso atual
   const intervalRef = useRef(null) // Ref para o intervalo
@@ -205,6 +206,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       // Definir blob URL diretamente no elemento vídeo
       video.src = blobUrl
       console.log('📹 Blob URL definida no vídeo:', video.src)
+      
+      // Marcar que estamos usando blob URL (isso evitará recriar a tag <source> no render)
+      setUseBlobUrl(true)
       
       // Remover crossOrigin quando usar blob (não é necessário)
       video.removeAttribute('crossorigin')
@@ -1251,7 +1255,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               objectFit: 'cover' // Garantir que o vídeo preencha o espaço
             }}
           >
-            <source src={videoPath} type="video/mp4" />
+            {/* Só renderizar tag <source> se não estivermos usando blob URL */}
+            {!useBlobUrl && <source src={videoPath} type="video/mp4" />}
             Seu navegador não suporta vídeos HTML5.
           </video>
           
