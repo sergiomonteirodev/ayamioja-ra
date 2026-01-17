@@ -12,6 +12,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const videoRef = useRef(null)
   const isLoadingViaFetchRef = useRef(false) // Ref para evitar múltiplas chamadas simultâneas
   const hasTriedAlternativeUrlRef = useRef(false) // Ref para evitar loop de tentativas de URL alternativa
+  const hasLoadedVideoRef = useRef(false) // Ref para garantir que loadVideoViaFetch só é chamado uma vez
   const progressRef = useRef(0) // Ref para rastrear progresso atual
   const intervalRef = useRef(null) // Ref para o intervalo
   const blockCheckTimeoutRef = useRef(null) // Ref para timeout de verificação de bloqueio
@@ -375,17 +376,23 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     // Tentar carregar via fetch IMEDIATAMENTE como método principal (não fallback)
     // Isso evita problemas de bloqueio desde o início
-    const videoUrl = videoPath
-    console.log('🚀 Tentando carregar vídeo via fetch como método principal')
-    loadVideoViaFetch(videoUrl).then(success => {
-      if (success) {
-        console.log('✅ Vídeo carregado com sucesso via fetch!')
-        // Não definir isBlocked aqui - já está false por padrão
-      } else {
-        console.warn('⚠️ Fetch falhou, tentando método tradicional')
-        // Só então tentar método tradicional
-      }
-    })
+    // IMPORTANTE: Só carregar uma vez, no mount inicial
+    if (!hasLoadedVideoRef.current && !useBlobUrl) {
+      hasLoadedVideoRef.current = true
+      const videoUrl = videoPath
+      console.log('🚀 Tentando carregar vídeo via fetch como método principal')
+      loadVideoViaFetch(videoUrl).then(success => {
+        if (success) {
+          console.log('✅ Vídeo carregado com sucesso via fetch!')
+          // Não definir isBlocked aqui - já está false por padrão
+        } else {
+          console.warn('⚠️ Fetch falhou, tentando método tradicional')
+          // Só então tentar método tradicional
+        }
+      })
+    } else if (hasLoadedVideoRef.current || useBlobUrl) {
+      console.log('⏸️ Vídeo já foi carregado ou está usando blob URL, pulando loadVideoViaFetch')
+    }
     
     // Verificar bloqueio apenas após 8 segundos (mais tempo para carregar)
     blockCheckTimeoutRef.current = setTimeout(() => {
