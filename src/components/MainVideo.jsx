@@ -10,6 +10,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [isBlocked, setIsBlocked] = useState(false) // Estado para detectar bloqueio
   const [useBlobUrl, setUseBlobUrl] = useState(false) // Estado para rastrear se estamos usando blob URL
   const videoRef = useRef(null)
+  const isLoadingViaFetchRef = useRef(false) // Ref para evitar múltiplas chamadas simultâneas
   const progressRef = useRef(0) // Ref para rastrear progresso atual
   const intervalRef = useRef(null) // Ref para o intervalo
   const blockCheckTimeoutRef = useRef(null) // Ref para timeout de verificação de bloqueio
@@ -163,6 +164,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
   // Função para tentar carregar vídeo via fetch/blob URL (bypass bloqueador)
   const loadVideoViaFetch = async (videoUrl) => {
+    // Evitar múltiplas chamadas simultâneas
+    if (isLoadingViaFetchRef.current) {
+      console.log('⏸️ Carregamento via fetch já em andamento, ignorando...')
+      return false
+    }
+    
+    isLoadingViaFetchRef.current = true
+    
     try {
       console.log('🔄 Tentando carregar vídeo via fetch (bypass bloqueador):', videoUrl)
       const response = await fetch(videoUrl, {
@@ -194,10 +203,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
       
       // Remover todas as tags <source> antes de definir blob URL
+      // IMPORTANTE: Verificar se ainda existem e se estão no DOM
       const sources = video.querySelectorAll('source')
       sources.forEach(source => {
-        console.log('🗑️ Removendo source tag:', source.src)
-        source.remove()
+        // Verificar se o source ainda está no DOM antes de remover
+        if (source.parentNode === video) {
+          console.log('🗑️ Removendo source tag:', source.src)
+          source.remove()
+        }
       })
       
       // Aguardar um pouco antes de definir o src para garantir que as sources foram removidas
@@ -251,6 +264,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             }, 50)
             
             clearTimeout(timeout)
+            isLoadingViaFetchRef.current = false // Resetar flag após sucesso
             resolve(true)
           }
         }
@@ -288,6 +302,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             }, 50)
             
             clearTimeout(timeout)
+            isLoadingViaFetchRef.current = false // Resetar flag após sucesso
             resolve(true)
           }
         }
@@ -339,7 +354,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       })
     } catch (error) {
       console.error('❌ Erro ao carregar vídeo via fetch:', error)
+      isLoadingViaFetchRef.current = false
       return false
+    } finally {
+      // Resetar flag após um delay para permitir nova tentativa se necessário
+      // Isso é feito no finally para garantir que a flag seja resetada mesmo em caso de erro
+      setTimeout(() => {
+        isLoadingViaFetchRef.current = false
+      }, 1000)
     }
   }
 
