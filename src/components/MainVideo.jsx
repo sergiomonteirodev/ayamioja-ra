@@ -218,22 +218,30 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               readyState: video.readyState,
               networkState: video.networkState
             })
-            setIsBlocked(false)
-            setShowLoading(false)
-            setIsVideoPlaying(true)
             
-            // FORÇAR vídeo a aparecer via DOM
+            // IMPORTANTE: Garantir que isBlocked está false ANTES de esconder loading
+            setIsBlocked(false)
+            
+            // FORÇAR vídeo a aparecer via DOM IMEDIATAMENTE
             video.style.setProperty('opacity', '1', 'important')
             video.style.setProperty('visibility', 'visible', 'important')
             video.style.setProperty('display', 'block', 'important')
             video.style.setProperty('z-index', '999', 'important')
+            video.style.setProperty('position', 'absolute', 'important')
+            video.style.setProperty('width', '100%', 'important')
+            video.style.setProperty('height', '100%', 'important')
+            video.style.setProperty('object-fit', 'cover', 'important')
             
-            // Tentar reproduzir
+            // Esconder loading e mostrar vídeo
+            setShowLoading(false)
+            setIsVideoPlaying(true)
+            
+            // Tentar reproduzir imediatamente
             setTimeout(() => {
               video.play().catch(err => {
                 console.log('⚠️ Erro ao reproduzir blob:', err)
               })
-            }, 100)
+            }, 50)
             
             clearTimeout(timeout)
             resolve(true)
@@ -247,17 +255,25 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               readyState: video.readyState,
               networkState: video.networkState
             })
-            setIsBlocked(false)
-            setShowLoading(false)
-            setIsVideoPlaying(true)
             
-            // FORÇAR vídeo a aparecer via DOM
+            // IMPORTANTE: Garantir que isBlocked está false ANTES de esconder loading
+            setIsBlocked(false)
+            
+            // FORÇAR vídeo a aparecer via DOM IMEDIATAMENTE
             video.style.setProperty('opacity', '1', 'important')
             video.style.setProperty('visibility', 'visible', 'important')
             video.style.setProperty('display', 'block', 'important')
             video.style.setProperty('z-index', '999', 'important')
+            video.style.setProperty('position', 'absolute', 'important')
+            video.style.setProperty('width', '100%', 'important')
+            video.style.setProperty('height', '100%', 'important')
+            video.style.setProperty('object-fit', 'cover', 'important')
             
-            // Tentar reproduzir
+            // Esconder loading e mostrar vídeo
+            setShowLoading(false)
+            setIsVideoPlaying(true)
+            
+            // Tentar reproduzir imediatamente
             video.play().catch(err => {
               console.log('⚠️ Erro ao reproduzir blob:', err)
             })
@@ -334,22 +350,30 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.playsInline = true
     }
 
-    // Verificar bloqueio após 3 segundos se readyState ainda for 0
-    blockCheckTimeoutRef.current = setTimeout(() => {
-      if (video.readyState === 0 && video.networkState === 2) {
-        console.error('🚨 BLOQUEIO DETECTADO: Vídeo não recebeu dados após 3 segundos')
-        setIsBlocked(true)
-        
-        // Tentar carregar via fetch como fallback
-        const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
-        loadVideoViaFetch(videoUrl).then(success => {
-          if (success) {
-            setIsBlocked(false)
-            console.log('✅ Vídeo carregado com sucesso via fetch!')
-          }
-        })
+    // Tentar carregar via fetch IMEDIATAMENTE como método principal (não fallback)
+    // Isso evita problemas de bloqueio desde o início
+    const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
+    console.log('🚀 Tentando carregar vídeo via fetch como método principal')
+    loadVideoViaFetch(videoUrl).then(success => {
+      if (success) {
+        console.log('✅ Vídeo carregado com sucesso via fetch!')
+        // Não definir isBlocked aqui - já está false por padrão
+      } else {
+        console.warn('⚠️ Fetch falhou, tentando método tradicional')
+        // Só então tentar método tradicional
       }
-    }, 3000)
+    })
+    
+    // Verificar bloqueio apenas após 8 segundos (mais tempo para carregar)
+    blockCheckTimeoutRef.current = setTimeout(() => {
+      if (video.readyState === 0 && (video.networkState === 2 || video.networkState === 3)) {
+        console.error('🚨 BLOQUEIO DETECTADO: Vídeo não recebeu dados após 8 segundos')
+        // Só mostrar mensagem se realmente não carregou
+        if (video.readyState === 0) {
+          setIsBlocked(true)
+        }
+      }
+    }, 8000)
 
     // FORÇAR CARREGAMENTO IMEDIATO DO VÍDEO
     // Para Android, verificar networkState antes de chamar load()
@@ -565,13 +589,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       // Verificar se é erro de bloqueio (code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED ou rede)
       if (errorCode === 4 || video.networkState === 3) {
         console.error('🚨 ERRO: Vídeo bloqueado ou fonte não suportada!')
-        setIsBlocked(true)
         
-        // Tentar carregar via fetch/blob URL primeiro
+        // Tentar carregar via fetch/blob URL primeiro (SEM definir isBlocked ainda)
         const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
         loadVideoViaFetch(videoUrl).then(success => {
-          if (!success) {
-            // Se fetch também falhar, tentar URL absoluta normal
+          if (success) {
+            setIsBlocked(false)
+            console.log('✅ Vídeo carregado com sucesso via fetch após erro!')
+          } else {
+            // Só mostrar mensagem de bloqueio se fetch também falhar
+            setIsBlocked(true)
+            // Tentar URL absoluta normal como último recurso
             console.log('🔄 Tentando URL absoluta como fallback:', videoUrl)
             const source = video.querySelector('source')
             if (source) {
@@ -581,8 +609,6 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               video.src = videoUrl
               video.load()
             }
-          } else {
-            setIsBlocked(false)
           }
         })
       }
@@ -645,20 +671,25 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           console.warn('⚠️ NetworkState = 0 (EMPTY) - vídeo ainda não iniciou carregamento')
         } else if (video.readyState === 0 && video.networkState === 2) {
           // NetworkState 2 = LOADING mas readyState 0 = sem dados após alguns segundos indica bloqueio
+          // Aumentar timeout para 6 segundos para dar mais tempo
           setTimeout(() => {
             if (video.readyState === 0 && video.networkState === 2) {
-              console.error('🚨 POSSÍVEL BLOQUEIO: Vídeo está "carregando" mas sem receber dados')
-              setIsBlocked(true)
+              console.warn('⚠️ Vídeo ainda carregando após 6 segundos - tentando fetch')
               
-              // Tentar carregar via fetch
+              // Tentar carregar via fetch SEM definir isBlocked ainda
               const videoUrl = window.location.origin + '/ayamioja-ra/videos/anim_ayo.mp4'
               loadVideoViaFetch(videoUrl).then(success => {
                 if (success) {
                   setIsBlocked(false)
+                  console.log('✅ Vídeo carregado via fetch após delay!')
+                } else {
+                  // Só então mostrar mensagem de bloqueio
+                  console.error('🚨 POSSÍVEL BLOQUEIO: Vídeo não carregou mesmo via fetch')
+                  setIsBlocked(true)
                 }
               })
             }
-          }, 3000)
+          }, 6000)
         }
       }
       
