@@ -225,22 +225,22 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             // IMPORTANTE: Garantir que isBlocked está false ANTES de esconder loading
             setIsBlocked(false)
             
-            // FORÇAR vídeo a aparecer via DOM IMEDIATAMENTE
-            video.style.setProperty('opacity', '1', 'important')
-            video.style.setProperty('visibility', 'visible', 'important')
-            video.style.setProperty('display', 'block', 'important')
-            video.style.setProperty('z-index', '999', 'important')
-            video.style.setProperty('position', 'absolute', 'important')
-            video.style.setProperty('width', '100%', 'important')
-            video.style.setProperty('height', '100%', 'important')
-            video.style.setProperty('object-fit', 'cover', 'important')
-            
-            // Esconder loading e mostrar vídeo
+            // Esconder loading PRIMEIRO
             setShowLoading(false)
             setIsVideoPlaying(true)
             
-            // Tentar reproduzir imediatamente
+            // FORÇAR vídeo a aparecer via DOM IMEDIATAMENTE (após um pequeno delay)
             setTimeout(() => {
+              video.style.setProperty('opacity', '1', 'important')
+              video.style.setProperty('visibility', 'visible', 'important')
+              video.style.setProperty('display', 'block', 'important')
+              video.style.setProperty('z-index', '5', 'important') // Acima do loading (z-index: 4)
+              video.style.setProperty('position', 'absolute', 'important')
+              video.style.setProperty('width', '100%', 'important')
+              video.style.setProperty('height', '100%', 'important')
+              video.style.setProperty('object-fit', 'cover', 'important')
+              
+              // Tentar reproduzir após garantir visibilidade
               video.play().catch(err => {
                 console.log('⚠️ Erro ao reproduzir blob:', err)
               })
@@ -262,24 +262,26 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             // IMPORTANTE: Garantir que isBlocked está false ANTES de esconder loading
             setIsBlocked(false)
             
-            // FORÇAR vídeo a aparecer via DOM IMEDIATAMENTE
-            video.style.setProperty('opacity', '1', 'important')
-            video.style.setProperty('visibility', 'visible', 'important')
-            video.style.setProperty('display', 'block', 'important')
-            video.style.setProperty('z-index', '999', 'important')
-            video.style.setProperty('position', 'absolute', 'important')
-            video.style.setProperty('width', '100%', 'important')
-            video.style.setProperty('height', '100%', 'important')
-            video.style.setProperty('object-fit', 'cover', 'important')
-            
-            // Esconder loading e mostrar vídeo
+            // Esconder loading PRIMEIRO
             setShowLoading(false)
             setIsVideoPlaying(true)
             
-            // Tentar reproduzir imediatamente
-            video.play().catch(err => {
-              console.log('⚠️ Erro ao reproduzir blob:', err)
-            })
+            // FORÇAR vídeo a aparecer via DOM IMEDIATAMENTE (após um pequeno delay)
+            setTimeout(() => {
+              video.style.setProperty('opacity', '1', 'important')
+              video.style.setProperty('visibility', 'visible', 'important')
+              video.style.setProperty('display', 'block', 'important')
+              video.style.setProperty('z-index', '5', 'important') // Acima do loading (z-index: 4)
+              video.style.setProperty('position', 'absolute', 'important')
+              video.style.setProperty('width', '100%', 'important')
+              video.style.setProperty('height', '100%', 'important')
+              video.style.setProperty('object-fit', 'cover', 'important')
+              
+              // Tentar reproduzir após garantir visibilidade
+              video.play().catch(err => {
+                console.log('⚠️ Erro ao reproduzir blob:', err)
+              })
+            }, 50)
             
             clearTimeout(timeout)
             resolve(true)
@@ -1237,10 +1239,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             crossOrigin="anonymous"
             style={{ 
               // SEMPRE tentar mostrar vídeo - será forçado pelo useEffect se estiver pronto
-              opacity: showLoading ? 0.3 : 1, // 0.3 para ainda ser visível mas indicar loading
+              opacity: showLoading ? 0 : 1, // 0 quando loading para não interferir
               visibility: 'visible', // SEMPRE visible
               display: 'block', // SEMPRE block, nunca none
-              zIndex: 999, // z-index muito alto
+              zIndex: showLoading ? 2 : 5, // z-index acima do loading (4) quando não está carregando
               transition: 'opacity 0.3s ease',
               position: 'absolute',
               pointerEvents: showLoading ? 'none' : 'auto',
