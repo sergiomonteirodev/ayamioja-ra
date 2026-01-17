@@ -202,26 +202,20 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         return false
       }
       
-      // Remover todas as tags <source> antes de definir blob URL
-      // IMPORTANTE: Verificar se ainda existem e se estão no DOM
-      const sources = video.querySelectorAll('source')
-      sources.forEach(source => {
-        // Verificar se o source ainda está no DOM antes de remover
-        if (source.parentNode === video) {
-          console.log('🗑️ Removendo source tag:', source.src)
-          source.remove()
-        }
-      })
+      // Marcar que estamos usando blob URL (isso evitará React criar tag <source>)
+      setUseBlobUrl(true)
       
-      // Aguardar um pouco antes de definir o src para garantir que as sources foram removidas
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Limpar qualquer src anterior do vídeo para evitar conflitos
+      if (video.src) {
+        video.src = ''
+      }
+      
+      // Aguardar um tick para React processar a mudança de estado
+      await new Promise(resolve => setTimeout(resolve, 10))
       
       // Definir blob URL diretamente no elemento vídeo
       video.src = blobUrl
       console.log('📹 Blob URL definida no vídeo:', video.src)
-      
-      // Marcar que estamos usando blob URL (isso evitará recriar a tag <source> no render)
-      setUseBlobUrl(true)
       
       // Remover crossOrigin quando usar blob (não é necessário)
       video.removeAttribute('crossorigin')
