@@ -298,6 +298,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         console.log('🔄 Chamando video.load() com blob URL')
         video.load()
         
+        // Verificar se já está pronto imediatamente após load()
+        setTimeout(() => {
+          if (!resolved && video.readyState >= 1) {
+            console.log('✅ Vídeo blob já está pronto após load() - forçando visibilidade')
+            handleLoadedMetadata()
+          }
+        }, 500)
+        
         // Limpar blob URL quando vídeo terminar
         video.addEventListener('ended', () => {
           console.log('🧹 Revogando blob URL após término do vídeo')
