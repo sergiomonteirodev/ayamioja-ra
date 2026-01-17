@@ -22,6 +22,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
   const isAndroidChrome = isAndroid && isChrome
 
+  // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
+  const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
+
   // Detectar interação do usuário para ativar áudio em dispositivos Apple
   useEffect(() => {
     if (!isAppleDevice) return
@@ -352,7 +355,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     // Tentar carregar via fetch IMEDIATAMENTE como método principal (não fallback)
     // Isso evita problemas de bloqueio desde o início
-    const videoUrl = '/videos/anim_ayo.mp4'
+    const videoUrl = videoPath
     console.log('🚀 Tentando carregar vídeo via fetch como método principal')
     loadVideoViaFetch(videoUrl).then(success => {
       if (success) {
@@ -591,7 +594,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         console.error('🚨 ERRO: Vídeo bloqueado ou fonte não suportada!')
         
         // Tentar carregar via fetch/blob URL primeiro (SEM definir isBlocked ainda)
-        const videoUrl = '/videos/anim_ayo.mp4'
+        const videoUrl = videoPath
         loadVideoViaFetch(videoUrl).then(success => {
           if (success) {
             setIsBlocked(false)
@@ -658,7 +661,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           console.error('   - Problema de CORS')
           
           // Tentar URL alternativa
-          const alternativeUrl = '/videos/anim_ayo.mp4'
+          const alternativeUrl = videoPath
           if (!currentSrc.includes(alternativeUrl)) {
             console.log('🔄 Tentando URL alternativa:', alternativeUrl)
             const source = video.querySelector('source')
@@ -677,7 +680,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               console.warn('⚠️ Vídeo ainda carregando após 6 segundos - tentando fetch')
               
               // Tentar carregar via fetch SEM definir isBlocked ainda
-              const videoUrl = '/videos/anim_ayo.mp4'
+              const videoUrl = videoPath
               loadVideoViaFetch(videoUrl).then(success => {
                 if (success) {
                   setIsBlocked(false)
@@ -1186,7 +1189,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
                       setIsBlocked(false)
                       const video = videoRef.current
                       if (video) {
-                        const videoUrl = '/videos/anim_ayo.mp4'
+                        const videoUrl = videoPath
                         loadVideoViaFetch(videoUrl)
                       }
                     }}
@@ -1246,7 +1249,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               objectFit: 'cover' // Garantir que o vídeo preencha o espaço
             }}
           >
-            <source src="/videos/anim_ayo.mp4" type="video/mp4" />
+            <source src={videoPath} type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
           </video>
           
