@@ -2732,7 +2732,7 @@ const ScanPage = () => {
             height="0.8"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
-            visible="true"
+            visible="false"
           ></a-video>
         </a-entity>
 
@@ -2745,7 +2745,7 @@ const ScanPage = () => {
             height="0.8"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
-            visible="true"
+            visible="false"
             loop="true"
           ></a-video>
         </a-entity>
@@ -2760,7 +2760,7 @@ const ScanPage = () => {
             height="0.8"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
-            visible="true"
+            visible="false"
             loop="true"
           ></a-video>
         </a-entity>
