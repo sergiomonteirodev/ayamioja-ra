@@ -2577,11 +2577,23 @@ body.modal-open {
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
         -webkit-transform: translate(-50%, -50%) !important;
-        z-index: 2 !important;
+        z-index: 10 !important; /* MOBILE: z-index 10 para garantir visibilidade */
         margin: 0 !important;
         padding: 0 !important;
         opacity: 1 !important; /* Garantir que o vídeo seja visível */
         visibility: visible !important; /* Garantir visibilidade */
+        display: block !important; /* Forçar display block */
+    }
+    
+    /* Regra específica para garantir main-video visível no mobile Android/iOS */
+    @media screen and (max-width: 768px) {
+        #main-video.main-video {
+            z-index: 10 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+            position: absolute !important;
+        }
     }
     
     .video-loading {
