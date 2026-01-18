@@ -67,8 +67,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       if (isMobile) {
         video.setAttribute('webkit-playsinline', 'true')
         video.setAttribute('x5-playsinline', 'true') // Para Android/WeChat
-        video.setAttribute('preload', 'metadata') // Mobile: metadata em vez de auto
-        video.preload = 'metadata'
+        // MUDANÇA: usar 'auto' mesmo no mobile para garantir carregamento
+        video.setAttribute('preload', 'auto')
+        video.preload = 'auto'
       } else {
         video.setAttribute('preload', 'auto')
         video.preload = 'auto'
@@ -651,7 +652,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             playsInline
             webkit-playsinline="true"
             x5-playsinline="true"
-            preload={isMobile ? "metadata" : "auto"}
+            preload="auto"
             loop={false}
             style={{
               opacity: isMobile ? 1 : (showLoading ? 0 : 1), // MOBILE: sempre 1
