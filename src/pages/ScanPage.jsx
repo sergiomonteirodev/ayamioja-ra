@@ -45,23 +45,8 @@ const ScanPage = () => {
     console.log('Toggle Audio:', active)
   }
 
-  const updateCanvasVisibility = (showCanvas) => {
-    const scene = sceneRef.current
-    if (!scene) return
-
-    const canvas = scene.querySelector('canvas')
-    if (!canvas) return
-
-    const targetOpacity = showCanvas ? '1' : '0'
-    canvas.style.setProperty('opacity', targetOpacity, 'important')
-    canvas.style.setProperty('pointer-events', showCanvas ? 'auto' : 'none', 'important')
-    canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
-    if (!showCanvas) {
-      canvas.style.setProperty('background-color', 'transparent', 'important')
-      canvas.style.setProperty('background', 'transparent', 'important')
-    }
-    console.log(`🎛️ Canvas ${showCanvas ? 'visível' : 'oculto'} (opacity ${targetOpacity})`)
-  }
+  // REMOVIDO: updateCanvasVisibility - deixar MindAR gerenciar canvas completamente
+  // O canvas deve sempre estar transparente e visível, sem manipulações condicionais
 
   const handleBackClick = () => {
     // Garantir que a URL tenha a barra no final para carregar o background corretamente
@@ -311,7 +296,7 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // Forçar transparência Android continuamente
+  // SIMPLIFICADO: Forçar transparência do canvas no Android - SEM interferir com vídeos AR
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
@@ -323,20 +308,45 @@ const ScanPage = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
       
-      // Forçar transparência via CSS
+      // FORÇAR canvas sempre transparente - SEM manipular opacity baseado em targets
       canvas.style.setProperty('background-color', 'transparent', 'important')
       canvas.style.setProperty('background', 'transparent', 'important')
-      canvas.style.setProperty('opacity', '1', 'important')
+      canvas.style.setProperty('opacity', '1', 'important') // SEMPRE visível
       canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
       canvas.style.setProperty('pointer-events', 'none', 'important')
+      canvas.style.setProperty('z-index', '1', 'important') // Acima dos vídeos AR (-1)
       
       // Forçar via WebGL
       const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
       if (gl) {
-        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+        gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA totalmente transparente
       }
       
-      // Garantir que o vídeo esteja atrás
+      // GARANTIR que vídeos AR (video1, video2, video3) fiquem visíveis com z-index correto
+      const video1 = document.getElementById('video1')
+      const video2 = document.getElementById('video2')
+      const video3 = document.getElementById('video3')
+      
+      if (video1) {
+        video1.style.setProperty('z-index', '-1', 'important')
+        video1.style.setProperty('opacity', '1', 'important')
+        video1.style.setProperty('visibility', 'visible', 'important')
+        video1.style.setProperty('display', 'block', 'important')
+      }
+      if (video2) {
+        video2.style.setProperty('z-index', '-1', 'important')
+        video2.style.setProperty('opacity', '1', 'important')
+        video2.style.setProperty('visibility', 'visible', 'important')
+        video2.style.setProperty('display', 'block', 'important')
+      }
+      if (video3) {
+        video3.style.setProperty('z-index', '-1', 'important')
+        video3.style.setProperty('opacity', '1', 'important')
+        video3.style.setProperty('visibility', 'visible', 'important')
+        video3.style.setProperty('display', 'block', 'important')
+      }
+      
+      // Vídeo da câmera fica atrás de tudo
       const mindarVideo = document.querySelector('#arVideo') || 
                           Array.from(document.querySelectorAll('video')).find(v => 
                             v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
