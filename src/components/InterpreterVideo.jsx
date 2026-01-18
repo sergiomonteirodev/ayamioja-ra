@@ -126,6 +126,9 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
     }
   }, [librasActive, videoState?.isPlaying, customVideoSrc, isHomePage, videoState?.currentTime])
 
+  // Detectar mobile para usar CSS responsivo ao invés de estilos inline fixos
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
   return (
     <div 
       className="interpreter-container" 
@@ -133,8 +136,8 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
         position: 'fixed',
         bottom: '72px',
         left: '20px',
-        width: '300px',
-        height: '300px',
+        // Remover width e height inline para permitir que CSS responsivo funcione
+        // width e height serão controlados pelo CSS (.interpreter-container)
         zIndex: 150,
         visibility: (isVisible || showPausedMessage) ? 'visible' : 'hidden',
         opacity: isVisible ? 1 : 0,
