@@ -336,29 +336,9 @@ const ScanPage = () => {
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
       }
       
-      // GARANTIR que vídeos AR (video1, video2, video3) fiquem visíveis com z-index correto
-      const video1 = document.getElementById('video1')
-      const video2 = document.getElementById('video2')
-      const video3 = document.getElementById('video3')
-      
-      if (video1) {
-        video1.style.setProperty('z-index', '-1', 'important')
-        video1.style.setProperty('opacity', '1', 'important')
-        video1.style.setProperty('visibility', 'visible', 'important')
-        video1.style.setProperty('display', 'block', 'important')
-      }
-      if (video2) {
-        video2.style.setProperty('z-index', '-1', 'important')
-        video2.style.setProperty('opacity', '1', 'important')
-        video2.style.setProperty('visibility', 'visible', 'important')
-        video2.style.setProperty('display', 'block', 'important')
-      }
-      if (video3) {
-        video3.style.setProperty('z-index', '-1', 'important')
-        video3.style.setProperty('opacity', '1', 'important')
-        video3.style.setProperty('visibility', 'visible', 'important')
-        video3.style.setProperty('display', 'block', 'important')
-      }
+      // NÃO manipular vídeos AR aqui - eles são gerenciados pelo A-Frame/MindAR
+      // Os vídeos AR (video1, video2, video3) são renderizados dentro do a-video,
+      // não precisam de z-index manual
       
       // Vídeo da câmera fica atrás de tudo
       const mindarVideo = document.querySelector('#arVideo') || 
@@ -1710,13 +1690,22 @@ const ScanPage = () => {
           })
           
           target1.addEventListener('targetLost', () => {
-            console.log('❌ Target 1 perdido')
+            console.log('❌ Target 1 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
             const video = document.getElementById('video2')
             if (video) {
               video.pause()
+              video.currentTime = 0 // Resetar para início
+              console.log('✅ Vídeo 2 pausado e resetado')
+            }
+            
+            // Garantir que o a-video esteja oculto
+            const videoPlane = target1.querySelector('a-video')
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'false')
+              console.log('✅ a-video do target 1 oculto')
             }
           })
         }
