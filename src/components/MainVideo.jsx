@@ -58,25 +58,59 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   // Forçar carregamento e visibilidade do vídeo quando componente monta
   useEffect(() => {
     const video = videoRef.current
-    if (!video) return
+    if (!video) {
+      console.warn('⚠️ MainVideo: videoRef.current é null')
+      return
+    }
+
+    console.log('🎬 MainVideo: Verificando vídeo no mount:', {
+      src: video.src || videoPath,
+      readyState: video.readyState,
+      networkState: video.networkState,
+      width: video.offsetWidth,
+      height: video.offsetHeight,
+      computedStyle: {
+        display: window.getComputedStyle(video).display,
+        visibility: window.getComputedStyle(video).visibility,
+        opacity: window.getComputedStyle(video).opacity,
+        zIndex: window.getComputedStyle(video).zIndex
+      }
+    })
 
     // Garantir que src está definido
     if (!video.src && videoPath) {
       video.src = videoPath
+      console.log('✅ MainVideo: src definido:', videoPath)
     }
 
     // FORÇAR visibilidade IMEDIATAMENTE
     video.style.setProperty('opacity', '1', 'important')
     video.style.setProperty('visibility', 'visible', 'important')
     video.style.setProperty('display', 'block', 'important')
+    video.style.setProperty('z-index', '15', 'important')
     video.style.opacity = '1'
     video.style.visibility = 'visible'
     video.style.display = 'block'
+    video.style.zIndex = '15'
 
     // Forçar load() para garantir que o vídeo comece a carregar
     try {
       video.load()
       console.log('✅ MainVideo: video.load() chamado no mount')
+      
+      // Verificar após um tempo se o vídeo começou a carregar
+      setTimeout(() => {
+        console.log('📊 MainVideo: Estado após load():', {
+          readyState: video.readyState,
+          networkState: video.networkState,
+          src: video.src,
+          width: video.offsetWidth,
+          height: video.offsetHeight,
+          computedDisplay: window.getComputedStyle(video).display,
+          computedVisibility: window.getComputedStyle(video).visibility,
+          computedOpacity: window.getComputedStyle(video).opacity
+        })
+      }, 500)
     } catch (e) {
       console.error('❌ MainVideo: Erro ao chamar video.load():', e)
     }
@@ -88,28 +122,42 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     if (!video) return
 
     const handleCanPlay = () => {
+      console.log('✅ MainVideo: canplay event - vídeo pode reproduzir')
       setShowLoading(false)
       // Forçar visibilidade quando vídeo pode reproduzir
       if (video) {
         video.style.setProperty('opacity', '1', 'important')
         video.style.setProperty('visibility', 'visible', 'important')
         video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '15', 'important')
         video.style.opacity = '1'
         video.style.visibility = 'visible'
         video.style.display = 'block'
+        video.style.zIndex = '15'
+        console.log('✅ MainVideo: Visibilidade forçada no canplay', {
+          width: video.offsetWidth,
+          height: video.offsetHeight
+        })
       }
     }
 
     const handleLoadedData = () => {
+      console.log('✅ MainVideo: loadeddata event - dados carregados')
       setShowLoading(false)
       // Forçar visibilidade quando dados carregam
       if (video) {
         video.style.setProperty('opacity', '1', 'important')
         video.style.setProperty('visibility', 'visible', 'important')
         video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '15', 'important')
         video.style.opacity = '1'
         video.style.visibility = 'visible'
         video.style.display = 'block'
+        video.style.zIndex = '15'
+        console.log('✅ MainVideo: Visibilidade forçada no loadeddata', {
+          width: video.offsetWidth,
+          height: video.offsetHeight
+        })
       }
     }
 
