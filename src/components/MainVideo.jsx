@@ -110,9 +110,30 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           computedVisibility: window.getComputedStyle(video).visibility,
           computedOpacity: window.getComputedStyle(video).opacity
         })
+        
+        // FORÇAR visibilidade novamente após 500ms
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '15', 'important')
       }, 500)
     } catch (e) {
       console.error('❌ MainVideo: Erro ao chamar video.load():', e)
+    }
+
+    // FORÇAR visibilidade periodicamente para garantir que vídeo sempre apareça
+    const forceVisibilityInterval = setInterval(() => {
+      const v = videoRef.current
+      if (v) {
+        v.style.setProperty('opacity', '1', 'important')
+        v.style.setProperty('visibility', 'visible', 'important')
+        v.style.setProperty('display', 'block', 'important')
+        v.style.setProperty('z-index', '15', 'important')
+      }
+    }, 200)
+
+    return () => {
+      clearInterval(forceVisibilityInterval)
     }
   }, [videoPath])
 
