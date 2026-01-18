@@ -1428,7 +1428,7 @@ body.modal-open {
     }
     
     .replay-button {
-        z-index: 10 !important;
+        z-index: 20 !important; /* Acima do vídeo (z-index 15) */
         pointer-events: auto !important;
         -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         position: absolute !important;
@@ -1437,6 +1437,9 @@ body.modal-open {
         -webkit-transform: translate(-50%, -50%) !important;
         transform: translate(-50%, -50%) !important;
         margin: 0 !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     video {
