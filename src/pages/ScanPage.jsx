@@ -2671,24 +2671,25 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* A-Frame Scene */}
+      {/* A-Frame Scene - SIMPLIFICADO: deixar MindAR gerenciar completamente */}
       <a-scene 
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: ${/Android/i.test(navigator.userAgent) ? 'false' : 'true'}; powerPreference: high-performance;`}
+        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: false; powerPreference: high-performance;`}
         embedded
-        background="color: #000000; opacity: 0"
+        background="color: transparent; opacity: 0"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100vw',
           height: '100vh',
-          zIndex: 1, // Acima do vídeo da câmera (-1), mas transparente
+          zIndex: 1,
           pointerEvents: 'none',
           backgroundColor: 'transparent',
+          background: 'transparent',
           opacity: 1
         }}
       >
