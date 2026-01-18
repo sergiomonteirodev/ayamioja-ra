@@ -1634,11 +1634,39 @@ const ScanPage = () => {
                 // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target0.querySelector('a-video')
                 if (videoPlane) {
+                  // CRÍTICO: Garantir que o a-video esteja visível
                   videoPlane.setAttribute('visible', 'true')
+                  
                   // Garantir que o material está configurado corretamente
-                  if (!videoPlane.getAttribute('material') || !videoPlane.getAttribute('material').includes('shader: flat')) {
+                  const currentMaterial = videoPlane.getAttribute('material')
+                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
                     videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
                   }
+                  
+                  // Garantir que o vídeo HTML está tocando
+                  console.log('📹 Estado do vídeo HTML:', {
+                    id: video.id,
+                    paused: video.paused,
+                    readyState: video.readyState,
+                    currentTime: video.currentTime,
+                    duration: video.duration,
+                    muted: video.muted
+                  })
+                  
+                  // Verificar se o a-video está realmente visível no DOM
+                  setTimeout(() => {
+                    const isVisible = videoPlane.getAttribute('visible')
+                    const material = videoPlane.getAttribute('material')
+                    const object3D = videoPlane.object3D
+                    console.log('🔍 Verificação do a-video após 500ms:', {
+                      visible: isVisible,
+                      material: material,
+                      object3DExists: !!object3D,
+                      object3DVisible: object3D?.visible,
+                      object3DMatrixWorld: object3D?.matrixWorld?.elements
+                    })
+                  }, 500)
+                  
                   console.log('✅ a-video do target 0 tornado visível e configurado', {
                     visible: videoPlane.getAttribute('visible'),
                     material: videoPlane.getAttribute('material')
@@ -1709,11 +1737,39 @@ const ScanPage = () => {
                 // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target1.querySelector('a-video')
                 if (videoPlane) {
+                  // CRÍTICO: Garantir que o a-video esteja visível
                   videoPlane.setAttribute('visible', 'true')
+                  
                   // Garantir que o material está configurado corretamente
-                  if (!videoPlane.getAttribute('material') || !videoPlane.getAttribute('material').includes('shader: flat')) {
+                  const currentMaterial = videoPlane.getAttribute('material')
+                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
                     videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
                   }
+                  
+                  // Garantir que o vídeo HTML está tocando
+                  console.log('📹 Estado do vídeo HTML:', {
+                    id: video.id,
+                    paused: video.paused,
+                    readyState: video.readyState,
+                    currentTime: video.currentTime,
+                    duration: video.duration,
+                    muted: video.muted
+                  })
+                  
+                  // Verificar se o a-video está realmente visível no DOM
+                  setTimeout(() => {
+                    const isVisible = videoPlane.getAttribute('visible')
+                    const material = videoPlane.getAttribute('material')
+                    const object3D = videoPlane.object3D
+                    console.log('🔍 Verificação do a-video após 500ms:', {
+                      visible: isVisible,
+                      material: material,
+                      object3DExists: !!object3D,
+                      object3DVisible: object3D?.visible,
+                      object3DMatrixWorld: object3D?.matrixWorld?.elements
+                    })
+                  }, 500)
+                  
                   console.log('✅ a-video do target 1 tornado visível e configurado', {
                     visible: videoPlane.getAttribute('visible'),
                     material: videoPlane.getAttribute('material')
@@ -1781,11 +1837,39 @@ const ScanPage = () => {
                 // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target2.querySelector('a-video')
                 if (videoPlane) {
+                  // CRÍTICO: Garantir que o a-video esteja visível
                   videoPlane.setAttribute('visible', 'true')
+                  
                   // Garantir que o material está configurado corretamente
-                  if (!videoPlane.getAttribute('material') || !videoPlane.getAttribute('material').includes('shader: flat')) {
+                  const currentMaterial = videoPlane.getAttribute('material')
+                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
                     videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
                   }
+                  
+                  // Garantir que o vídeo HTML está tocando
+                  console.log('📹 Estado do vídeo HTML:', {
+                    id: video.id,
+                    paused: video.paused,
+                    readyState: video.readyState,
+                    currentTime: video.currentTime,
+                    duration: video.duration,
+                    muted: video.muted
+                  })
+                  
+                  // Verificar se o a-video está realmente visível no DOM
+                  setTimeout(() => {
+                    const isVisible = videoPlane.getAttribute('visible')
+                    const material = videoPlane.getAttribute('material')
+                    const object3D = videoPlane.object3D
+                    console.log('🔍 Verificação do a-video após 500ms:', {
+                      visible: isVisible,
+                      material: material,
+                      object3DExists: !!object3D,
+                      object3DVisible: object3D?.visible,
+                      object3DMatrixWorld: object3D?.matrixWorld?.elements
+                    })
+                  }, 500)
+                  
                   console.log('✅ a-video do target 2 tornado visível e configurado', {
                     visible: videoPlane.getAttribute('visible'),
                     material: videoPlane.getAttribute('material')
