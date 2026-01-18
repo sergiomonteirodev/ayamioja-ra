@@ -55,7 +55,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [onVideoStateChange])
 
-  // Forçar carregamento do vídeo quando componente monta
+  // Forçar carregamento e visibilidade do vídeo quando componente monta
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -64,6 +64,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     if (!video.src && videoPath) {
       video.src = videoPath
     }
+
+    // FORÇAR visibilidade IMEDIATAMENTE
+    video.style.setProperty('opacity', '1', 'important')
+    video.style.setProperty('visibility', 'visible', 'important')
+    video.style.setProperty('display', 'block', 'important')
+    video.style.opacity = '1'
+    video.style.visibility = 'visible'
+    video.style.display = 'block'
 
     // Forçar load() para garantir que o vídeo comece a carregar
     try {
@@ -81,10 +89,28 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handleCanPlay = () => {
       setShowLoading(false)
+      // Forçar visibilidade quando vídeo pode reproduzir
+      if (video) {
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+      }
     }
 
     const handleLoadedData = () => {
       setShowLoading(false)
+      // Forçar visibilidade quando dados carregam
+      if (video) {
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+      }
     }
 
     const handleEnded = () => {
@@ -157,6 +183,13 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             x5-playsinline="true"
             preload="auto"
             loop={false}
+            style={{
+              opacity: 1,
+              visibility: 'visible',
+              display: 'block',
+              zIndex: 15,
+              position: 'absolute'
+            }}
           >
             <source src={videoPath} type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
