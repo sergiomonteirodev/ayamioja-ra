@@ -399,7 +399,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)'
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                visibility: 'visible',
+                opacity: 1
               }}
             >
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -408,9 +411,6 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               Assistir Novamente
             </button>
           )}
-          
-          {/* Debug: Mostrar estado */}
-          {console.log('🔍 MainVideo Render - showReplay:', showReplay, 'hasEnded:', hasEnded)}
         </div>
       </div>
     </section>
