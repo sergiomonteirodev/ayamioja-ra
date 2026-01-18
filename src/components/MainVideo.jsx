@@ -55,6 +55,25 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [onVideoStateChange])
 
+  // Forçar carregamento do vídeo quando componente monta
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    // Garantir que src está definido
+    if (!video.src && videoPath) {
+      video.src = videoPath
+    }
+
+    // Forçar load() para garantir que o vídeo comece a carregar
+    try {
+      video.load()
+      console.log('✅ MainVideo: video.load() chamado no mount')
+    } catch (e) {
+      console.error('❌ MainVideo: Erro ao chamar video.load():', e)
+    }
+  }, [videoPath])
+
   // Event listeners simples para loading
   useEffect(() => {
     const video = videoRef.current
