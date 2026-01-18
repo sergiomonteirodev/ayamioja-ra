@@ -226,8 +226,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
 
     const handleEnded = () => {
+      console.log('✅ MainVideo: ended event - vídeo terminou')
       setShowReplay(true)
       setHasEnded(true)
+      console.log('✅ MainVideo: Botão replay deve aparecer agora')
     }
 
     const handleProgress = () => {
