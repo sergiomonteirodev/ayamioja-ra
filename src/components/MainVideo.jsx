@@ -174,16 +174,47 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
     }
 
+    const handleError = (e) => {
+      console.error('❌ MainVideo: Erro ao carregar vídeo:', {
+        error: video.error,
+        code: video.error?.code,
+        message: video.error?.message,
+        networkState: video.networkState,
+        src: video.src
+      })
+      setShowLoading(false)
+    }
+
+    const handleLoadedMetadata = () => {
+      console.log('✅ MainVideo: loadedmetadata - metadados carregados')
+      setShowLoading(false)
+      // Forçar visibilidade também aqui
+      if (video) {
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '15', 'important')
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        video.style.zIndex = '15'
+      }
+    }
+
     video.addEventListener('canplay', handleCanPlay)
     video.addEventListener('loadeddata', handleLoadedData)
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
     video.addEventListener('ended', handleEnded)
     video.addEventListener('progress', handleProgress)
+    video.addEventListener('error', handleError)
 
     return () => {
       video.removeEventListener('canplay', handleCanPlay)
       video.removeEventListener('loadeddata', handleLoadedData)
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('progress', handleProgress)
+      video.removeEventListener('error', handleError)
     }
   }, [])
 
