@@ -63,17 +63,38 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       return
     }
 
+    // Verificar se vídeo está no DOM
+    if (!document.body.contains(video)) {
+      console.error('❌ MainVideo: Vídeo não está no DOM!')
+      return
+    }
+
+    // Verificar se há elementos cobrindo o vídeo
+    const rect = video.getBoundingClientRect()
+    const elementAtPoint = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    if (elementAtPoint && elementAtPoint !== video && !video.contains(elementAtPoint)) {
+      console.warn('⚠️ MainVideo: Elemento cobrindo o vídeo:', {
+        element: elementAtPoint,
+        tagName: elementAtPoint.tagName,
+        id: elementAtPoint.id,
+        className: elementAtPoint.className
+      })
+    }
+
     console.log('🎬 MainVideo: Verificando vídeo no mount:', {
       src: video.src || videoPath,
       readyState: video.readyState,
       networkState: video.networkState,
       width: video.offsetWidth,
       height: video.offsetHeight,
+      boundingRect: rect,
+      elementAtCenter: elementAtPoint?.tagName,
       computedStyle: {
         display: window.getComputedStyle(video).display,
         visibility: window.getComputedStyle(video).visibility,
         opacity: window.getComputedStyle(video).opacity,
-        zIndex: window.getComputedStyle(video).zIndex
+        zIndex: window.getComputedStyle(video).zIndex,
+        position: window.getComputedStyle(video).position
       }
     })
 
@@ -255,8 +276,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     <section className="circle-section">
       <div className="circular-text-container">
         <div className="main-circle">
-          {/* Loading Placeholder */}
-          {showLoading && !isMobile && (
+          {/* Loading Placeholder - DESABILITADO para garantir que não cubra o vídeo */}
+          {/* {showLoading && !isMobile && (
             <div id="video-loading" className="video-loading">
               <div className="loading-spinner"></div>
               <div className="loading-progress">
@@ -270,7 +291,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               </div>
               <p className="loading-text">Carregando vídeo...</p>
             </div>
-          )}
+          )} */}
           
           {/* Vídeo SIMPLES - sem complexidade desnecessária */}
           <video 
