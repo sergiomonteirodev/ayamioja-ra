@@ -628,8 +628,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     <section className="circle-section">
       <div className="circular-text-container">
         <div className="main-circle">
-          {/* Loading Placeholder */}
-          {showLoading && (
+          {/* Loading Placeholder - MOBILE: não exibir para evitar cobrir o vídeo */}
+          {showLoading && !isMobile && (
             <div id="video-loading" className="video-loading">
               <div className="loading-spinner"></div>
               <div className="loading-progress">
