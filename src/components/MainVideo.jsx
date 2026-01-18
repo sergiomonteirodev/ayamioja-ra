@@ -18,8 +18,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
   // Forçar carregamento do vídeo no mount inicial - múltiplas tentativas
   useEffect(() => {
+    console.log('🎬 MainVideo: Componente montado, iniciando carregamento...')
+    
     let attemptCount = 0
-    const maxAttempts = 10
+    const maxAttempts = 15 // Aumentado para mobile
     
     const forceLoadVideo = () => {
       attemptCount++
@@ -90,6 +92,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             src: video.src || source.src,
             paused: video.paused
           })
+          
+          // MOBILE: Se ainda não carregou após 500ms, tentar novamente
+          if (isMobile && video.readyState === 0 && attemptCount < maxAttempts) {
+            console.log('📱 Mobile: Vídeo ainda não carregou, tentando novamente...')
+            setTimeout(forceLoadVideo, 500)
+          }
         }, 500)
       } catch (e) {
         console.error('❌ Erro ao chamar video.load():', e)
@@ -103,13 +111,16 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const timer1 = setTimeout(forceLoadVideo, 50)
     const timer2 = setTimeout(forceLoadVideo, 200)
     const timer3 = setTimeout(forceLoadVideo, 500)
+    // MOBILE: Tentativa adicional após 1 segundo
+    const timer4 = isMobile ? setTimeout(forceLoadVideo, 1000) : null
 
     return () => {
       clearTimeout(timer1)
       clearTimeout(timer2)
       clearTimeout(timer3)
+      if (timer4) clearTimeout(timer4)
     }
-  }, []) // Executar apenas uma vez no mount
+  }, [isMobile]) // Adicionar isMobile como dependência para mobile
 
   // Ajustar volume baseado no toggle de audiodescrição
   useEffect(() => {
@@ -174,7 +185,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const handleLoadedData = () => {
       setLoadingProgress(100)
       setShowLoading(false)
-      // Forçar visibilidade do vídeo
+      // Forçar visibilidade do vídeo (MOBILE: com !important)
+      if (isMobile) {
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '5', 'important')
+        console.log('📱 Mobile: handleLoadedData - forçando visibilidade com !important')
+      }
       video.style.opacity = '1'
       video.style.visibility = 'visible'
       video.style.display = 'block'
@@ -184,7 +202,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const handleCanPlay = () => {
       setLoadingProgress(100)
       setShowLoading(false)
-      // Forçar visibilidade do vídeo
+      // Forçar visibilidade do vídeo (MOBILE: com !important)
+      if (isMobile) {
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '5', 'important')
+        console.log('📱 Mobile: handleCanPlay - forçando visibilidade com !important')
+      }
       video.style.opacity = '1'
       video.style.visibility = 'visible'
       video.style.display = 'block'
@@ -314,6 +339,51 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     return () => observer.disconnect()
   }, [isMobileChrome])
+
+  // MOBILE: Forçar visibilidade AGGRESSIVA - executar quando vídeo tiver metadados
+  useEffect(() => {
+    if (!isMobile) return
+    
+    const video = videoRef.current
+    if (!video) return
+
+    const forceMobileVisibility = () => {
+      // Se vídeo tem metadados (readyState >= 1), FORÇAR visibilidade IMEDIATAMENTE
+      if (video.readyState >= 1) {
+        setShowLoading(false)
+        // Forçar com !important via setProperty (sobrescreve tudo)
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '5', 'important')
+        // Também definir via style normal
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        video.style.zIndex = '5'
+        console.log('📱 Mobile AGGRESSIVE: Forçando visibilidade (readyState >= 1)')
+      }
+    }
+
+    // Verificar imediatamente
+    forceMobileVisibility()
+
+    // Listener para quando vídeo carregar metadados
+    const handleMetadata = () => {
+      console.log('📱 Mobile: Metadata carregado, forçando visibilidade')
+      forceMobileVisibility()
+    }
+
+    video.addEventListener('loadedmetadata', handleMetadata, { once: true })
+
+    // Verificar a cada 100ms (muito agressivo para mobile)
+    const interval = setInterval(forceMobileVisibility, 100)
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleMetadata)
+      clearInterval(interval)
+    }
+  }, [isMobile])
 
   // Listener de touch para mobile - força carregamento na primeira interação
   useEffect(() => {
@@ -461,14 +531,30 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [isMobile])
 
-  // Forçar visibilidade do vídeo periodicamente quando estiver pronto
+  // Forçar visibilidade do vídeo periodicamente quando estiver pronto - MOBILE AGGRESSIVE
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
     const checkAndForceVisibility = () => {
-      // Se vídeo tem metadados e está carregado, forçar visibilidade
-      if (video.readyState >= 1 && showLoading) {
+      // MOBILE: Forçar visibilidade IMEDIATA quando vídeo tiver metadados
+      if (isMobile && video.readyState >= 1) {
+        setShowLoading(false)
+        // Forçar estilos diretamente com !important via setProperty
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('z-index', '5', 'important')
+        // Também definir via style normal
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        video.style.zIndex = '5'
+        console.log('📱 Mobile: Forçando visibilidade AGGRESSIVA do vídeo (readyState >= 1)')
+      }
+      
+      // Desktop: comportamento normal
+      if (!isMobile && video.readyState >= 1 && showLoading) {
         setShowLoading(false)
         video.style.opacity = '1'
         video.style.visibility = 'visible'
@@ -477,9 +563,15 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         console.log('✅ Forçando visibilidade do vídeo (readyState >= 1)')
       }
       
-      // Se vídeo pode reproduzir, garantir visibilidade
+      // Se vídeo pode reproduzir, garantir visibilidade SEMPRE
       if (video.readyState >= 2) {
         setShowLoading(false)
+        if (isMobile) {
+          video.style.setProperty('opacity', '1', 'important')
+          video.style.setProperty('visibility', 'visible', 'important')
+          video.style.setProperty('display', 'block', 'important')
+          video.style.setProperty('z-index', '5', 'important')
+        }
         video.style.opacity = '1'
         video.style.visibility = 'visible'
         video.style.display = 'block'
@@ -490,13 +582,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     // Verificar imediatamente
     checkAndForceVisibility()
 
-    // Verificar periodicamente a cada 300ms (mais frequente)
-    const interval = setInterval(checkAndForceVisibility, 300)
+    // MOBILE: Verificar mais frequentemente (a cada 100ms)
+    // Desktop: a cada 300ms
+    const interval = setInterval(checkAndForceVisibility, isMobile ? 100 : 300)
 
     return () => {
       clearInterval(interval)
     }
-  }, [showLoading])
+  }, [showLoading, isMobile])
 
   const handleReplay = () => {
     const video = videoRef.current
@@ -542,7 +635,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             preload={isMobile ? "metadata" : "auto"}
             loop={false}
             style={{
-              opacity: showLoading ? 0 : 1,
+              opacity: isMobile ? 1 : (showLoading ? 0 : 1), // MOBILE: sempre 1
               visibility: 'visible',
               display: 'block',
               zIndex: showLoading ? 2 : 5,

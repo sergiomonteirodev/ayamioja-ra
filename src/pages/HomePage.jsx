@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import ToggleControls from '../components/ToggleControls'
 import MainVideo from '../components/MainVideo'
@@ -10,6 +11,34 @@ const HomePage = () => {
   const [librasActive, setLibrasActive] = useState(false)
   const [audioActive, setAudioActive] = useState(false)
   const [videoState, setVideoState] = useState(null)
+  const location = useLocation()
+  const mountedRef = useRef(false)
+  
+  // Forçar inicialização do vídeo quando a página é montada ou quando retorna à rota
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      console.log('🏠 HomePage montado pela primeira vez')
+      
+      // Forçar carregamento do vídeo após um pequeno delay para garantir que o DOM está pronto
+      const timer = setTimeout(() => {
+        const video = document.getElementById('main-video')
+        if (video && video.readyState === 0) {
+          console.log('🏠 HomePage: Forçando carregamento inicial do vídeo via DOM')
+          try {
+            video.load()
+            console.log('✅ HomePage: video.load() chamado via DOM')
+          } catch (e) {
+            console.error('❌ HomePage: Erro ao chamar video.load():', e)
+          }
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    } else {
+      console.log('🏠 HomePage: Retornou para a rota inicial')
+    }
+  }, [location.pathname])
 
   const handleLibrasToggle = (active) => {
     setLibrasActive(active)
