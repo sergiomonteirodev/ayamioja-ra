@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
 
 const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
-  const [showLoading, setShowLoading] = useState(true)
+  // MOBILE: Não usar showLoading para evitar problemas na primeira renderização
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  const [showLoading, setShowLoading] = useState(!isMobile) // Mobile: false desde o início
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
@@ -11,7 +13,6 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
 
   // Detectar mobile/Android/iOS para aplicar correções específicas
-  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   const isAndroid = /Android/i.test(navigator.userAgent)
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
   const isMobileChrome = isMobile && /Chrome/i.test(navigator.userAgent)
