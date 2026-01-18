@@ -316,6 +316,10 @@ const ScanPage = () => {
       canvas.style.setProperty('pointer-events', 'none', 'important')
       canvas.style.setProperty('z-index', '1', 'important') // Acima dos vídeos AR (-1)
       
+      // CRÍTICO: Garantir que o canvas não cubra elementos renderizados dentro dele
+      // O canvas renderiza a cena 3D, então o a-video DEVE estar sendo renderizado dentro dele
+      // O problema pode ser que o canvas está limpando com cor opaca
+      
       // Forçar via WebGL - CRÍTICO: sempre forçar clearColor transparente
       const gl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
       if (gl) {
@@ -2842,7 +2846,7 @@ const ScanPage = () => {
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: false; powerPreference: high-performance;`}
+        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: ${/Android/i.test(navigator.userAgent) ? 'false' : 'false'}; powerPreference: high-performance;`}
         embedded
         background="color: transparent; opacity: 0"
         style={{
