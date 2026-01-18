@@ -10,6 +10,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
   const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
 
+  // Detectar mobile/Android/iOS para aplicar correções específicas
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  const isAndroid = /Android/i.test(navigator.userAgent)
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const isMobileChrome = isMobile && /Chrome/i.test(navigator.userAgent)
+
   // Forçar carregamento do vídeo no mount inicial - múltiplas tentativas
   useEffect(() => {
     let attemptCount = 0
@@ -50,11 +56,20 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       // Forçar load() para garantir que o vídeo comece a carregar imediatamente
       console.log(`🚀 [Tentativa ${attemptCount}] Forçando carregamento inicial do vídeo:`, source.src)
       
-      // Garantir atributos necessários
+      // Garantir atributos necessários (especialmente para mobile)
       video.setAttribute('playsinline', '')
       video.playsInline = true
-      video.setAttribute('preload', 'auto')
-      video.preload = 'auto'
+      
+      // Atributos específicos para mobile
+      if (isMobile) {
+        video.setAttribute('webkit-playsinline', 'true')
+        video.setAttribute('x5-playsinline', 'true') // Para Android/WeChat
+        video.setAttribute('preload', 'metadata') // Mobile: metadata em vez de auto
+        video.preload = 'metadata'
+      } else {
+        video.setAttribute('preload', 'auto')
+        video.preload = 'auto'
+      }
       
       // SEMPRE definir src diretamente no elemento video (alguns navegadores não carregam apenas com source)
       if (source.src) {
@@ -264,6 +279,77 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [hasEnded])
 
+  // IntersectionObserver específico para mobile Chrome - força carregamento quando visível
+  useEffect(() => {
+    if (!isMobileChrome) return // Só para mobile Chrome
+    
+    const video = videoRef.current
+    if (!video) return
+
+    // Forçar carregamento quando entrar na viewport (mobile específico)
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && video.readyState === 0) {
+          console.log('📱 Mobile Chrome: Vídeo entrou na viewport, forçando carregamento')
+          
+          // Garantir atributos mobile
+          video.setAttribute('webkit-playsinline', 'true')
+          video.setAttribute('x5-playsinline', 'true')
+          video.playsInline = true
+          
+          // Forçar load
+          if (video.src) {
+            try {
+              video.load()
+              console.log('✅ Mobile Chrome: load() chamado via IntersectionObserver')
+            } catch (e) {
+              console.error('❌ Mobile Chrome: Erro no load():', e)
+            }
+          }
+        }
+      })
+    }, { threshold: 0 })
+
+    observer.observe(video)
+
+    return () => observer.disconnect()
+  }, [isMobileChrome])
+
+  // Listener de touch para mobile - força carregamento na primeira interação
+  useEffect(() => {
+    if (!isMobile) return
+
+    const handleFirstTouch = () => {
+      const video = videoRef.current
+      if (!video || video.readyState > 0) return
+      
+      console.log('👆 Mobile: Touch detectado, forçando carregamento do vídeo')
+      
+      // Garantir atributos mobile
+      video.setAttribute('webkit-playsinline', 'true')
+      video.setAttribute('x5-playsinline', 'true')
+      video.playsInline = true
+      
+      if (video.src) {
+        try {
+          video.load()
+          console.log('✅ Mobile: load() chamado via touch')
+        } catch (e) {
+          console.error('❌ Mobile: Erro no load() via touch:', e)
+        }
+      }
+    }
+
+    // Usar once para remover automaticamente após primeira interação
+    document.addEventListener('touchstart', handleFirstTouch, { once: true, passive: true })
+    document.addEventListener('touchend', handleFirstTouch, { once: true, passive: true })
+
+    return () => {
+      document.removeEventListener('touchstart', handleFirstTouch)
+      document.removeEventListener('touchend', handleFirstTouch)
+    }
+  }, [isMobile])
+
   // MutationObserver + IntersectionObserver para garantir que vídeo carregue
   useEffect(() => {
     const video = videoRef.current
@@ -282,6 +368,13 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           if (!video.src) {
             video.src = source.src
           }
+          
+          // Garantir atributos mobile se necessário
+          if (isMobile) {
+            video.setAttribute('webkit-playsinline', 'true')
+            video.setAttribute('x5-playsinline', 'true')
+          }
+          
           try {
             video.load()
             console.log('✅ load() chamado via MutationObserver')
@@ -312,6 +405,13 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               if (source && source.src && !v.src) {
                 v.src = source.src
               }
+              
+              // Garantir atributos mobile se necessário
+              if (isMobile) {
+                v.setAttribute('webkit-playsinline', 'true')
+                v.setAttribute('x5-playsinline', 'true')
+              }
+              
               try {
                 v.load()
                 console.log('✅ load() chamado via IntersectionObserver')
@@ -359,7 +459,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       intersectionObserver.disconnect()
       window.removeEventListener('load', handleWindowLoad)
     }
-  }, [])
+  }, [isMobile])
 
   // Forçar visibilidade do vídeo periodicamente quando estiver pronto
   useEffect(() => {
@@ -437,7 +537,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             className="main-video" 
             src={videoPath}
             playsInline
-            preload="auto"
+            webkit-playsinline="true"
+            x5-playsinline="true"
+            preload={isMobile ? "metadata" : "auto"}
             loop={false}
             style={{
               opacity: showLoading ? 0 : 1,
