@@ -10,8 +10,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
   const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
 
-  // Detectar mobile
+  // Detectar mobile e iOS
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
 
   // Função auxiliar para converter networkState em texto
   const networkStateText = (state) => {
@@ -260,6 +261,18 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
     }
 
+    // iOS FALLBACK: Verificar se vídeo terminou via timeupdate (iOS às vezes não dispara 'ended')
+    const handleTimeUpdate = () => {
+      if (video.duration > 0 && video.currentTime >= video.duration - 0.1) {
+        // Vídeo chegou ao fim (com margem de 0.1s)
+        if (!hasEnded) {
+          console.log('✅ MainVideo: iOS - Vídeo terminou detectado via timeupdate')
+          setShowReplay(true)
+          setHasEnded(true)
+        }
+      }
+    }
+
     const handleError = (e) => {
       const error = video.error
       let errorMessage = 'Erro desconhecido'
@@ -317,6 +330,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     video.addEventListener('ended', handleEnded)
     video.addEventListener('progress', handleProgress)
     video.addEventListener('error', handleError)
+    // iOS FALLBACK: Adicionar timeupdate para detectar fim do vídeo
+    video.addEventListener('timeupdate', handleTimeUpdate)
 
     return () => {
       video.removeEventListener('canplay', handleCanPlay)
@@ -325,8 +340,9 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('progress', handleProgress)
       video.removeEventListener('error', handleError)
+      video.removeEventListener('timeupdate', handleTimeUpdate)
     }
-  }, [])
+  }, [hasEnded])
 
   const handleReplay = () => {
     const video = videoRef.current
