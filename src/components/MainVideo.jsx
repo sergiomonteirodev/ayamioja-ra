@@ -682,10 +682,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               }
             }}
             style={{
-              opacity: isMobile ? 1 : (showLoading ? 0 : 1), // MOBILE: sempre 1
+              // MOBILE: sempre visível desde o início (sem depender de showLoading)
+              // Isso evita problemas de estado na primeira renderização
+              opacity: isMobile ? 1 : (showLoading ? 0 : 1),
               visibility: 'visible',
               display: 'block',
-              zIndex: showLoading ? 2 : 5,
+              zIndex: isMobile ? 5 : (showLoading ? 2 : 5), // MOBILE: sempre z-index 5
               width: '100%',
               height: '100%',
               objectFit: 'cover'
