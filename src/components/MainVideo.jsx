@@ -21,7 +21,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     console.log('🎬 MainVideo: Componente montado, iniciando carregamento...')
     
     let attemptCount = 0
-    const maxAttempts = 15 // Aumentado para mobile
+    const maxAttempts = 20 // Aumentado ainda mais para mobile
+    let loadExecuted = false // Flag para evitar múltiplos loads
     
     const forceLoadVideo = () => {
       attemptCount++
@@ -74,33 +75,51 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
       
       // SEMPRE definir src diretamente no elemento video (alguns navegadores não carregam apenas com source)
-      if (source.src) {
+      if (source.src && !video.src) {
         video.src = source.src
         console.log('✅ src definido diretamente no elemento video:', source.src)
-      }
-      
-      // Chamar load() explicitamente
-      try {
-        video.load()
-        console.log('✅ video.load() chamado com sucesso')
         
-        // Verificar se o vídeo começou a carregar
+        // AGUARDAR que o src seja realmente definido antes de chamar load()
+        // Usar setTimeout para garantir que o browser processou o src
         setTimeout(() => {
-          console.log('📊 Estado do vídeo após load():', {
-            readyState: video.readyState,
-            networkState: video.networkState,
-            src: video.src || source.src,
-            paused: video.paused
-          })
-          
-          // MOBILE: Se ainda não carregou após 500ms, tentar novamente
-          if (isMobile && video.readyState === 0 && attemptCount < maxAttempts) {
-            console.log('📱 Mobile: Vídeo ainda não carregou, tentando novamente...')
-            setTimeout(forceLoadVideo, 500)
+          if (!loadExecuted && video.src === source.src) {
+            loadExecuted = true
+            try {
+              video.load()
+              console.log('✅ video.load() chamado com sucesso (após src ser definido)')
+              
+              // Verificar se o vídeo começou a carregar
+              setTimeout(() => {
+                console.log('📊 Estado do vídeo após load():', {
+                  readyState: video.readyState,
+                  networkState: video.networkState,
+                  src: video.src || source.src,
+                  paused: video.paused
+                })
+                
+                // MOBILE: Se ainda não carregou após 500ms, tentar novamente
+                if (isMobile && video.readyState === 0 && attemptCount < maxAttempts && !loadExecuted) {
+                  loadExecuted = false // Reset flag para tentar novamente
+                  console.log('📱 Mobile: Vídeo ainda não carregou, tentando novamente...')
+                  setTimeout(forceLoadVideo, 500)
+                }
+              }, 500)
+            } catch (e) {
+              console.error('❌ Erro ao chamar video.load():', e)
+              loadExecuted = false // Reset em caso de erro
+            }
           }
-        }, 500)
-      } catch (e) {
-        console.error('❌ Erro ao chamar video.load():', e)
+        }, 50) // Pequeno delay para garantir que o src foi processado
+      } else if (video.src && !loadExecuted) {
+        // Se já tem src mas ainda não chamou load()
+        loadExecuted = true
+        try {
+          video.load()
+          console.log('✅ video.load() chamado com sucesso (src já estava definido)')
+        } catch (e) {
+          console.error('❌ Erro ao chamar video.load():', e)
+          loadExecuted = false
+        }
       }
     }
 
