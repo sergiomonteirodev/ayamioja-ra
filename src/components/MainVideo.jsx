@@ -699,21 +699,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               }
             }}
             style={{
-              // MOBILE: sempre visível desde o início com !important
+              // MOBILE: sempre visível desde o início
               opacity: isMobile ? 1 : (showLoading ? 0 : 1),
-              visibility: 'visible !important' as any,
+              visibility: 'visible',
               display: 'block',
-              zIndex: isMobile ? 10 : (showLoading ? 2 : 5), // MOBILE: z-index 10 para garantir que está acima de tudo
+              zIndex: isMobile ? 10 : (showLoading ? 2 : 5), // MOBILE: z-index 10 para ficar acima do loading overlay
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              // MOBILE: forçar todos os estilos diretamente
-              ...(isMobile && {
-                opacity: '1 !important' as any,
-                visibility: 'visible !important' as any,
-                display: 'block !important' as any,
-                zIndex: '10 !important' as any
-              })
+              objectFit: 'cover'
             }}
           >
             <source src={videoPath} type="video/mp4" />
