@@ -316,10 +316,24 @@ const ScanPage = () => {
       canvas.style.setProperty('pointer-events', 'none', 'important')
       canvas.style.setProperty('z-index', '1', 'important') // Acima dos vídeos AR (-1)
       
-      // Forçar via WebGL
-      const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+      // Forçar via WebGL - CRÍTICO: sempre forçar clearColor transparente
+      const gl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
       if (gl) {
-        gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA totalmente transparente
+        // CRÍTICO: Interceptar gl.clear() para SEMPRE usar clearColor transparente
+        if (!gl._clearIntercepted) {
+          gl._originalClear = gl.clear.bind(gl)
+          gl.clear = function(mask) {
+            // SEMPRE forçar clearColor transparente antes de limpar
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            gl._originalClear(mask)
+            // Forçar novamente após limpar para garantir
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          }
+          gl._clearIntercepted = true
+        }
+        gl.clearColor(0.0, 0.0, 0.0, 0.0)
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
       }
       
       // GARANTIR que vídeos AR (video1, video2, video3) fiquem visíveis com z-index correto
@@ -360,8 +374,8 @@ const ScanPage = () => {
     // Chamar imediatamente
     forceAndroidTransparency()
     
-    // Chamar continuamente a cada 100ms no Android
-    const interval = setInterval(forceAndroidTransparency, 100)
+    // Chamar continuamente a cada 50ms no Android (mais frequente para garantir)
+    const interval = setInterval(forceAndroidTransparency, 50)
     
     return () => clearInterval(interval)
   }, [cameraPermissionGranted])
