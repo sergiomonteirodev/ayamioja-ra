@@ -13,6 +13,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   // Detectar mobile
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
+  // Função auxiliar para converter networkState em texto
+  const networkStateText = (state) => {
+    switch (state) {
+      case 0: return 'NETWORK_EMPTY - Ainda não iniciou'
+      case 1: return 'NETWORK_IDLE - Ativo e selecionou recurso'
+      case 2: return 'NETWORK_LOADING - Está baixando'
+      case 3: return 'NETWORK_NO_SOURCE - Nenhum src encontrado'
+      default: return `Desconhecido: ${state}`
+    }
+  }
+
   // Ajustar volume baseado no toggle de audiodescrição
   useEffect(() => {
     const video = videoRef.current
@@ -217,12 +228,36 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
 
     const handleError = (e) => {
+      const error = video.error
+      let errorMessage = 'Erro desconhecido'
+      
+      if (error) {
+        switch (error.code) {
+          case error.MEDIA_ERR_ABORTED:
+            errorMessage = 'Download abortado pelo usuário'
+            break
+          case error.MEDIA_ERR_NETWORK:
+            errorMessage = 'Erro de rede ao tentar baixar o vídeo'
+            break
+          case error.MEDIA_ERR_DECODE:
+            errorMessage = 'Erro ao decodificar o vídeo'
+            break
+          case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = 'Formato de vídeo não suportado ou src não encontrado'
+            break
+          default:
+            errorMessage = 'Erro desconhecido'
+        }
+      }
+      
       console.error('❌ MainVideo: Erro ao carregar vídeo:', {
-        error: video.error,
-        code: video.error?.code,
-        message: video.error?.message,
+        error,
+        code: error?.code,
+        message: errorMessage,
         networkState: video.networkState,
-        src: video.src
+        readyState: video.readyState,
+        src: video.src,
+        currentSrc: video.currentSrc
       })
       setShowLoading(false)
     }
