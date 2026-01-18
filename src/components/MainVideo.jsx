@@ -654,6 +654,33 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             x5-playsinline="true"
             preload="auto"
             loop={false}
+            onLoadedMetadata={() => {
+              console.log('✅ onLoadedMetadata disparado')
+              setShowLoading(false)
+              if (isMobile && videoRef.current) {
+                videoRef.current.style.opacity = '1'
+                videoRef.current.style.visibility = 'visible'
+                videoRef.current.style.display = 'block'
+              }
+            }}
+            onCanPlay={() => {
+              console.log('✅ onCanPlay disparado')
+              setShowLoading(false)
+              if (isMobile && videoRef.current) {
+                videoRef.current.style.opacity = '1'
+                videoRef.current.style.visibility = 'visible'
+                videoRef.current.style.display = 'block'
+              }
+            }}
+            onLoadedData={() => {
+              console.log('✅ onLoadedData disparado')
+              setShowLoading(false)
+              if (isMobile && videoRef.current) {
+                videoRef.current.style.opacity = '1'
+                videoRef.current.style.visibility = 'visible'
+                videoRef.current.style.display = 'block'
+              }
+            }}
             style={{
               opacity: isMobile ? 1 : (showLoading ? 0 : 1), // MOBILE: sempre 1
               visibility: 'visible',
