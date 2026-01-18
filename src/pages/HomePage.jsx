@@ -11,42 +11,43 @@ const HomePage = () => {
   const [librasActive, setLibrasActive] = useState(false)
   const [audioActive, setAudioActive] = useState(false)
   const [videoState, setVideoState] = useState(null)
-  const [videoKey, setVideoKey] = useState(0) // Key para forçar remontagem do vídeo
   const location = useLocation()
   const mountedRef = useRef(false)
   
-  // Forçar inicialização do vídeo quando a página é montada ou quando retorna à rota
+  // Forçar inicialização do vídeo quando a página é montada
   useEffect(() => {
     if (!mountedRef.current) {
       mountedRef.current = true
       console.log('🏠 HomePage montado pela primeira vez')
       
-      // FORÇAR remontagem do vídeo na primeira carga usando requestAnimationFrame
-      // Isso garante que o vídeo seja montado após o DOM estar completamente renderizado
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          console.log('🏠 HomePage: requestAnimationFrame - forçando remontagem do vídeo')
-          setVideoKey(prev => prev + 1) // Incrementar key para forçar remontagem
-          
-          // Também forçar carregamento via DOM após remontagem
-          setTimeout(() => {
-            const video = document.getElementById('main-video')
-            if (video && video.readyState === 0) {
-              console.log('🏠 HomePage: Forçando carregamento inicial do vídeo via DOM')
-              try {
-                video.load()
-                console.log('✅ HomePage: video.load() chamado via DOM')
-              } catch (e) {
-                console.error('❌ HomePage: Erro ao chamar video.load():', e)
-              }
+      // Forçar carregamento do vídeo após pequeno delay para garantir que o DOM está pronto
+      const timer = setTimeout(() => {
+        const video = document.getElementById('main-video')
+        if (video) {
+          console.log('🏠 HomePage: Forçando carregamento inicial do vídeo via DOM')
+          // Garantir atributos mobile
+          if (video.readyState === 0) {
+            try {
+              video.load()
+              console.log('✅ HomePage: video.load() chamado via DOM')
+            } catch (e) {
+              console.error('❌ HomePage: Erro ao chamar video.load():', e)
             }
-          }, 200)
-        })
-      })
-    } else {
-      console.log('🏠 HomePage: Retornou para a rota inicial')
-      // Quando retorna, forçar remontagem novamente
-      setVideoKey(prev => prev + 1)
+          }
+          
+          // Forçar visibilidade no mobile
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+          if (isMobile) {
+            video.style.setProperty('opacity', '1', 'important')
+            video.style.setProperty('visibility', 'visible', 'important')
+            video.style.setProperty('display', 'block', 'important')
+            video.style.setProperty('z-index', '10', 'important')
+            console.log('✅ HomePage: Visibilidade forçada no mobile')
+          }
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
     }
   }, [location.pathname])
 
@@ -81,7 +82,6 @@ const HomePage = () => {
         </div>
         
         <MainVideo 
-          key={`main-video-${videoKey}`} // Key para forçar remontagem
           librasActive={librasActive}
           audioActive={audioActive}
           onVideoStateChange={handleVideoStateChange}
