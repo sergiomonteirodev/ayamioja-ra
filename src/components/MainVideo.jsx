@@ -189,8 +189,19 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         video.style.zIndex = '15'
         console.log('✅ MainVideo: Visibilidade forçada no canplay', {
           width: video.offsetWidth,
-          height: video.offsetHeight
+          height: video.offsetHeight,
+          paused: video.paused,
+          readyState: video.readyState
         })
+        
+        // Tentar reproduzir automaticamente
+        if (video.paused) {
+          video.play().then(() => {
+            console.log('✅ MainVideo: Autoplay iniciado com sucesso')
+          }).catch((err) => {
+            console.warn('⚠️ MainVideo: Autoplay bloqueado pelo navegador:', err)
+          })
+        }
       }
     }
 
@@ -344,8 +355,13 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               visibility: 'visible',
               display: 'block',
               zIndex: 15,
-              position: 'absolute'
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
             }}
+            autoPlay
+            muted
           >
             <source src={videoPath} type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
