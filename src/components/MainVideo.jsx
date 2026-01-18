@@ -227,9 +227,29 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handleEnded = () => {
       console.log('✅ MainVideo: ended event - vídeo terminou')
+      console.log('🔍 MainVideo: Estados ANTES - showReplay:', false, 'hasEnded:', false)
       setShowReplay(true)
       setHasEnded(true)
+      console.log('✅ MainVideo: Estados ATUALIZADOS - showReplay: true, hasEnded: true')
       console.log('✅ MainVideo: Botão replay deve aparecer agora')
+      
+      // Forçar renderização verificando após um momento
+      setTimeout(() => {
+        console.log('🔍 MainVideo: Verificando se botão está visível no DOM')
+        const button = document.querySelector('.replay-button')
+        if (button) {
+          console.log('✅ Botão encontrado no DOM:', button)
+          const styles = window.getComputedStyle(button)
+          console.log('📊 Estilos do botão:', {
+            display: styles.display,
+            visibility: styles.visibility,
+            opacity: styles.opacity,
+            zIndex: styles.zIndex
+          })
+        } else {
+          console.warn('⚠️ Botão NÃO encontrado no DOM após ended event')
+        }
+      }, 100)
     }
 
     const handleProgress = () => {
@@ -371,13 +391,26 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
           {/* Botão Assistir Novamente */}
           {showReplay && hasEnded && (
-            <button className="replay-button" onClick={handleReplay}>
+            <button 
+              className="replay-button" 
+              onClick={handleReplay}
+              style={{
+                zIndex: 20,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)'
+              }}
+            >
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 5-5v3h4v4h-4v3z"/>
               </svg>
               Assistir Novamente
             </button>
           )}
+          
+          {/* Debug: Mostrar estado */}
+          {console.log('🔍 MainVideo Render - showReplay:', showReplay, 'hasEnded:', hasEnded)}
         </div>
       </div>
     </section>
