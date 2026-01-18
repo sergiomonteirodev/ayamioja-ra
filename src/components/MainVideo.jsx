@@ -10,6 +10,44 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
   const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
 
+  // Forçar carregamento do vídeo no mount inicial
+  useEffect(() => {
+    // Aguardar próximo tick para garantir que DOM foi renderizado
+    const timer = setTimeout(() => {
+      const video = videoRef.current
+      if (!video) return
+
+      // Verificar se o vídeo está no DOM
+      if (!document.body.contains(video)) {
+        console.warn('⚠️ Vídeo ainda não está no DOM')
+        return
+      }
+
+      // Verificar se source está presente
+      const source = video.querySelector('source')
+      if (!source || !source.src) {
+        console.warn('⚠️ Source tag não encontrada ou sem src')
+        return
+      }
+
+      // Forçar load() para garantir que o vídeo comece a carregar imediatamente
+      console.log('🚀 Forçando carregamento inicial do vídeo:', source.src)
+      
+      // Garantir atributos necessários
+      video.setAttribute('playsinline', '')
+      video.playsInline = true
+      
+      // Chamar load() explicitamente
+      try {
+        video.load()
+      } catch (e) {
+        console.error('❌ Erro ao chamar video.load():', e)
+      }
+    }, 50) // Pequeno delay para garantir que React renderizou
+
+    return () => clearTimeout(timer)
+  }, []) // Executar apenas uma vez no mount
+
   // Ajustar volume baseado no toggle de audiodescrição
   useEffect(() => {
     const video = videoRef.current
