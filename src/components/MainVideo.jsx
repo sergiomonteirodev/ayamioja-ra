@@ -111,11 +111,21 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const handleLoadedData = () => {
       setLoadingProgress(100)
       setShowLoading(false)
+      // Forçar visibilidade do vídeo
+      video.style.opacity = '1'
+      video.style.visibility = 'visible'
+      video.style.display = 'block'
+      video.style.zIndex = '5'
     }
 
     const handleCanPlay = () => {
       setLoadingProgress(100)
       setShowLoading(false)
+      // Forçar visibilidade do vídeo
+      video.style.opacity = '1'
+      video.style.visibility = 'visible'
+      video.style.display = 'block'
+      video.style.zIndex = '5'
       // Tentar autoplay apenas uma vez
       if (video.paused && !hasEnded) {
         video.play().catch(() => {
@@ -131,10 +141,20 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
 
     const handlePlay = () => {
       setShowLoading(false)
+      // Forçar visibilidade do vídeo
+      video.style.opacity = '1'
+      video.style.visibility = 'visible'
+      video.style.display = 'block'
+      video.style.zIndex = '5'
     }
 
     const handlePlaying = () => {
       setShowLoading(false)
+      // Forçar visibilidade do vídeo
+      video.style.opacity = '1'
+      video.style.visibility = 'visible'
+      video.style.display = 'block'
+      video.style.zIndex = '5'
     }
 
     const handleEnded = () => {
@@ -161,8 +181,25 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const fallbackTimeout = setTimeout(() => {
       if (video.readyState >= 1) {
         setShowLoading(false)
+        // Forçar visibilidade do vídeo também
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        console.log('✅ Fallback: vídeo forçado a aparecer (readyState >= 1)')
       }
     }, 3000)
+
+    // Fallback adicional: forçar visibilidade após 1 segundo se vídeo estiver no DOM
+    const forceVisibilityTimeout = setTimeout(() => {
+      if (video.readyState >= 1 || video.readyState >= 2) {
+        setShowLoading(false)
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        video.style.zIndex = '5'
+        console.log('✅ Fallback: vídeo forçado a aparecer (1s)')
+      }
+    }, 1000)
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata)
@@ -175,8 +212,46 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('error', handleError)
       clearTimeout(fallbackTimeout)
+      clearTimeout(forceVisibilityTimeout)
     }
   }, [hasEnded])
+
+  // Forçar visibilidade do vídeo periodicamente quando estiver pronto
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const checkAndForceVisibility = () => {
+      // Se vídeo tem metadados e está carregado, forçar visibilidade
+      if (video.readyState >= 1 && showLoading) {
+        setShowLoading(false)
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        video.style.zIndex = '5'
+        console.log('✅ Forçando visibilidade do vídeo (readyState >= 1)')
+      }
+      
+      // Se vídeo pode reproduzir, garantir visibilidade
+      if (video.readyState >= 2) {
+        setShowLoading(false)
+        video.style.opacity = '1'
+        video.style.visibility = 'visible'
+        video.style.display = 'block'
+        video.style.zIndex = '5'
+      }
+    }
+
+    // Verificar imediatamente
+    checkAndForceVisibility()
+
+    // Verificar periodicamente a cada 500ms
+    const interval = setInterval(checkAndForceVisibility, 500)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [showLoading])
 
   const handleReplay = () => {
     const video = videoRef.current
@@ -218,6 +293,15 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             playsInline
             preload="auto"
             loop={false}
+            style={{
+              opacity: showLoading ? 0 : 1,
+              visibility: 'visible',
+              display: 'block',
+              zIndex: showLoading ? 2 : 5,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
           >
             <source src={videoPath} type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
