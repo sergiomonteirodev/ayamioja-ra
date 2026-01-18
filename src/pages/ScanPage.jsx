@@ -1631,11 +1631,20 @@ const ScanPage = () => {
                 video.muted = true
                 enableVideo(video)
                 
-                // Garantir que o a-video esteja visível
+                // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target0.querySelector('a-video')
                 if (videoPlane) {
                   videoPlane.setAttribute('visible', 'true')
-                  console.log('✅ a-video do target 0 tornado visível')
+                  // Garantir que o material está configurado corretamente
+                  if (!videoPlane.getAttribute('material') || !videoPlane.getAttribute('material').includes('shader: flat')) {
+                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
+                  }
+                  console.log('✅ a-video do target 0 tornado visível e configurado', {
+                    visible: videoPlane.getAttribute('visible'),
+                    material: videoPlane.getAttribute('material')
+                  })
+                } else {
+                  console.warn('⚠️ a-video do target 0 não encontrado!')
                 }
               } catch (e) {
                 console.error('❌ Erro ao habilitar vídeo para target 0:', e)
@@ -1648,12 +1657,23 @@ const ScanPage = () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
-            const video = document.getElementById('video1')
-            if (video) {
-              video.pause()
-              video.currentTime = 0 // Resetar para início
-              console.log('✅ Vídeo 1 pausado e resetado')
+            // Pausar vídeo com múltiplas tentativas para garantir
+            const pauseVideo = (video, attempts = 0) => {
+              if (!video) return
+              
+              if (attempts < 5) {
+                video.pause()
+                if (!video.paused) {
+                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
+                } else {
+                  video.currentTime = 0 // Resetar para início apenas quando pausar
+                  console.log('✅ Vídeo 1 pausado e resetado')
+                }
+              }
             }
+            
+            const video = document.getElementById('video1')
+            pauseVideo(video)
             
             // Garantir que o a-video esteja oculto
             const videoPlane = target0.querySelector('a-video')
@@ -1686,11 +1706,20 @@ const ScanPage = () => {
                 console.log('🔊 Áudio do video2 habilitado - muted:', video.muted)
                 enableVideo(video)
                 
-                // Garantir que o a-video esteja visível
+                // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target1.querySelector('a-video')
                 if (videoPlane) {
                   videoPlane.setAttribute('visible', 'true')
-                  console.log('✅ a-video do target 1 tornado visível')
+                  // Garantir que o material está configurado corretamente
+                  if (!videoPlane.getAttribute('material') || !videoPlane.getAttribute('material').includes('shader: flat')) {
+                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
+                  }
+                  console.log('✅ a-video do target 1 tornado visível e configurado', {
+                    visible: videoPlane.getAttribute('visible'),
+                    material: videoPlane.getAttribute('material')
+                  })
+                } else {
+                  console.warn('⚠️ a-video do target 1 não encontrado!')
                 }
               } catch (e) {
                 console.error('❌ Erro ao habilitar vídeo para target 1:', e)
@@ -1703,12 +1732,23 @@ const ScanPage = () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
-            const video = document.getElementById('video2')
-            if (video) {
-              video.pause()
-              video.currentTime = 0 // Resetar para início
-              console.log('✅ Vídeo 2 pausado e resetado')
+            // Pausar vídeo com múltiplas tentativas para garantir
+            const pauseVideo = (video, attempts = 0) => {
+              if (!video) return
+              
+              if (attempts < 5) {
+                video.pause()
+                if (!video.paused) {
+                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
+                } else {
+                  video.currentTime = 0 // Resetar para início apenas quando pausar
+                  console.log('✅ Vídeo 2 pausado e resetado')
+                }
+              }
             }
+            
+            const video = document.getElementById('video2')
+            pauseVideo(video)
             
             // Garantir que o a-video esteja oculto
             const videoPlane = target1.querySelector('a-video')
@@ -1738,11 +1778,20 @@ const ScanPage = () => {
                 video.muted = false // video3 deve ter áudio
                 enableVideo(video)
                 
-                // Garantir que o a-video esteja visível
+                // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target2.querySelector('a-video')
                 if (videoPlane) {
                   videoPlane.setAttribute('visible', 'true')
-                  console.log('✅ a-video do target 2 tornado visível')
+                  // Garantir que o material está configurado corretamente
+                  if (!videoPlane.getAttribute('material') || !videoPlane.getAttribute('material').includes('shader: flat')) {
+                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
+                  }
+                  console.log('✅ a-video do target 2 tornado visível e configurado', {
+                    visible: videoPlane.getAttribute('visible'),
+                    material: videoPlane.getAttribute('material')
+                  })
+                } else {
+                  console.warn('⚠️ a-video do target 2 não encontrado!')
                 }
               } catch (e) {
                 console.error('❌ Erro ao habilitar vídeo para target 2:', e)
@@ -1755,12 +1804,23 @@ const ScanPage = () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
-            const video = document.getElementById('video3')
-            if (video) {
-              video.pause()
-              video.currentTime = 0 // Resetar para início
-              console.log('✅ Vídeo 3 pausado e resetado')
+            // Pausar vídeo com múltiplas tentativas para garantir
+            const pauseVideo = (video, attempts = 0) => {
+              if (!video) return
+              
+              if (attempts < 5) {
+                video.pause()
+                if (!video.paused) {
+                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
+                } else {
+                  video.currentTime = 0 // Resetar para início apenas quando pausar
+                  console.log('✅ Vídeo 3 pausado e resetado')
+                }
+              }
             }
+            
+            const video = document.getElementById('video3')
+            pauseVideo(video)
             
             // Garantir que o a-video esteja oculto
             const videoPlane = target2.querySelector('a-video')
