@@ -659,39 +659,61 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               console.log('✅ onLoadedMetadata disparado')
               setShowLoading(false)
               if (isMobile && videoRef.current) {
+                // Forçar visibilidade com !important via setProperty
+                videoRef.current.style.setProperty('opacity', '1', 'important')
+                videoRef.current.style.setProperty('visibility', 'visible', 'important')
+                videoRef.current.style.setProperty('display', 'block', 'important')
+                videoRef.current.style.setProperty('z-index', '10', 'important')
                 videoRef.current.style.opacity = '1'
                 videoRef.current.style.visibility = 'visible'
                 videoRef.current.style.display = 'block'
+                videoRef.current.style.zIndex = '10'
               }
             }}
             onCanPlay={() => {
               console.log('✅ onCanPlay disparado')
               setShowLoading(false)
               if (isMobile && videoRef.current) {
+                videoRef.current.style.setProperty('opacity', '1', 'important')
+                videoRef.current.style.setProperty('visibility', 'visible', 'important')
+                videoRef.current.style.setProperty('display', 'block', 'important')
+                videoRef.current.style.setProperty('z-index', '10', 'important')
                 videoRef.current.style.opacity = '1'
                 videoRef.current.style.visibility = 'visible'
                 videoRef.current.style.display = 'block'
+                videoRef.current.style.zIndex = '10'
               }
             }}
             onLoadedData={() => {
               console.log('✅ onLoadedData disparado')
               setShowLoading(false)
               if (isMobile && videoRef.current) {
+                videoRef.current.style.setProperty('opacity', '1', 'important')
+                videoRef.current.style.setProperty('visibility', 'visible', 'important')
+                videoRef.current.style.setProperty('display', 'block', 'important')
+                videoRef.current.style.setProperty('z-index', '10', 'important')
                 videoRef.current.style.opacity = '1'
                 videoRef.current.style.visibility = 'visible'
                 videoRef.current.style.display = 'block'
+                videoRef.current.style.zIndex = '10'
               }
             }}
             style={{
-              // MOBILE: sempre visível desde o início (sem depender de showLoading)
-              // Isso evita problemas de estado na primeira renderização
+              // MOBILE: sempre visível desde o início com !important
               opacity: isMobile ? 1 : (showLoading ? 0 : 1),
-              visibility: 'visible',
+              visibility: 'visible !important' as any,
               display: 'block',
-              zIndex: isMobile ? 5 : (showLoading ? 2 : 5), // MOBILE: sempre z-index 5
+              zIndex: isMobile ? 10 : (showLoading ? 2 : 5), // MOBILE: z-index 10 para garantir que está acima de tudo
               width: '100%',
               height: '100%',
-              objectFit: 'cover'
+              objectFit: 'cover',
+              // MOBILE: forçar todos os estilos diretamente
+              ...(isMobile && {
+                opacity: '1 !important' as any,
+                visibility: 'visible !important' as any,
+                display: 'block !important' as any,
+                zIndex: '10 !important' as any
+              })
             }}
           >
             <source src={videoPath} type="video/mp4" />
