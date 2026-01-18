@@ -718,7 +718,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               opacity: isMobile ? 1 : (showLoading ? 0 : 1),
               visibility: 'visible',
               display: 'block',
-              zIndex: isMobile ? 10 : (showLoading ? 2 : 5), // MOBILE: z-index 10 para ficar acima do loading overlay
+              zIndex: isMobile ? 15 : (showLoading ? 2 : 15), // MOBILE: z-index 15 para ficar acima de tudo
               width: '100%',
               height: '100%',
               objectFit: 'cover'
