@@ -361,48 +361,63 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     return () => observer.disconnect()
   }, [isMobileChrome])
 
-  // MOBILE: Forçar visibilidade AGGRESSIVA - executar quando vídeo tiver metadados
+  // MOBILE: Forçar visibilidade SEMPRE - não esperar por readyState
   useEffect(() => {
     if (!isMobile) return
     
     const video = videoRef.current
-    if (!video) return
-
-    const forceMobileVisibility = () => {
-      // Se vídeo tem metadados (readyState >= 1), FORÇAR visibilidade IMEDIATAMENTE
-      if (video.readyState >= 1) {
-        setShowLoading(false)
-        // Forçar com !important via setProperty (sobrescreve tudo)
-        video.style.setProperty('opacity', '1', 'important')
-        video.style.setProperty('visibility', 'visible', 'important')
-        video.style.setProperty('display', 'block', 'important')
-        video.style.setProperty('z-index', '5', 'important')
-        // Também definir via style normal
-        video.style.opacity = '1'
-        video.style.visibility = 'visible'
-        video.style.display = 'block'
-        video.style.zIndex = '5'
-        console.log('📱 Mobile AGGRESSIVE: Forçando visibilidade (readyState >= 1)')
-      }
+    if (!video) {
+      // Tentar novamente após pequeno delay se vídeo ainda não existe
+      const timer = setTimeout(() => {
+        const v = videoRef.current
+        if (v && isMobile) {
+          v.style.setProperty('opacity', '1', 'important')
+          v.style.setProperty('visibility', 'visible', 'important')
+          v.style.setProperty('display', 'block', 'important')
+          v.style.setProperty('z-index', '10', 'important')
+          v.style.setProperty('position', 'absolute', 'important')
+        }
+      }, 100)
+      return () => clearTimeout(timer)
     }
 
-    // Verificar imediatamente
+    const forceMobileVisibility = () => {
+      // FORÇAR visibilidade IMEDIATAMENTE, sem verificar readyState
+      setShowLoading(false)
+      // Forçar com !important via setProperty (sobrescreve CSS)
+      video.style.setProperty('opacity', '1', 'important')
+      video.style.setProperty('visibility', 'visible', 'important')
+      video.style.setProperty('display', 'block', 'important')
+      video.style.setProperty('z-index', '10', 'important')
+      video.style.setProperty('position', 'absolute', 'important')
+      // Também definir via style normal
+      video.style.opacity = '1'
+      video.style.visibility = 'visible'
+      video.style.display = 'block'
+      video.style.zIndex = '10'
+      video.style.position = 'absolute'
+    }
+
+    // Verificar imediatamente SEM condição de readyState
     forceMobileVisibility()
 
-    // Listener para quando vídeo carregar metadados
+    // Listener para quando vídeo carregar metadados (mas já forçamos antes)
     const handleMetadata = () => {
-      console.log('📱 Mobile: Metadata carregado, forçando visibilidade')
       forceMobileVisibility()
     }
 
     video.addEventListener('loadedmetadata', handleMetadata, { once: true })
 
-    // Verificar a cada 100ms (muito agressivo para mobile)
+    // Verificar continuamente para garantir que nunca perca visibilidade
     const interval = setInterval(forceMobileVisibility, 100)
+
+    // Também forçar após delay para garantir
+    const timeout = setTimeout(forceMobileVisibility, 500)
 
     return () => {
       video.removeEventListener('loadedmetadata', handleMetadata)
       clearInterval(interval)
+      clearTimeout(timeout)
     }
   }, [isMobile])
 
