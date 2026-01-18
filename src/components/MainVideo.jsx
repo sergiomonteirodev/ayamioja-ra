@@ -10,42 +10,90 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
   const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
 
-  // Forçar carregamento do vídeo no mount inicial
+  // Forçar carregamento do vídeo no mount inicial - múltiplas tentativas
   useEffect(() => {
-    // Aguardar próximo tick para garantir que DOM foi renderizado
-    const timer = setTimeout(() => {
+    let attemptCount = 0
+    const maxAttempts = 10
+    
+    const forceLoadVideo = () => {
+      attemptCount++
       const video = videoRef.current
-      if (!video) return
+      
+      if (!video) {
+        if (attemptCount < maxAttempts) {
+          setTimeout(forceLoadVideo, 100)
+        }
+        return
+      }
 
       // Verificar se o vídeo está no DOM
       if (!document.body.contains(video)) {
-        console.warn('⚠️ Vídeo ainda não está no DOM')
+        if (attemptCount < maxAttempts) {
+          setTimeout(forceLoadVideo, 100)
+        } else {
+          console.warn('⚠️ Vídeo não encontrado no DOM após múltiplas tentativas')
+        }
         return
       }
 
       // Verificar se source está presente
       const source = video.querySelector('source')
       if (!source || !source.src) {
-        console.warn('⚠️ Source tag não encontrada ou sem src')
+        if (attemptCount < maxAttempts) {
+          setTimeout(forceLoadVideo, 100)
+        } else {
+          console.warn('⚠️ Source tag não encontrada após múltiplas tentativas')
+        }
         return
       }
 
       // Forçar load() para garantir que o vídeo comece a carregar imediatamente
-      console.log('🚀 Forçando carregamento inicial do vídeo:', source.src)
+      console.log(`🚀 [Tentativa ${attemptCount}] Forçando carregamento inicial do vídeo:`, source.src)
       
       // Garantir atributos necessários
       video.setAttribute('playsinline', '')
       video.playsInline = true
+      video.setAttribute('preload', 'auto')
+      video.preload = 'auto'
+      
+      // SEMPRE definir src diretamente no elemento video (alguns navegadores não carregam apenas com source)
+      if (source.src) {
+        video.src = source.src
+        console.log('✅ src definido diretamente no elemento video:', source.src)
+      }
       
       // Chamar load() explicitamente
       try {
         video.load()
+        console.log('✅ video.load() chamado com sucesso')
+        
+        // Verificar se o vídeo começou a carregar
+        setTimeout(() => {
+          console.log('📊 Estado do vídeo após load():', {
+            readyState: video.readyState,
+            networkState: video.networkState,
+            src: video.src || source.src,
+            paused: video.paused
+          })
+        }, 500)
       } catch (e) {
         console.error('❌ Erro ao chamar video.load():', e)
       }
-    }, 50) // Pequeno delay para garantir que React renderizou
+    }
 
-    return () => clearTimeout(timer)
+    // Tentar imediatamente
+    forceLoadVideo()
+    
+    // Tentar também após pequeno delay
+    const timer1 = setTimeout(forceLoadVideo, 50)
+    const timer2 = setTimeout(forceLoadVideo, 200)
+    const timer3 = setTimeout(forceLoadVideo, 500)
+
+    return () => {
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+    }
   }, []) // Executar apenas uma vez no mount
 
   // Ajustar volume baseado no toggle de audiodescrição
@@ -216,6 +264,103 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [hasEnded])
 
+  // MutationObserver + IntersectionObserver para garantir que vídeo carregue
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    // MutationObserver para detectar quando vídeo é inserido no DOM
+    const mutationObserver = new MutationObserver((mutations, observer) => {
+      const video = videoRef.current
+      if (!video) return
+
+      // Verificar se vídeo está no DOM e tem source
+      if (document.body.contains(video)) {
+        const source = video.querySelector('source')
+        if (source && source.src && video.readyState === 0) {
+          console.log('🔍 MutationObserver detectou vídeo no DOM, forçando carregamento')
+          if (!video.src) {
+            video.src = source.src
+          }
+          try {
+            video.load()
+            console.log('✅ load() chamado via MutationObserver')
+            observer.disconnect() // Desconectar após primeira detecção
+          } catch (e) {
+            console.error('❌ Erro ao chamar load() via MutationObserver:', e)
+          }
+        }
+      }
+    })
+
+    // Observar mudanças no DOM
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+
+    // Criar IntersectionObserver para detectar quando vídeo está visível
+    const intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            console.log('👁️ Vídeo está visível, forçando carregamento')
+            const v = entry.target
+            const source = v.querySelector('source')
+            if (v.readyState === 0 && v.networkState === 0) {
+              // Vídeo ainda não começou a carregar
+              if (source && source.src && !v.src) {
+                v.src = source.src
+              }
+              try {
+                v.load()
+                console.log('✅ load() chamado via IntersectionObserver')
+              } catch (e) {
+                console.error('❌ Erro ao chamar load() via IntersectionObserver:', e)
+              }
+            }
+          }
+        })
+      },
+      { threshold: 0.1 }
+    )
+
+    intersectionObserver.observe(video)
+
+    // Também tentar quando a página estiver completamente carregada
+    const handleWindowLoad = () => {
+      console.log('📄 Window load event - forçando carregamento do vídeo')
+      const v = videoRef.current
+      if (!v) return
+      
+      const source = v.querySelector('source')
+      if (v.readyState === 0) {
+        if (source && source.src && !v.src) {
+          v.src = source.src
+        }
+        try {
+          v.load()
+          console.log('✅ load() chamado via window.load')
+        } catch (e) {
+          console.error('❌ Erro ao chamar load() via window.load:', e)
+        }
+      }
+    }
+
+    // Verificar se já está carregado
+    if (document.readyState === 'complete') {
+      handleWindowLoad()
+    } else {
+      window.addEventListener('load', handleWindowLoad)
+    }
+
+    return () => {
+      mutationObserver.disconnect()
+      intersectionObserver.disconnect()
+      window.removeEventListener('load', handleWindowLoad)
+    }
+  }, [])
+
   // Forçar visibilidade do vídeo periodicamente quando estiver pronto
   useEffect(() => {
     const video = videoRef.current
@@ -245,8 +390,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     // Verificar imediatamente
     checkAndForceVisibility()
 
-    // Verificar periodicamente a cada 500ms
-    const interval = setInterval(checkAndForceVisibility, 500)
+    // Verificar periodicamente a cada 300ms (mais frequente)
+    const interval = setInterval(checkAndForceVisibility, 300)
 
     return () => {
       clearInterval(interval)
@@ -290,6 +435,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
             ref={videoRef}
             id="main-video" 
             className="main-video" 
+            src={videoPath}
             playsInline
             preload="auto"
             loop={false}
