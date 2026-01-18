@@ -1644,13 +1644,22 @@ const ScanPage = () => {
           })
           
           target0.addEventListener('targetLost', () => {
-            console.log('❌ Target 0 perdido')
+            console.log('❌ Target 0 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
             const video = document.getElementById('video1')
             if (video) {
               video.pause()
+              video.currentTime = 0 // Resetar para início
+              console.log('✅ Vídeo 1 pausado e resetado')
+            }
+            
+            // Garantir que o a-video esteja oculto
+            const videoPlane = target0.querySelector('a-video')
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'false')
+              console.log('✅ a-video do target 0 oculto')
             }
           })
         }
@@ -1742,13 +1751,22 @@ const ScanPage = () => {
           })
           
           target2.addEventListener('targetLost', () => {
-            console.log('❌ Target 2 perdido')
+            console.log('❌ Target 2 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
             const video = document.getElementById('video3')
             if (video) {
               video.pause()
+              video.currentTime = 0 // Resetar para início
+              console.log('✅ Vídeo 3 pausado e resetado')
+            }
+            
+            // Garantir que o a-video esteja oculto
+            const videoPlane = target2.querySelector('a-video')
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'false')
+              console.log('✅ a-video do target 2 oculto')
             }
           })
         }
