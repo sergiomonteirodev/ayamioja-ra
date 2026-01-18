@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 
 const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [showLoading, setShowLoading] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
   const videoRef = useRef(null)
@@ -56,11 +57,26 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const video = videoRef.current
     if (!video) return
 
+    const handleLoadedMetadata = () => {
+      setLoadingProgress(15)
+    }
+
+    const handleProgress = () => {
+      // Calcular progresso baseado no buffer
+      if (video.buffered.length > 0 && video.duration > 0) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1)
+        const percent = Math.min((bufferedEnd / video.duration) * 100, 99)
+        setLoadingProgress(Math.round(percent))
+      }
+    }
+
     const handleLoadedData = () => {
+      setLoadingProgress(100)
       setShowLoading(false)
     }
 
     const handleCanPlay = () => {
+      setLoadingProgress(100)
       setShowLoading(false)
       // Tentar autoplay apenas uma vez
       if (video.paused && !hasEnded) {
@@ -70,7 +86,16 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
     }
 
+    const handleCanPlayThrough = () => {
+      setLoadingProgress(100)
+      setShowLoading(false)
+    }
+
     const handlePlay = () => {
+      setShowLoading(false)
+    }
+
+    const handlePlaying = () => {
       setShowLoading(false)
     }
 
@@ -84,18 +109,34 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       setShowLoading(false)
     }
 
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
+    video.addEventListener('progress', handleProgress)
     video.addEventListener('loadeddata', handleLoadedData)
     video.addEventListener('canplay', handleCanPlay)
+    video.addEventListener('canplaythrough', handleCanPlayThrough)
     video.addEventListener('play', handlePlay)
+    video.addEventListener('playing', handlePlaying)
     video.addEventListener('ended', handleEnded)
     video.addEventListener('error', handleError)
 
+    // Fallback: esconder loading após 3 segundos se vídeo tiver metadados
+    const fallbackTimeout = setTimeout(() => {
+      if (video.readyState >= 1) {
+        setShowLoading(false)
+      }
+    }, 3000)
+
     return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      video.removeEventListener('progress', handleProgress)
       video.removeEventListener('loadeddata', handleLoadedData)
       video.removeEventListener('canplay', handleCanPlay)
+      video.removeEventListener('canplaythrough', handleCanPlayThrough)
       video.removeEventListener('play', handlePlay)
+      video.removeEventListener('playing', handlePlaying)
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('error', handleError)
+      clearTimeout(fallbackTimeout)
     }
   }, [hasEnded])
 
@@ -119,6 +160,15 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           {showLoading && (
             <div id="video-loading" className="video-loading">
               <div className="loading-spinner"></div>
+              <div className="loading-progress">
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${loadingProgress}%` }}
+                  ></div>
+                </div>
+                <p className="loading-percentage">{loadingProgress}%</p>
+              </div>
               <p className="loading-text">Carregando vídeo...</p>
             </div>
           )}
