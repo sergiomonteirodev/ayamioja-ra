@@ -2906,7 +2906,7 @@ const ScanPage = () => {
             rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; src: #video3; side: double; transparent: false; opacity: 1.0"
+            material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
             visible="false"
             loop="true"
