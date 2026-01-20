@@ -5,7 +5,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
-  const [showPlayButton, setShowPlayButton] = useState(true)
+  
+  // Verificar se o vídeo já foi iniciado pelo usuário nesta sessão
+  const hasVideoBeenStarted = () => {
+    try {
+      return sessionStorage.getItem('homepageVideoStarted') === 'true'
+    } catch (e) {
+      return false
+    }
+  }
+  
+  const [showPlayButton, setShowPlayButton] = useState(!hasVideoBeenStarted())
   const videoRef = useRef(null)
 
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
@@ -570,6 +580,14 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     if (!video) return
     
     console.log('▶️ Botão de play clicado - iniciando vídeo')
+    
+    // Marcar que o vídeo foi iniciado pelo usuário (persistir na sessão)
+    try {
+      sessionStorage.setItem('homepageVideoStarted', 'true')
+    } catch (e) {
+      console.warn('⚠️ Não foi possível salvar no sessionStorage:', e)
+    }
+    
     setShowPlayButton(false)
     
     // Garantir que o áudio está habilitado antes de tocar
@@ -595,7 +613,10 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('✅ Vídeo iniciado pelo botão de play')
     }).catch((err) => {
       console.error('❌ Erro ao iniciar vídeo:', err)
-      // Se falhar, mostrar botão novamente
+      // Se falhar, mostrar botão novamente e remover flag
+      try {
+        sessionStorage.removeItem('homepageVideoStarted')
+      } catch (e) {}
       setShowPlayButton(true)
     })
   }
