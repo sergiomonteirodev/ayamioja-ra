@@ -135,6 +135,11 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
         
         // Reproduzir áudio de Audiodescrição
         if (audio.paused) {
+          // Sincronizar currentTime antes de reproduzir para continuar de onde parou
+          if (videoState?.currentTime !== undefined) {
+            audio.currentTime = videoState.currentTime
+            console.log('⏩ Sincronizando áudio AD com vídeo:', videoState.currentTime.toFixed(2), 's')
+          }
           // Garantir volume configurado antes de reproduzir (alto para audiodescrição)
           audio.volume = 1.0
           console.log('▶️ Reproduzindo áudio de Audiodescrição AR')
