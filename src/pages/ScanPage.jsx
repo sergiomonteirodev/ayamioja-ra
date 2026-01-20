@@ -1701,19 +1701,23 @@ const ScanPage = () => {
             setActiveTargetIndex(0)
             setShowScanningAnimation(false)
             
-            // Habilitar e reproduzir o vídeo AR
+            // Habilitar e reproduzir o vídeo AR (continuando de onde parou)
             const video = document.getElementById('video1')
             if (video) {
-              console.log('🎥 Habilitando vídeo AR para target 0:', video.id)
+              const savedTime = video.currentTime
+              console.log('🎥 Habilitando vídeo AR para target 0:', video.id, 'continuando de:', savedTime.toFixed(2), 's')
               try {
                 await ensureVideoSourceAvailable(video)
+                // Só chamar load() se o vídeo realmente não foi carregado ainda
                 if (video.readyState === 0) {
                   video.load()
                 }
                 // Target 0 (video1/anim_4.mp4) deve ter áudio habilitado
                 video.muted = false
                 video.setAttribute('muted', 'false')
+                // enableVideo vai dar play() mantendo o currentTime atual (continua de onde parou)
                 enableVideo(video)
+                console.log('▶️ Vídeo continuando de:', video.currentTime.toFixed(2), 's')
                 
                 // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target0.querySelector('a-video')
@@ -1765,11 +1769,11 @@ const ScanPage = () => {
           })
           
           target0.addEventListener('targetLost', () => {
-            console.log('❌ Target 0 perdido - pausando vídeo')
+            console.log('❌ Target 0 perdido - pausando vídeo (mantendo posição)')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
-            // Pausar vídeo com múltiplas tentativas para garantir
+            // Pausar vídeo com múltiplas tentativas para garantir (SEM resetar currentTime)
             const pauseVideo = (video, attempts = 0) => {
               if (!video) return
               
@@ -1778,8 +1782,8 @@ const ScanPage = () => {
                 if (!video.paused) {
                   setTimeout(() => pauseVideo(video, attempts + 1), 100)
                 } else {
-                  video.currentTime = 0 // Resetar para início apenas quando pausar
-                  console.log('✅ Vídeo 1 pausado e resetado')
+                  // NÃO resetar currentTime - manter posição para continuar de onde parou
+                  console.log('✅ Vídeo 1 pausado (posição mantida:', video.currentTime, 's)')
                 }
               }
             }
@@ -1793,6 +1797,7 @@ const ScanPage = () => {
               videoPlane.setAttribute('visible', 'false')
               console.log('✅ a-video do target 0 oculto')
             }
+            // A audiodescrição será pausada automaticamente via AudioDescriptionAR quando videoState.isPlaying for false
           })
         }
 
