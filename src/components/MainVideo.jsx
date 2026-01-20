@@ -132,32 +132,66 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     video.style.zIndex = '15'
 
     // Forçar load() para garantir que o vídeo comece a carregar
-    try {
-      video.load()
-      console.log('✅ MainVideo: video.load() chamado no mount')
-      
-      // Verificar após um tempo se o vídeo começou a carregar
-      setTimeout(() => {
-        console.log('📊 MainVideo: Estado após load():', {
+    // Android precisa de mais tentativas
+    const forceLoadVideo = () => {
+      try {
+        // Garantir atributos Android antes de load()
+        if (isMobile) {
+          video.setAttribute('playsinline', '')
+          video.setAttribute('webkit-playsinline', 'true')
+          video.setAttribute('x5-playsinline', 'true')
+          video.playsInline = true
+        }
+        
+        video.load()
+        console.log('✅ MainVideo: video.load() chamado no mount', {
           readyState: video.readyState,
           networkState: video.networkState,
-          src: video.src,
-          width: video.offsetWidth,
-          height: video.offsetHeight,
-          computedDisplay: window.getComputedStyle(video).display,
-          computedVisibility: window.getComputedStyle(video).visibility,
-          computedOpacity: window.getComputedStyle(video).opacity
+          isAndroid: /Android/i.test(navigator.userAgent)
         })
-        
-        // FORÇAR visibilidade novamente após 500ms
-        video.style.setProperty('opacity', '1', 'important')
-        video.style.setProperty('visibility', 'visible', 'important')
-        video.style.setProperty('display', 'block', 'important')
-        video.style.setProperty('z-index', '15', 'important')
-      }, 500)
-    } catch (e) {
-      console.error('❌ MainVideo: Erro ao chamar video.load():', e)
+      } catch (e) {
+        console.error('❌ MainVideo: Erro ao chamar video.load():', e)
+      }
     }
+    
+    forceLoadVideo()
+    
+    // Android: tentar novamente se não começou a carregar
+    if (/Android/i.test(navigator.userAgent)) {
+      setTimeout(() => {
+        if (video.networkState === 0 || video.readyState === 0) {
+          console.log('🔄 Android: Retry load() após 200ms')
+          forceLoadVideo()
+        }
+      }, 200)
+      
+      setTimeout(() => {
+        if (video.networkState === 0 || video.readyState === 0) {
+          console.log('🔄 Android: Retry load() após 600ms')
+          forceLoadVideo()
+        }
+      }, 600)
+    }
+    
+    // Verificar após um tempo se o vídeo começou a carregar
+    setTimeout(() => {
+      console.log('📊 MainVideo: Estado após load():', {
+        readyState: video.readyState,
+        networkState: video.networkState,
+        src: video.src,
+        width: video.offsetWidth,
+        height: video.offsetHeight,
+        computedDisplay: window.getComputedStyle(video).display,
+        computedVisibility: window.getComputedStyle(video).visibility,
+        computedOpacity: window.getComputedStyle(video).opacity
+      })
+      
+      // FORÇAR visibilidade novamente após 500ms
+      video.style.setProperty('opacity', '1', 'important')
+      video.style.setProperty('visibility', 'visible', 'important')
+      video.style.setProperty('display', 'block', 'important')
+      video.style.setProperty('z-index', '15', 'important')
+    }, 500)
 
     // FORÇAR visibilidade periodicamente para garantir que vídeo sempre apareça
     const forceVisibilityInterval = setInterval(() => {
