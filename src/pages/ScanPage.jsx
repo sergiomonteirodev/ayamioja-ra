@@ -45,23 +45,8 @@ const ScanPage = () => {
     console.log('Toggle Audio:', active)
   }
 
-  const updateCanvasVisibility = (showCanvas) => {
-    const scene = sceneRef.current
-    if (!scene) return
-
-    const canvas = scene.querySelector('canvas')
-    if (!canvas) return
-
-    const targetOpacity = showCanvas ? '1' : '0'
-    canvas.style.setProperty('opacity', targetOpacity, 'important')
-    canvas.style.setProperty('pointer-events', showCanvas ? 'auto' : 'none', 'important')
-    canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
-    if (!showCanvas) {
-      canvas.style.setProperty('background-color', 'transparent', 'important')
-      canvas.style.setProperty('background', 'transparent', 'important')
-    }
-    console.log(`🎛️ Canvas ${showCanvas ? 'visível' : 'oculto'} (opacity ${targetOpacity})`)
-  }
+  // REMOVIDO: updateCanvasVisibility - deixar MindAR gerenciar canvas completamente
+  // O canvas deve sempre estar transparente e visível, sem manipulações condicionais
 
   const handleBackClick = () => {
     // Garantir que a URL tenha a barra no final para carregar o background corretamente
@@ -311,10 +296,12 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // Forçar transparência Android continuamente
+  // AGressivo: Forçar transparência do canvas no Android - interceptar TUDO relacionado ao WebGL
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
+
+    let rafId = null
 
     const forceAndroidTransparency = () => {
       const scene = sceneRef.current
@@ -323,20 +310,112 @@ const ScanPage = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
       
-      // Forçar transparência via CSS
+      // FORÇAR canvas sempre transparente - SEM manipular opacity baseado em targets
       canvas.style.setProperty('background-color', 'transparent', 'important')
       canvas.style.setProperty('background', 'transparent', 'important')
-      canvas.style.setProperty('opacity', '1', 'important')
+      canvas.style.setProperty('opacity', '1', 'important') // SEMPRE visível
       canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
       canvas.style.setProperty('pointer-events', 'none', 'important')
+      canvas.style.setProperty('z-index', '1', 'important') // Acima dos vídeos AR (-1)
       
-      // Forçar via WebGL
-      const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+      // Forçar via WebGL - CRÍTICO: interceptar clearColor, clear, e usar RAF
+      const gl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
       if (gl) {
+        // CRÍTICO: Interceptar gl.clearColor() para SEMPRE retornar transparente
+        if (!gl._clearColorIntercepted) {
+          const originalClearColor = gl.clearColor.bind(gl)
+          gl.clearColor = function(r, g, b, a) {
+            // SEMPRE forçar alpha = 0 (transparente), mesmo se o A-Frame tentar definir preto
+            originalClearColor.call(this, r, g, b, 0.0)
+            // Log apenas uma vez para debug
+            if (!this._loggedClearColor) {
+              console.log('🔧 gl.clearColor interceptado - sempre forçando alpha 0.0')
+              this._loggedClearColor = true
+            }
+          }
+          gl._clearColorIntercepted = true
+        }
+        
+        // CRÍTICO: Interceptar setClearColor do renderer do Three.js (se disponível)
+        try {
+          const rendererSystem = scene.systems?.renderer
+          if (rendererSystem) {
+            const renderer = rendererSystem.renderer || rendererSystem
+            if (renderer && typeof renderer.setClearColor === 'function' && !renderer._setClearColorIntercepted) {
+              renderer._originalSetClearColor = renderer.setClearColor.bind(renderer)
+              renderer.setClearColor = function(color, alpha) {
+                // SEMPRE forçar alpha = 0 (transparente)
+                renderer._originalSetClearColor(color, 0)
+                if (!this._loggedSetClearColor) {
+                  console.log('🔧 renderer.setClearColor interceptado - sempre forçando alpha 0')
+                  this._loggedSetClearColor = true
+                }
+              }
+              renderer._setClearColorIntercepted = true
+              // Forçar transparente imediatamente
+              renderer.setClearColor(0x000000, 0)
+            }
+          }
+        } catch (e) {
+          // Ignorar se não conseguir acessar renderer
+        }
+        
+        // CRÍTICO: Interceptar gl.clear() para SEMPRE usar clearColor transparente
+        if (!gl._clearIntercepted) {
+          gl._originalClear = gl.clear.bind(gl)
+          gl.clear = function(mask) {
+            // SEMPRE forçar clearColor transparente antes de limpar
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+            gl._originalClear(mask)
+            // Forçar novamente após limpar para garantir
+            gl.clearColor(0.0, 0.0, 0.0, 0.0)
+          }
+          gl._clearIntercepted = true
+        }
+        
+        // CRÍTICO: Interceptar gl.clearColor antes de cada draw para garantir
+        if (!gl._drawIntercepted) {
+          const originalDrawArrays = gl.drawArrays?.bind(gl)
+          const originalDrawElements = gl.drawElements?.bind(gl)
+          
+          if (originalDrawArrays) {
+            gl.drawArrays = function(...args) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              return originalDrawArrays.apply(this, args)
+            }
+          }
+          
+          if (originalDrawElements) {
+            gl.drawElements = function(...args) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              return originalDrawElements.apply(this, args)
+            }
+          }
+          
+          gl._drawIntercepted = true
+        }
+        
+        // SEMPRE configurar clearColor transparente e blend
         gl.clearColor(0.0, 0.0, 0.0, 0.0)
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+        
+        // CRÍTICO: Usar requestAnimationFrame para forçar clearColor a cada frame
+        if (!canvas._rafTransparencyRunning) {
+          canvas._rafTransparencyRunning = true
+          const forceClearColorEveryFrame = () => {
+            const currentGl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
+            if (currentGl) {
+              currentGl.clearColor(0.0, 0.0, 0.0, 0.0)
+            }
+            rafId = requestAnimationFrame(forceClearColorEveryFrame)
+          }
+          forceClearColorEveryFrame()
+        }
       }
       
-      // Garantir que o vídeo esteja atrás
+      // Vídeo da câmera fica atrás de tudo
       const mindarVideo = document.querySelector('#arVideo') || 
                           Array.from(document.querySelectorAll('video')).find(v => 
                             v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
@@ -350,10 +429,19 @@ const ScanPage = () => {
     // Chamar imediatamente
     forceAndroidTransparency()
     
-    // Chamar continuamente a cada 100ms no Android
-    const interval = setInterval(forceAndroidTransparency, 100)
+    // Chamar continuamente a cada 50ms no Android (backup para RAF)
+    const interval = setInterval(forceAndroidTransparency, 50)
     
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
+      const canvas = sceneRef.current?.querySelector('canvas')
+      if (canvas) {
+        canvas._rafTransparencyRunning = false
+      }
+    }
   }, [cameraPermissionGranted])
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
@@ -1627,11 +1715,48 @@ const ScanPage = () => {
                 video.muted = true
                 enableVideo(video)
                 
-                // Garantir que o a-video esteja visível
+                // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target0.querySelector('a-video')
                 if (videoPlane) {
+                  // CRÍTICO: Garantir que o a-video esteja visível
                   videoPlane.setAttribute('visible', 'true')
-                  console.log('✅ a-video do target 0 tornado visível')
+                  
+                  // Garantir que o material está configurado corretamente
+                  const currentMaterial = videoPlane.getAttribute('material')
+                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
+                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
+                  }
+                  
+                  // Garantir que o vídeo HTML está tocando
+                  console.log('📹 Estado do vídeo HTML:', {
+                    id: video.id,
+                    paused: video.paused,
+                    readyState: video.readyState,
+                    currentTime: video.currentTime,
+                    duration: video.duration,
+                    muted: video.muted
+                  })
+                  
+                  // Verificar se o a-video está realmente visível no DOM
+                  setTimeout(() => {
+                    const isVisible = videoPlane.getAttribute('visible')
+                    const material = videoPlane.getAttribute('material')
+                    const object3D = videoPlane.object3D
+                    console.log('🔍 Verificação do a-video após 500ms:', {
+                      visible: isVisible,
+                      material: material,
+                      object3DExists: !!object3D,
+                      object3DVisible: object3D?.visible,
+                      object3DMatrixWorld: object3D?.matrixWorld?.elements
+                    })
+                  }, 500)
+                  
+                  console.log('✅ a-video do target 0 tornado visível e configurado', {
+                    visible: videoPlane.getAttribute('visible'),
+                    material: videoPlane.getAttribute('material')
+                  })
+                } else {
+                  console.warn('⚠️ a-video do target 0 não encontrado!')
                 }
               } catch (e) {
                 console.error('❌ Erro ao habilitar vídeo para target 0:', e)
@@ -1640,13 +1765,33 @@ const ScanPage = () => {
           })
           
           target0.addEventListener('targetLost', () => {
-            console.log('❌ Target 0 perdido')
+            console.log('❌ Target 0 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
+            // Pausar vídeo com múltiplas tentativas para garantir
+            const pauseVideo = (video, attempts = 0) => {
+              if (!video) return
+              
+              if (attempts < 5) {
+                video.pause()
+                if (!video.paused) {
+                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
+                } else {
+                  video.currentTime = 0 // Resetar para início apenas quando pausar
+                  console.log('✅ Vídeo 1 pausado e resetado')
+                }
+              }
+            }
+            
             const video = document.getElementById('video1')
-            if (video) {
-              video.pause()
+            pauseVideo(video)
+            
+            // Garantir que o a-video esteja oculto
+            const videoPlane = target0.querySelector('a-video')
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'false')
+              console.log('✅ a-video do target 0 oculto')
             }
           })
         }
@@ -1673,11 +1818,48 @@ const ScanPage = () => {
                 console.log('🔊 Áudio do video2 habilitado - muted:', video.muted)
                 enableVideo(video)
                 
-                // Garantir que o a-video esteja visível
+                // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target1.querySelector('a-video')
                 if (videoPlane) {
+                  // CRÍTICO: Garantir que o a-video esteja visível
                   videoPlane.setAttribute('visible', 'true')
-                  console.log('✅ a-video do target 1 tornado visível')
+                  
+                  // Garantir que o material está configurado corretamente
+                  const currentMaterial = videoPlane.getAttribute('material')
+                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
+                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
+                  }
+                  
+                  // Garantir que o vídeo HTML está tocando
+                  console.log('📹 Estado do vídeo HTML:', {
+                    id: video.id,
+                    paused: video.paused,
+                    readyState: video.readyState,
+                    currentTime: video.currentTime,
+                    duration: video.duration,
+                    muted: video.muted
+                  })
+                  
+                  // Verificar se o a-video está realmente visível no DOM
+                  setTimeout(() => {
+                    const isVisible = videoPlane.getAttribute('visible')
+                    const material = videoPlane.getAttribute('material')
+                    const object3D = videoPlane.object3D
+                    console.log('🔍 Verificação do a-video após 500ms:', {
+                      visible: isVisible,
+                      material: material,
+                      object3DExists: !!object3D,
+                      object3DVisible: object3D?.visible,
+                      object3DMatrixWorld: object3D?.matrixWorld?.elements
+                    })
+                  }, 500)
+                  
+                  console.log('✅ a-video do target 1 tornado visível e configurado', {
+                    visible: videoPlane.getAttribute('visible'),
+                    material: videoPlane.getAttribute('material')
+                  })
+                } else {
+                  console.warn('⚠️ a-video do target 1 não encontrado!')
                 }
               } catch (e) {
                 console.error('❌ Erro ao habilitar vídeo para target 1:', e)
@@ -1686,13 +1868,33 @@ const ScanPage = () => {
           })
           
           target1.addEventListener('targetLost', () => {
-            console.log('❌ Target 1 perdido')
+            console.log('❌ Target 1 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
+            // Pausar vídeo com múltiplas tentativas para garantir
+            const pauseVideo = (video, attempts = 0) => {
+              if (!video) return
+              
+              if (attempts < 5) {
+                video.pause()
+                if (!video.paused) {
+                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
+                } else {
+                  video.currentTime = 0 // Resetar para início apenas quando pausar
+                  console.log('✅ Vídeo 2 pausado e resetado')
+                }
+              }
+            }
+            
             const video = document.getElementById('video2')
-            if (video) {
-              video.pause()
+            pauseVideo(video)
+            
+            // Garantir que o a-video esteja oculto
+            const videoPlane = target1.querySelector('a-video')
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'false')
+              console.log('✅ a-video do target 1 oculto')
             }
           })
         }
@@ -1716,11 +1918,48 @@ const ScanPage = () => {
                 video.muted = false // video3 deve ter áudio
                 enableVideo(video)
                 
-                // Garantir que o a-video esteja visível
+                // Garantir que o a-video esteja visível e configurado corretamente
                 const videoPlane = target2.querySelector('a-video')
                 if (videoPlane) {
+                  // CRÍTICO: Garantir que o a-video esteja visível
                   videoPlane.setAttribute('visible', 'true')
-                  console.log('✅ a-video do target 2 tornado visível')
+                  
+                  // Garantir que o material está configurado corretamente
+                  const currentMaterial = videoPlane.getAttribute('material')
+                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
+                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
+                  }
+                  
+                  // Garantir que o vídeo HTML está tocando
+                  console.log('📹 Estado do vídeo HTML:', {
+                    id: video.id,
+                    paused: video.paused,
+                    readyState: video.readyState,
+                    currentTime: video.currentTime,
+                    duration: video.duration,
+                    muted: video.muted
+                  })
+                  
+                  // Verificar se o a-video está realmente visível no DOM
+                  setTimeout(() => {
+                    const isVisible = videoPlane.getAttribute('visible')
+                    const material = videoPlane.getAttribute('material')
+                    const object3D = videoPlane.object3D
+                    console.log('🔍 Verificação do a-video após 500ms:', {
+                      visible: isVisible,
+                      material: material,
+                      object3DExists: !!object3D,
+                      object3DVisible: object3D?.visible,
+                      object3DMatrixWorld: object3D?.matrixWorld?.elements
+                    })
+                  }, 500)
+                  
+                  console.log('✅ a-video do target 2 tornado visível e configurado', {
+                    visible: videoPlane.getAttribute('visible'),
+                    material: videoPlane.getAttribute('material')
+                  })
+                } else {
+                  console.warn('⚠️ a-video do target 2 não encontrado!')
                 }
               } catch (e) {
                 console.error('❌ Erro ao habilitar vídeo para target 2:', e)
@@ -1729,13 +1968,33 @@ const ScanPage = () => {
           })
           
           target2.addEventListener('targetLost', () => {
-            console.log('❌ Target 2 perdido')
+            console.log('❌ Target 2 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             
+            // Pausar vídeo com múltiplas tentativas para garantir
+            const pauseVideo = (video, attempts = 0) => {
+              if (!video) return
+              
+              if (attempts < 5) {
+                video.pause()
+                if (!video.paused) {
+                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
+                } else {
+                  video.currentTime = 0 // Resetar para início apenas quando pausar
+                  console.log('✅ Vídeo 3 pausado e resetado')
+                }
+              }
+            }
+            
             const video = document.getElementById('video3')
-            if (video) {
-              video.pause()
+            pauseVideo(video)
+            
+            // Garantir que o a-video esteja oculto
+            const videoPlane = target2.querySelector('a-video')
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'false')
+              console.log('✅ a-video do target 2 oculto')
             }
           })
         }
@@ -2661,24 +2920,25 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* A-Frame Scene */}
+      {/* A-Frame Scene - SIMPLIFICADO: deixar MindAR gerenciar completamente */}
       <a-scene 
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: ${/Android/i.test(navigator.userAgent) ? 'false' : 'true'}; powerPreference: high-performance;`}
+        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: ${/Android/i.test(navigator.userAgent) ? 'false' : 'false'}; powerPreference: high-performance;`}
         embedded
-        background="color: #000000; opacity: 0"
+        background="color: transparent; opacity: 0"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100vw',
           height: '100vh',
-          zIndex: 1, // Acima do vídeo da câmera (-1), mas transparente
+          zIndex: 1,
           pointerEvents: 'none',
           backgroundColor: 'transparent',
+          background: 'transparent',
           opacity: 1
         }}
       >
@@ -2700,7 +2960,7 @@ const ScanPage = () => {
             height="0.8"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
-            visible="true"
+            visible="false"
           ></a-video>
         </a-entity>
 
@@ -2713,7 +2973,7 @@ const ScanPage = () => {
             height="0.8"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
-            visible="true"
+            visible="false"
             loop="true"
           ></a-video>
         </a-entity>
@@ -2728,7 +2988,7 @@ const ScanPage = () => {
             height="0.8"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
-            visible="true"
+            visible="false"
             loop="true"
           ></a-video>
         </a-entity>
