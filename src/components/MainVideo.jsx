@@ -116,10 +116,37 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('✅ MainVideo: src definido:', videoPath)
     }
 
-    // GARANTIR que o áudio está habilitado (não muted)
-    video.muted = false
-    video.removeAttribute('muted')
-    console.log('🔊 MainVideo: Áudio habilitado - muted:', video.muted)
+    // Android: Iniciar muted para garantir autoplay funciona
+    // Habilitar áudio depois que o vídeo começar a tocar ou após interação
+    // Isso permite que o vídeo apareça na primeira vez
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (isAndroid) {
+      video.muted = true
+      video.setAttribute('muted', 'true')
+      console.log('🔇 Android: Vídeo iniciado muted para garantir autoplay')
+      
+      // Habilitar áudio após o vídeo começar a tocar
+      const enableAudioAfterPlay = () => {
+        if (!video.paused) {
+          video.muted = false
+          video.removeAttribute('muted')
+          console.log('🔊 Android: Áudio habilitado após play iniciado')
+        }
+      }
+      
+      // Tentar habilitar após play
+      video.addEventListener('play', enableAudioAfterPlay, { once: true })
+      
+      // Se já estiver tocando, habilitar imediatamente
+      if (!video.paused) {
+        enableAudioAfterPlay()
+      }
+    } else {
+      // Desktop/iOS: Pode tentar iniciar com áudio
+      video.muted = false
+      video.removeAttribute('muted')
+      console.log('🔊 MainVideo: Áudio habilitado - muted:', video.muted)
+    }
 
     // FORÇAR visibilidade IMEDIATAMENTE
     video.style.setProperty('opacity', '1', 'important')
@@ -234,20 +261,39 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           readyState: video.readyState
         })
         
-        // Garantir que o áudio está habilitado antes de reproduzir
-        video.muted = false
-        video.removeAttribute('muted')
+        // Android: Manter muted para autoplay funcionar, depois habilitar áudio
+        const isAndroid = /Android/i.test(navigator.userAgent)
+        if (!isAndroid) {
+          // Desktop/iOS: Pode tentar com áudio
+          video.muted = false
+          video.removeAttribute('muted')
+        }
+        // Android mantém muted aqui - será habilitado após play
         
         // Tentar reproduzir automaticamente
         if (video.paused) {
           video.play().then(() => {
             console.log('✅ MainVideo: Autoplay iniciado com sucesso')
-            // Garantir novamente após play (alguns navegadores podem resetar)
-            video.muted = false
-            console.log('🔊 MainVideo: Áudio confirmado após play - muted:', video.muted)
+            // Android: Habilitar áudio após play bem-sucedido
+            if (isAndroid && video.muted) {
+              video.muted = false
+              video.removeAttribute('muted')
+              console.log('🔊 Android: Áudio habilitado após autoplay bem-sucedido')
+            } else if (!isAndroid) {
+              // Garantir novamente após play (alguns navegadores podem resetar)
+              video.muted = false
+              console.log('🔊 MainVideo: Áudio confirmado após play - muted:', video.muted)
+            }
           }).catch((err) => {
             console.warn('⚠️ MainVideo: Autoplay bloqueado pelo navegador:', err)
           })
+        } else {
+          // Se já está tocando, garantir áudio (Android)
+          if (isAndroid && video.muted) {
+            video.muted = false
+            video.removeAttribute('muted')
+            console.log('🔊 Android: Áudio habilitado (vídeo já estava tocando)')
+          }
         }
       }
     }

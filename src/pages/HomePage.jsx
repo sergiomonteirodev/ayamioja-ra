@@ -37,9 +37,13 @@ const HomePage = () => {
         video.setAttribute('x5-playsinline', 'true')
         video.playsInline = true
         
-        // Garantir que não está muted
-        video.muted = false
-        video.removeAttribute('muted')
+        // Android: Manter muted para autoplay funcionar
+        // O MainVideo gerencia o unmute após play
+        if (!isAndroid) {
+          // Desktop/iOS: Pode tentar com áudio
+          video.muted = false
+          video.removeAttribute('muted')
+        }
         
         // Forçar load() mesmo se já tiver algum readyState
         // No Android, às vezes precisa forçar múltiplas vezes
