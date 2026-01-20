@@ -2944,7 +2944,7 @@ const ScanPage = () => {
       >
         {/* Assets - Vídeos */}
         <a-assets>
-          <video id="video1" src="/ayamioja-ra/ar-assets/assets/ayo_teste.mp4" preload="auto" crossOrigin="anonymous"></video>
+          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous"></video>
           <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop muted={false}></video>
           {/* video3 usando anim_2.mp4 novamente (ou você pode adicionar um terceiro vídeo) */}
           <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop></video>
