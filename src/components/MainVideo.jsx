@@ -5,6 +5,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
+  const [showPlayButton, setShowPlayButton] = useState(true)
   const videoRef = useRef(null)
 
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
@@ -49,7 +50,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       })
     }
 
-    const handlePlay = () => updateVideoState()
+    const handlePlay = () => {
+      // Ocultar botão de play quando o vídeo começar a tocar
+      setShowPlayButton(false)
+      updateVideoState()
+    }
     const handlePause = () => updateVideoState()
     const handleTimeUpdate = () => updateVideoState()
     const handleEnded = () => updateVideoState()
@@ -307,6 +312,12 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const handleCanPlay = () => {
       console.log('✅ MainVideo: canplay event - vídeo pode reproduzir')
       setShowLoading(false)
+      
+      // Ocultar botão de play quando o vídeo começar a tocar
+      if (video && !video.paused) {
+        setShowPlayButton(false)
+      }
+      
       // Forçar visibilidade quando vídeo pode reproduzir
       if (video) {
         video.style.setProperty('opacity', '1', 'important')
@@ -372,8 +383,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           }
         }
         
-        // Tentar reproduzir automaticamente
-        attemptPlay()
+        // Não tentar reproduzir automaticamente - esperar clique no botão
+        // attemptPlay() // DESABILITADO - vídeo será iniciado pelo botão de play
       }
     }
 
@@ -558,6 +569,41 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
   }, [hasEnded])
 
+  const handlePlayButtonClick = () => {
+    const video = videoRef.current
+    if (!video) return
+    
+    console.log('▶️ Botão de play clicado - iniciando vídeo')
+    setShowPlayButton(false)
+    
+    // Garantir que o áudio está habilitado antes de tocar
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (isAndroid) {
+      // Android: Iniciar muted e habilitar após 1 segundo
+      video.muted = true
+      video.setAttribute('muted', 'true')
+      
+      // Habilitar áudio após 1 segundo
+      setTimeout(() => {
+        video.muted = false
+        video.removeAttribute('muted')
+        console.log('🔊 Android: Áudio habilitado após 1 segundo')
+      }, 1000)
+    } else {
+      video.muted = false
+      video.removeAttribute('muted')
+    }
+    
+    // Iniciar reprodução
+    video.play().then(() => {
+      console.log('✅ Vídeo iniciado pelo botão de play')
+    }).catch((err) => {
+      console.error('❌ Erro ao iniciar vídeo:', err)
+      // Se falhar, mostrar botão novamente
+      setShowPlayButton(true)
+    })
+  }
+
   const handleReplay = () => {
     const video = videoRef.current
     if (!video) return
@@ -612,11 +658,58 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               height: '100%',
               objectFit: 'cover'
             }}
-            autoPlay
           >
             <source src={videoPath} type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
           </video>
+
+          {/* Botão de Play Inicial */}
+          {showPlayButton && (
+            <button 
+              className="play-button" 
+              onClick={handlePlayButtonClick}
+              style={{
+                zIndex: 25,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.3s ease',
+                padding: 0,
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 1)'
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)'
+              }}
+            >
+              <svg 
+                width="32" 
+                height="32" 
+                viewBox="0 0 24 24" 
+                fill="#333"
+                style={{
+                  marginLeft: '4px' // Ajustar seta para parecer mais centralizada
+                }}
+              >
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+          )}
 
           {/* Botão Assistir Novamente */}
           {showReplay && hasEnded && (
