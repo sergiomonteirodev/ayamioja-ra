@@ -116,6 +116,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('✅ MainVideo: src definido:', videoPath)
     }
 
+    // GARANTIR que o áudio está habilitado (não muted)
+    video.muted = false
+    video.removeAttribute('muted')
+    console.log('🔊 MainVideo: Áudio habilitado - muted:', video.muted)
+
     // FORÇAR visibilidade IMEDIATAMENTE
     video.style.setProperty('opacity', '1', 'important')
     video.style.setProperty('visibility', 'visible', 'important')
@@ -195,10 +200,17 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           readyState: video.readyState
         })
         
+        // Garantir que o áudio está habilitado antes de reproduzir
+        video.muted = false
+        video.removeAttribute('muted')
+        
         // Tentar reproduzir automaticamente
         if (video.paused) {
           video.play().then(() => {
             console.log('✅ MainVideo: Autoplay iniciado com sucesso')
+            // Garantir novamente após play (alguns navegadores podem resetar)
+            video.muted = false
+            console.log('🔊 MainVideo: Áudio confirmado após play - muted:', video.muted)
           }).catch((err) => {
             console.warn('⚠️ MainVideo: Autoplay bloqueado pelo navegador:', err)
           })
@@ -399,7 +411,6 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
               objectFit: 'cover'
             }}
             autoPlay
-            muted
           >
             <source src={videoPath} type="video/mp4" />
             Seu navegador não suporta vídeos HTML5.
