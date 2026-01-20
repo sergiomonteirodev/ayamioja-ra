@@ -509,12 +509,18 @@ const ScanPage = () => {
 
   // Controlar volume dos vídeos AR quando audiodescrição está ativa
   useEffect(() => {
-    // Controlar volume de todos os vídeos AR que têm áudio (video2 e video3)
+    // Controlar volume de todos os vídeos AR que têm áudio (video1, video2 e video3)
+    const video1 = document.getElementById('video1')
     const video2 = document.getElementById('video2')
     const video3 = document.getElementById('video3')
 
     if (audioActive) {
-      // Audiodescrição ativa: reduzir volume dos vídeos para 0.3 (30%)
+      // Audiodescrição ativa: reduzir volume dos vídeos para priorizar a voz da AD
+      // Deixar vídeos bem mais baixos (20%) para a AD se sobressair
+      if (video1) {
+        console.log('🔊 Audiodescrição ativa - reduzindo volume do video1 (anim_4) para 0.2')
+        video1.volume = 0.2
+      }
       if (video2) {
         console.log('🔊 Audiodescrição ativa - reduzindo volume do video2 para 0.3')
         video2.volume = 0.3
@@ -525,6 +531,10 @@ const ScanPage = () => {
       }
     } else {
       // Audiodescrição inativa: restaurar volume dos vídeos para 1.0 (100%)
+      if (video1) {
+        console.log('🔊 Audiodescrição inativa - restaurando volume do video1 (anim_4) para 1.0')
+        video1.volume = 1.0
+      }
       if (video2) {
         console.log('🔊 Audiodescrição inativa - restaurando volume do video2 para 1.0')
         video2.volume = 1.0
