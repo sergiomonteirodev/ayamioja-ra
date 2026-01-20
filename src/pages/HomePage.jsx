@@ -14,40 +14,120 @@ const HomePage = () => {
   const location = useLocation()
   const mountedRef = useRef(false)
   
-  // Forçar inicialização do vídeo quando a página é montada
+  // Forçar inicialização do vídeo quando a página é montada (Android-friendly)
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true
-      console.log('🏠 HomePage montado pela primeira vez')
-      
-      // Forçar carregamento do vídeo após pequeno delay para garantir que o DOM está pronto
-      const timer = setTimeout(() => {
-        const video = document.getElementById('main-video')
-        if (video) {
-          console.log('🏠 HomePage: Forçando carregamento inicial do vídeo via DOM')
-          // Garantir atributos mobile
-          if (video.readyState === 0) {
-            try {
-              video.load()
-              console.log('✅ HomePage: video.load() chamado via DOM')
-            } catch (e) {
-              console.error('❌ HomePage: Erro ao chamar video.load():', e)
+    console.log('🏠 HomePage: useEffect executado - pathname:', location.pathname)
+    
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    
+    // Função para forçar carregamento do vídeo
+    const forceVideoLoad = () => {
+      const video = document.getElementById('main-video')
+      if (video) {
+        console.log('🏠 HomePage: Forçando carregamento do vídeo via DOM', {
+          readyState: video.readyState,
+          networkState: video.networkState,
+          src: video.src
+        })
+        
+        // Forçar atributos mobile/Android
+        video.setAttribute('playsinline', '')
+        video.setAttribute('webkit-playsinline', 'true')
+        video.setAttribute('x5-playsinline', 'true')
+        video.playsInline = true
+        
+        // Garantir que não está muted
+        video.muted = false
+        video.removeAttribute('muted')
+        
+        // Forçar load() mesmo se já tiver algum readyState
+        // No Android, às vezes precisa forçar múltiplas vezes
+        if (video.readyState === 0 || (isAndroid && video.networkState !== 2)) {
+          try {
+            video.load()
+            console.log('✅ HomePage: video.load() chamado via DOM')
+            
+            // Android: tentar novamente após pequeno delay
+            if (isAndroid) {
+              setTimeout(() => {
+                if (video.networkState === 0 || video.readyState === 0) {
+                  console.log('🔄 Android: Tentando load() novamente...')
+                  try {
+                    video.load()
+                  } catch (e) {
+                    console.warn('⚠️ Android: Erro no segundo load():', e)
+                  }
+                }
+              }, 300)
             }
-          }
-          
-          // Forçar visibilidade no mobile
-          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-          if (isMobile) {
-            video.style.setProperty('opacity', '1', 'important')
-            video.style.setProperty('visibility', 'visible', 'important')
-            video.style.setProperty('display', 'block', 'important')
-            video.style.setProperty('z-index', '10', 'important')
-            console.log('✅ HomePage: Visibilidade forçada no mobile')
+          } catch (e) {
+            console.error('❌ HomePage: Erro ao chamar video.load():', e)
           }
         }
-      }, 100)
-      
-      return () => clearTimeout(timer)
+        
+        // Forçar visibilidade no mobile
+        if (isMobile) {
+          video.style.setProperty('opacity', '1', 'important')
+          video.style.setProperty('visibility', 'visible', 'important')
+          video.style.setProperty('display', 'block', 'important')
+          video.style.setProperty('z-index', '10', 'important')
+          console.log('✅ HomePage: Visibilidade forçada no mobile')
+        }
+      } else {
+        console.warn('⚠️ HomePage: Vídeo não encontrado no DOM ainda')
+      }
+    }
+    
+    // Executar imediatamente
+    forceVideoLoad()
+    
+    // Timer para garantir que executa após o DOM estar pronto
+    const timer = setTimeout(forceVideoLoad, 100)
+    
+    // Android: tentar novamente após mais tempo se ainda não carregou
+    let androidRetryTimer = null
+    if (isAndroid) {
+      androidRetryTimer = setTimeout(() => {
+        const video = document.getElementById('main-video')
+        if (video && (video.readyState === 0 || video.networkState === 0)) {
+          console.log('🔄 Android: Retry final após 800ms')
+          forceVideoLoad()
+        }
+      }, 800)
+    }
+    
+    // Listener para quando a página fica visível (importante para Android)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('👁️ HomePage: Página ficou visível - forçando vídeo')
+        forceVideoLoad()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Listener de interação do usuário (necessário para autoplay no Android)
+    const handleUserInteraction = () => {
+      const video = document.getElementById('main-video')
+      if (video && (video.paused || video.readyState === 0)) {
+        console.log('👆 HomePage: Interação do usuário detectada - tentando play')
+        forceVideoLoad()
+        video.play().catch(e => {
+          console.warn('⚠️ Play bloqueado após interação:', e)
+        })
+      }
+    }
+    
+    // Adicionar listeners de interação (apenas uma vez, mas sem remover)
+    document.addEventListener('touchstart', handleUserInteraction, { once: true })
+    document.addEventListener('click', handleUserInteraction, { once: true })
+    
+    return () => {
+      clearTimeout(timer)
+      if (androidRetryTimer) clearTimeout(androidRetryTimer)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      // Não remover os listeners de interação pois queremos que funcionem sempre
     }
   }, [location.pathname])
 
