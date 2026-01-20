@@ -619,12 +619,8 @@ const ScanPage = () => {
         video.setAttribute('webkit-playsinline', '')
         video.playsInline = true
         
-        // Mutar apenas video1, video2 e video3 devem ter áudio
-        if (video.id === 'video1') {
-          video.muted = true
-        } else {
-          video.muted = false // video2 e video3 com áudio
-        }
+        // Todos os vídeos AR podem ter áudio quando forem reproduzidos
+        video.muted = false
         
         // Forçar load() para iniciar download APENAS se não estiver carregando
         // networkState: 0=EMPTY, 1=IDLE, 2=LOADING, 3=NO_SOURCE
@@ -699,12 +695,8 @@ const ScanPage = () => {
       } catch {}
       video.playsInline = true
       
-      // Só mutar video1, video2 e video3 devem ter áudio
-      if (video.id === 'video1') {
-        video.muted = true
-      } else {
-        video.muted = false // video2 e video3 com áudio
-      }
+      // Todos os vídeos AR podem ter áudio quando forem reproduzidos
+      video.muted = false
       
       // Para Android: sempre forçar load() antes de play() APENAS se não estiver carregando
       // networkState: 0=EMPTY, 1=IDLE, 2=LOADING, 3=NO_SOURCE
@@ -1141,12 +1133,8 @@ const ScanPage = () => {
         } catch(e) {
           console.warn(`⚠️ Erro ao carregar ${video.id}:`, e)
         }
-        // Só mutar video1, video2 e video3 devem ter áudio
-        if (video.id === 'video1') {
-          video.muted = true
-        } else {
-          video.muted = false // video2 e video3 com áudio
-        }
+        // Todos os vídeos AR podem ter áudio quando forem reproduzidos
+        video.muted = false
         // Para evitar áudio antes do target: só toca video1 e video2 quando seus targets forem encontrados
         // video3 só toca quando target 2 for encontrado
         if (video.id !== 'video3') {
@@ -1712,7 +1700,9 @@ const ScanPage = () => {
                 if (video.readyState === 0) {
                   video.load()
                 }
-                video.muted = true
+                // Target 0 (video1/anim_4.mp4) deve ter áudio habilitado
+                video.muted = false
+                video.setAttribute('muted', 'false')
                 enableVideo(video)
                 
                 // Garantir que o a-video esteja visível e configurado corretamente
