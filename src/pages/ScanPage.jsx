@@ -296,10 +296,12 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // SIMPLIFICADO: Forçar transparência do canvas no Android - SEM interferir com vídeos AR
+  // AGressivo: Forçar transparência do canvas no Android - interceptar TUDO relacionado ao WebGL
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
+
+    let rafId = null
 
     const forceAndroidTransparency = () => {
       const scene = sceneRef.current
@@ -316,13 +318,48 @@ const ScanPage = () => {
       canvas.style.setProperty('pointer-events', 'none', 'important')
       canvas.style.setProperty('z-index', '1', 'important') // Acima dos vídeos AR (-1)
       
-      // CRÍTICO: Garantir que o canvas não cubra elementos renderizados dentro dele
-      // O canvas renderiza a cena 3D, então o a-video DEVE estar sendo renderizado dentro dele
-      // O problema pode ser que o canvas está limpando com cor opaca
-      
-      // Forçar via WebGL - CRÍTICO: sempre forçar clearColor transparente
+      // Forçar via WebGL - CRÍTICO: interceptar clearColor, clear, e usar RAF
       const gl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
       if (gl) {
+        // CRÍTICO: Interceptar gl.clearColor() para SEMPRE retornar transparente
+        if (!gl._clearColorIntercepted) {
+          const originalClearColor = gl.clearColor.bind(gl)
+          gl.clearColor = function(r, g, b, a) {
+            // SEMPRE forçar alpha = 0 (transparente), mesmo se o A-Frame tentar definir preto
+            originalClearColor.call(this, r, g, b, 0.0)
+            // Log apenas uma vez para debug
+            if (!this._loggedClearColor) {
+              console.log('🔧 gl.clearColor interceptado - sempre forçando alpha 0.0')
+              this._loggedClearColor = true
+            }
+          }
+          gl._clearColorIntercepted = true
+        }
+        
+        // CRÍTICO: Interceptar setClearColor do renderer do Three.js (se disponível)
+        try {
+          const rendererSystem = scene.systems?.renderer
+          if (rendererSystem) {
+            const renderer = rendererSystem.renderer || rendererSystem
+            if (renderer && typeof renderer.setClearColor === 'function' && !renderer._setClearColorIntercepted) {
+              renderer._originalSetClearColor = renderer.setClearColor.bind(renderer)
+              renderer.setClearColor = function(color, alpha) {
+                // SEMPRE forçar alpha = 0 (transparente)
+                renderer._originalSetClearColor(color, 0)
+                if (!this._loggedSetClearColor) {
+                  console.log('🔧 renderer.setClearColor interceptado - sempre forçando alpha 0')
+                  this._loggedSetClearColor = true
+                }
+              }
+              renderer._setClearColorIntercepted = true
+              // Forçar transparente imediatamente
+              renderer.setClearColor(0x000000, 0)
+            }
+          }
+        } catch (e) {
+          // Ignorar se não conseguir acessar renderer
+        }
+        
         // CRÍTICO: Interceptar gl.clear() para SEMPRE usar clearColor transparente
         if (!gl._clearIntercepted) {
           gl._originalClear = gl.clear.bind(gl)
@@ -335,14 +372,48 @@ const ScanPage = () => {
           }
           gl._clearIntercepted = true
         }
+        
+        // CRÍTICO: Interceptar gl.clearColor antes de cada draw para garantir
+        if (!gl._drawIntercepted) {
+          const originalDrawArrays = gl.drawArrays?.bind(gl)
+          const originalDrawElements = gl.drawElements?.bind(gl)
+          
+          if (originalDrawArrays) {
+            gl.drawArrays = function(...args) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              return originalDrawArrays.apply(this, args)
+            }
+          }
+          
+          if (originalDrawElements) {
+            gl.drawElements = function(...args) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              return originalDrawElements.apply(this, args)
+            }
+          }
+          
+          gl._drawIntercepted = true
+        }
+        
+        // SEMPRE configurar clearColor transparente e blend
         gl.clearColor(0.0, 0.0, 0.0, 0.0)
         gl.enable(gl.BLEND)
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+        
+        // CRÍTICO: Usar requestAnimationFrame para forçar clearColor a cada frame
+        if (!canvas._rafTransparencyRunning) {
+          canvas._rafTransparencyRunning = true
+          const forceClearColorEveryFrame = () => {
+            const currentGl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
+            if (currentGl) {
+              currentGl.clearColor(0.0, 0.0, 0.0, 0.0)
+            }
+            rafId = requestAnimationFrame(forceClearColorEveryFrame)
+          }
+          forceClearColorEveryFrame()
+        }
       }
-      
-      // NÃO manipular vídeos AR aqui - eles são gerenciados pelo A-Frame/MindAR
-      // Os vídeos AR (video1, video2, video3) são renderizados dentro do a-video,
-      // não precisam de z-index manual
       
       // Vídeo da câmera fica atrás de tudo
       const mindarVideo = document.querySelector('#arVideo') || 
@@ -358,10 +429,19 @@ const ScanPage = () => {
     // Chamar imediatamente
     forceAndroidTransparency()
     
-    // Chamar continuamente a cada 50ms no Android (mais frequente para garantir)
+    // Chamar continuamente a cada 50ms no Android (backup para RAF)
     const interval = setInterval(forceAndroidTransparency, 50)
     
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
+      const canvas = sceneRef.current?.querySelector('canvas')
+      if (canvas) {
+        canvas._rafTransparencyRunning = false
+      }
+    }
   }, [cameraPermissionGranted])
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
@@ -2878,7 +2958,7 @@ const ScanPage = () => {
             rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; src: #video1; side: double; transparent: false; opacity: 1.0"
+            material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
             visible="false"
           ></a-video>
@@ -2891,7 +2971,7 @@ const ScanPage = () => {
             rotation="0 0 0" 
             width="1.6" 
             height="0.8"
-            material="shader: flat; src: #video1; side: double; transparent: false; opacity: 1.0"
+            material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
             visible="false"
             loop="true"
