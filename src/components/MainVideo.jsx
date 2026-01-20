@@ -51,8 +51,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
 
     const handlePlay = () => {
-      // Ocultar botão de play quando o vídeo começar a tocar
-      setShowPlayButton(false)
+      // Não ocultar botão aqui - só quando usuário clicar
       updateVideoState()
     }
     const handlePause = () => updateVideoState()
@@ -313,10 +312,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('✅ MainVideo: canplay event - vídeo pode reproduzir')
       setShowLoading(false)
       
-      // Ocultar botão de play quando o vídeo começar a tocar
-      if (video && !video.paused) {
-        setShowPlayButton(false)
-      }
+      // Não ocultar botão aqui - só quando usuário clicar
       
       // Forçar visibilidade quando vídeo pode reproduzir
       if (video) {
