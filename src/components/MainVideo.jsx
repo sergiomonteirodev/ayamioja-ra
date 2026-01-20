@@ -117,30 +117,74 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
 
     // Android: Iniciar muted para garantir autoplay funciona
-    // Habilitar áudio depois que o vídeo começar a tocar ou após interação
-    // Isso permite que o vídeo apareça na primeira vez
+    // Estratégia: Iniciar muted e habilitar áudio após 1 segundo de reprodução
+    // Isso permite que o vídeo apareça e reproduza na primeira vez
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (isAndroid) {
       video.muted = true
       video.setAttribute('muted', 'true')
       console.log('🔇 Android: Vídeo iniciado muted para garantir autoplay')
       
-      // Habilitar áudio após o vídeo começar a tocar
-      const enableAudioAfterPlay = () => {
-        if (!video.paused) {
+      let audioEnableTimer = null
+      let hasEnabledAudio = false
+      
+      // Habilitar áudio após 1 segundo de reprodução
+      const enableAudioAfter1Second = () => {
+        if (hasEnabledAudio) return
+        hasEnabledAudio = true
+        
+        if (audioEnableTimer) {
+          clearTimeout(audioEnableTimer)
+        }
+        
+        // Verificar se o vídeo está tocando e tem pelo menos 1 segundo
+        if (!video.paused && video.currentTime >= 0.5) {
           video.muted = false
           video.removeAttribute('muted')
-          console.log('🔊 Android: Áudio habilitado após play iniciado')
+          console.log('🔊 Android: Áudio habilitado após 1 segundo de reprodução (currentTime:', video.currentTime.toFixed(2), 's)')
+        } else {
+          // Se ainda não passou 1 segundo, esperar mais um pouco
+          audioEnableTimer = setTimeout(() => {
+            if (!video.paused && !hasEnabledAudio) {
+              video.muted = false
+              video.removeAttribute('muted')
+              console.log('🔊 Android: Áudio habilitado após timeout de 1 segundo')
+              hasEnabledAudio = true
+            }
+          }, 1000)
         }
       }
       
-      // Tentar habilitar após play
-      video.addEventListener('play', enableAudioAfterPlay, { once: true })
-      
-      // Se já estiver tocando, habilitar imediatamente
-      if (!video.paused) {
-        enableAudioAfterPlay()
+      // Monitorar quando o vídeo começar a tocar
+      const handlePlayStart = () => {
+        console.log('▶️ Android: Vídeo começou a tocar - agendando enable audio em 1s')
+        // Aguardar 1 segundo após o play começar
+        audioEnableTimer = setTimeout(enableAudioAfter1Second, 1000)
       }
+      
+      // Monitorar timeupdate para habilitar após 1 segundo de reprodução
+      const handleTimeUpdate = () => {
+        if (!hasEnabledAudio && !video.paused && video.currentTime >= 1.0) {
+          enableAudioAfter1Second()
+          // Remover listener após habilitar áudio
+          video.removeEventListener('timeupdate', handleTimeUpdate)
+          video._androidTimeUpdateHandler = null
+        }
+      }
+      
+      // Guardar referência para cleanup
+      video._androidTimeUpdateHandler = handleTimeUpdate
+      
+      video.addEventListener('play', handlePlayStart, { once: true })
+      video.addEventListener('timeupdate', handleTimeUpdate)
+      
+      // Se já estiver tocando, iniciar timer imediatamente
+      if (!video.paused) {
+        handlePlayStart()
+      }
+      
+      // Guardar referência do timer para cleanup
+      video._androidAudioTimer = audioEnableTimer
     } else {
       // Desktop/iOS: Pode tentar iniciar com áudio
       video.muted = false
@@ -231,8 +275,27 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       }
     }, 200)
 
+    // Cleanup dos listeners de áudio Android
     return () => {
       clearInterval(forceVisibilityInterval)
+      
+      // Limpar timer e listeners de áudio Android se ainda existirem
+      if (isAndroid) {
+        const video = videoRef.current
+        if (video) {
+          // Limpar timer
+          if (video._androidAudioTimer) {
+            clearTimeout(video._androidAudioTimer)
+            video._androidAudioTimer = null
+          }
+          // Remover listener de timeupdate
+          const timeUpdateHandler = video._androidTimeUpdateHandler
+          if (timeUpdateHandler) {
+            video.removeEventListener('timeupdate', timeUpdateHandler)
+            video._androidTimeUpdateHandler = null
+          }
+        }
+      }
     }
   }, [videoPath])
 
