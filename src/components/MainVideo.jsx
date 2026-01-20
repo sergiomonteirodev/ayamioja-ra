@@ -270,31 +270,47 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         }
         // Android mantém muted aqui - será habilitado após play
         
-        // Tentar reproduzir automaticamente
-        if (video.paused) {
-          video.play().then(() => {
-            console.log('✅ MainVideo: Autoplay iniciado com sucesso')
-            // Android: Habilitar áudio após play bem-sucedido
+        // Função para tentar reproduzir (com retries para Android)
+        const attemptPlay = (attempt = 0) => {
+          if (video.paused && video.readyState >= 2) {
+            video.play().then(() => {
+              console.log('✅ MainVideo: Play iniciado com sucesso', { attempt })
+              // Android: Habilitar áudio após play bem-sucedido
+              if (isAndroid && video.muted) {
+                video.muted = false
+                video.removeAttribute('muted')
+                console.log('🔊 Android: Áudio habilitado após play bem-sucedido')
+              } else if (!isAndroid) {
+                // Garantir novamente após play (alguns navegadores podem resetar)
+                video.muted = false
+                console.log('🔊 MainVideo: Áudio confirmado após play - muted:', video.muted)
+              }
+            }).catch((err) => {
+              console.warn('⚠️ MainVideo: Play bloqueado:', err, { attempt })
+              // Android: Tentar novamente até 3 vezes
+              if (isAndroid && attempt < 3) {
+                setTimeout(() => {
+                  attemptPlay(attempt + 1)
+                }, 300 * (attempt + 1)) // Delay crescente: 300ms, 600ms, 900ms
+              }
+            })
+          } else if (video.paused && isAndroid && attempt < 3) {
+            // Se ainda não tem dados suficientes, tentar novamente
+            setTimeout(() => {
+              attemptPlay(attempt + 1)
+            }, 500)
+          } else if (!video.paused) {
+            // Se já está tocando, garantir áudio (Android)
             if (isAndroid && video.muted) {
               video.muted = false
               video.removeAttribute('muted')
-              console.log('🔊 Android: Áudio habilitado após autoplay bem-sucedido')
-            } else if (!isAndroid) {
-              // Garantir novamente após play (alguns navegadores podem resetar)
-              video.muted = false
-              console.log('🔊 MainVideo: Áudio confirmado após play - muted:', video.muted)
+              console.log('🔊 Android: Áudio habilitado (vídeo já estava tocando)')
             }
-          }).catch((err) => {
-            console.warn('⚠️ MainVideo: Autoplay bloqueado pelo navegador:', err)
-          })
-        } else {
-          // Se já está tocando, garantir áudio (Android)
-          if (isAndroid && video.muted) {
-            video.muted = false
-            video.removeAttribute('muted')
-            console.log('🔊 Android: Áudio habilitado (vídeo já estava tocando)')
           }
         }
+        
+        // Tentar reproduzir automaticamente
+        attemptPlay()
       }
     }
 
@@ -313,8 +329,33 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         video.style.zIndex = '15'
         console.log('✅ MainVideo: Visibilidade forçada no loadeddata', {
           width: video.offsetWidth,
-          height: video.offsetHeight
+          height: video.offsetHeight,
+          paused: video.paused,
+          readyState: video.readyState
         })
+        
+        // Android: Tentar play() imediatamente após loadeddata
+        const isAndroid = /Android/i.test(navigator.userAgent)
+        if (isAndroid && video.paused && video.readyState >= 2) {
+          console.log('🔄 Android: Tentando play() após loadeddata')
+          video.play().then(() => {
+            console.log('✅ Android: Play bem-sucedido após loadeddata')
+            // Habilitar áudio após play bem-sucedido
+            if (video.muted) {
+              video.muted = false
+              video.removeAttribute('muted')
+              console.log('🔊 Android: Áudio habilitado após play')
+            }
+          }).catch((err) => {
+            console.warn('⚠️ Android: Play bloqueado após loadeddata:', err)
+            // Tentar novamente após pequeno delay
+            setTimeout(() => {
+              if (video.paused) {
+                video.play().catch(() => {})
+              }
+            }, 300)
+          })
+        }
       }
     }
 
@@ -413,6 +454,24 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         video.style.visibility = 'visible'
         video.style.display = 'block'
         video.style.zIndex = '15'
+        
+        // Android: Tentar play() após metadata (alguns navegadores podem já ter dados suficientes)
+        const isAndroid = /Android/i.test(navigator.userAgent)
+        if (isAndroid && video.paused && video.readyState >= 1) {
+          console.log('🔄 Android: Tentando play() após loadedmetadata')
+          setTimeout(() => {
+            if (video.paused && video.readyState >= 2) {
+              video.play().then(() => {
+                console.log('✅ Android: Play bem-sucedido após loadedmetadata')
+                if (video.muted) {
+                  video.muted = false
+                  video.removeAttribute('muted')
+                  console.log('🔊 Android: Áudio habilitado')
+                }
+              }).catch(() => {})
+            }
+          }, 100)
+        }
       }
     }
 
