@@ -2944,12 +2944,12 @@ const ScanPage = () => {
       >
         {/* Assets - Vídeos */}
         <a-assets>
-          {/* Target 0 → video1 → anim_2.mp4 */}
-          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous"></video>
-          {/* Target 1 → video2 → anim_3.mp4 */}
+          {/* Target 0 → video1 → anim_4.mp4 (substitui antigo ayo_teste.mp4) */}
+          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous"></video>
+          {/* Target 1 → video2 → anim_3.mp4 (mantém) */}
           <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop muted={false}></video>
-          {/* Target 2 → video3 → anim_4.mp4 */}
-          <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous" loop></video>
+          {/* Target 2 → video3 → anim_2.mp4 (mantém onde estava antes) */}
+          <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop></video>
         </a-assets>
 
         {/* Targets */}
