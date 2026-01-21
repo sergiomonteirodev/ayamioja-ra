@@ -199,6 +199,98 @@
         }
       }
 
+      /* Modal de Instruções Personalizado */
+      .instructions-overlay {
+        background: linear-gradient(135deg, rgba(226, 106, 2, 0.95), rgba(91, 44, 9, 0.95));
+        backdrop-filter: blur(15px);
+      }
+
+      .instructions-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 25px;
+        padding: 50px 40px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 25px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        max-width: 450px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .instructions-content::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #e26a02, #ff8c42, #e26a02);
+        animation: shimmer 3s ease-in-out infinite;
+      }
+
+      .instructions-icon {
+        position: relative;
+      }
+
+      .target-icon {
+        font-size: 60px;
+        animation: bounce 2s ease-in-out infinite;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+      }
+
+      .instructions-title {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0;
+        color: white;
+        font-family: 'RooneySans', Arial, sans-serif;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        letter-spacing: 1px;
+      }
+
+      .instructions-text {
+        font-size: 18px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.95);
+        line-height: 1.5;
+        font-family: 'RooneySans', Arial, sans-serif;
+        font-weight: 500;
+      }
+
+      .instructions-subtext {
+        font-size: 16px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.4;
+        font-family: 'RooneySans', Arial, sans-serif;
+        font-weight: 400;
+      }
+
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(-5px);
+        }
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
       .target-info {
         position: absolute;
         top: 20px;
@@ -609,7 +701,8 @@
             if (userInteracted) return;
             userInteracted = true;
             instructions.style.display = 'none';
-            videos.forEach((video) => enableVideo(video));
+            // REMOVIDO: Não tocar vídeos automaticamente ao clicar na tela
+            // Os vídeos só devem tocar quando o target for detectado
           },
           { once: true }
         );
