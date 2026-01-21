@@ -744,8 +744,13 @@ footer {
     display: block;
 }
 
-/* A-Frame Scene */
+/* A-Frame Scene - APENAS na página de scan */
 a-scene {
+    display: none !important;
+}
+
+.scan-page a-scene {
+    display: block !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
