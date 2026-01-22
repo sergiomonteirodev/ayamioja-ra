@@ -25,6 +25,9 @@ const ActionButtons = ({ showScanButton = true, showAccessButton = true }) => {
           Acesse a história
         </button>
       )}
+      <a href="#" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>
+        Ouvir música
+      </a>
     </div>
   )
 }
