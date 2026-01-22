@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 
 const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
+  const location = useLocation()
   
   // Verificar se o vídeo já foi iniciado pelo usuário nesta sessão
   const hasVideoBeenStarted = () => {
@@ -17,6 +19,45 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
   
   const [showPlayButton, setShowPlayButton] = useState(!hasVideoBeenStarted())
   const videoRef = useRef(null)
+  
+  // Resetar vídeo quando voltar para a página inicial após navegação
+  useEffect(() => {
+    // Só executar quando estiver na página inicial (/)
+    if (location.pathname !== '/' && location.pathname !== '/ayamioja-ra/') {
+      return
+    }
+    
+    const video = videoRef.current
+    if (!video) return
+    
+    // Verificar se acabamos de voltar para a página inicial
+    // (se o vídeo estava tocando antes de navegar)
+    const wasPlaying = !video.paused && video.currentTime > 0
+    
+    if (wasPlaying) {
+      console.log('🔄 HomePage: Voltando para página inicial - resetando vídeo')
+      
+      // Pausar o vídeo
+      video.pause()
+      
+      // Resetar para o início
+      video.currentTime = 0
+      
+      // Limpar sessionStorage para mostrar botão de play novamente
+      try {
+        sessionStorage.removeItem('homepageVideoStarted')
+      } catch (e) {
+        console.warn('⚠️ Não foi possível limpar sessionStorage:', e)
+      }
+      
+      // Mostrar botão de play
+      setShowPlayButton(true)
+      setShowReplay(false)
+      setHasEnded(false)
+      
+      console.log('✅ Vídeo resetado - botão de play aparecerá')
+    }
+  }, [location.pathname])
 
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
   const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
