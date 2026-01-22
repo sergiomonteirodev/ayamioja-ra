@@ -455,28 +455,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
           readyState: video.readyState
         })
         
-        // Android: Tentar play() imediatamente após loadeddata
-        const isAndroid = /Android/i.test(navigator.userAgent)
-        if (isAndroid && video.paused && video.readyState >= 2) {
-          console.log('🔄 Android: Tentando play() após loadeddata')
-          video.play().then(() => {
-            console.log('✅ Android: Play bem-sucedido após loadeddata')
-            // Habilitar áudio após play bem-sucedido
-            if (video.muted) {
-              video.muted = false
-              video.removeAttribute('muted')
-              console.log('🔊 Android: Áudio habilitado após play')
-            }
-          }).catch((err) => {
-            console.warn('⚠️ Android: Play bloqueado após loadeddata:', err)
-            // Tentar novamente após pequeno delay
-            setTimeout(() => {
-              if (video.paused) {
-                video.play().catch(() => {})
-              }
-            }, 300)
-          })
-        }
+        // REMOVIDO: Play automático após loadeddata
+        // O vídeo só deve tocar quando o botão de play for clicado
       }
     }
 
@@ -576,23 +556,8 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
         video.style.display = 'block'
         video.style.zIndex = '15'
         
-        // Android: Tentar play() após metadata (alguns navegadores podem já ter dados suficientes)
-        const isAndroid = /Android/i.test(navigator.userAgent)
-        if (isAndroid && video.paused && video.readyState >= 1) {
-          console.log('🔄 Android: Tentando play() após loadedmetadata')
-          setTimeout(() => {
-            if (video.paused && video.readyState >= 2) {
-              video.play().then(() => {
-                console.log('✅ Android: Play bem-sucedido após loadedmetadata')
-                if (video.muted) {
-                  video.muted = false
-                  video.removeAttribute('muted')
-                  console.log('🔊 Android: Áudio habilitado')
-                }
-              }).catch(() => {})
-            }
-          }, 100)
-        }
+        // REMOVIDO: Play automático após loadedmetadata
+        // O vídeo só deve tocar quando o botão de play for clicado
       }
     }
 
