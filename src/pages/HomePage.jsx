@@ -111,21 +111,8 @@ const HomePage = () => {
     
     document.addEventListener('visibilitychange', handleVisibilityChange)
     
-    // Listener de interação do usuário (necessário para autoplay no Android)
-    const handleUserInteraction = () => {
-      const video = document.getElementById('main-video')
-      if (video && (video.paused || video.readyState === 0)) {
-        console.log('👆 HomePage: Interação do usuário detectada - tentando play')
-        forceVideoLoad()
-        video.play().catch(e => {
-          console.warn('⚠️ Play bloqueado após interação:', e)
-        })
-      }
-    }
-    
-    // Adicionar listeners de interação (apenas uma vez, mas sem remover)
-    document.addEventListener('touchstart', handleUserInteraction, { once: true })
-    document.addEventListener('click', handleUserInteraction, { once: true })
+    // REMOVIDO: Listener de interação que iniciava vídeo automaticamente
+    // O vídeo só deve tocar quando o botão de play for clicado
     
     return () => {
       clearTimeout(timer)
