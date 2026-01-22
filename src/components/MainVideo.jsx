@@ -28,35 +28,42 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
     
     const video = videoRef.current
-    if (!video) return
-    
-    // Verificar se acabamos de voltar para a página inicial
-    // (se o vídeo estava tocando antes de navegar)
-    const wasPlaying = !video.paused && video.currentTime > 0
-    
-    if (wasPlaying) {
-      console.log('🔄 HomePage: Voltando para página inicial - resetando vídeo')
-      
-      // Pausar o vídeo
-      video.pause()
-      
-      // Resetar para o início
-      video.currentTime = 0
-      
-      // Limpar sessionStorage para mostrar botão de play novamente
+    if (!video) {
+      // Se o vídeo ainda não existe, garantir que o botão apareça
+      // Limpar sessionStorage para mostrar botão de play
       try {
         sessionStorage.removeItem('homepageVideoStarted')
       } catch (e) {
         console.warn('⚠️ Não foi possível limpar sessionStorage:', e)
       }
-      
-      // Mostrar botão de play
       setShowPlayButton(true)
-      setShowReplay(false)
-      setHasEnded(false)
-      
-      console.log('✅ Vídeo resetado - botão de play aparecerá')
+      return
     }
+    
+    // SEMPRE resetar quando voltar para a página inicial
+    console.log('🔄 HomePage: Voltando para página inicial - resetando vídeo')
+    
+    // Pausar o vídeo se estiver tocando
+    if (!video.paused) {
+      video.pause()
+    }
+    
+    // Resetar para o início
+    video.currentTime = 0
+    
+    // Limpar sessionStorage para mostrar botão de play novamente
+    try {
+      sessionStorage.removeItem('homepageVideoStarted')
+    } catch (e) {
+      console.warn('⚠️ Não foi possível limpar sessionStorage:', e)
+    }
+    
+    // SEMPRE mostrar botão de play ao voltar para a página inicial
+    setShowPlayButton(true)
+    setShowReplay(false)
+    setHasEnded(false)
+    
+    console.log('✅ Vídeo resetado - botão de play aparecerá')
   }, [location.pathname])
 
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
