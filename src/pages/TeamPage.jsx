@@ -60,51 +60,83 @@ const TeamPage = () => {
   const teamMembers = [
     {
       id: 1,
-      name: "Nome do Membro 1",
-      role: "Função",
-      instagram: "@instagram1",
-      image: "/team-member-1.jpg",
-      bio: "Minibio do membro da equipe..."
+      name: "Ubirajara Machado da Silva Filho (Ubira Machado)",
+      role: "Fotógrafo e videomaker",
+      instagram: "",
+      image: "/images/equipe/ubira-machado.jpg",
+      bio: "Fotógrafo, artista visual, afro periférico, baseado na vibrante comunidade de Brasília Teimosa, formado em Artes Visuais no Instituto Federal de Pernambuco/ Campus Olinda, tem sua jornada marcada por resistências e reinvenções através da arte."
     },
     {
       id: 2,
-      name: "Nome do Membro 2", 
-      role: "Função",
-      instagram: "@instagram2",
-      image: "/team-member-2.jpg",
-      bio: "Minibio do membro da equipe..."
+      name: "Mariana Andrade Gomes",
+      role: "Revisão",
+      instagram: "",
+      image: "/images/equipe/mariana-andrade.jpg",
+      bio: "Mariana Andrade é uma mulher negra, cis, candombleicista, filha de José Carlos e de Maria do Carmo, dra. em Literatura e Cultura (UFBA), mestra em Comunicação Social (UFPE) e graduada em Letras (licenciatura (UNICAP) e bacharelado (UFPE)). É professora, revisora e, atualmente, atua como bolsista de Difusão do Conhecimento 1A do CNPq no LabEshu-UFPE."
     },
     {
       id: 3,
-      name: "Nome do Membro 3",
-      role: "Função", 
-      instagram: "@instagram3",
-      image: "/team-member-3.jpg",
-      bio: "Minibio do membro da equipe..."
+      name: "Jamila de Oliveira Marques",
+      role: "Escritora e Cogestão do projeto",
+      instagram: "",
+      image: "/images/equipe/jamila-marques.jpg",
+      bio: "Tranço minhas experiências como artista da dança, escritora, pesquisadora, brincante, curadora, produtora e gestora cultural, entre outras movimentações. Bacharel em Ciências Sociais (UFRPE) e mestra em Educação (PPGECI UFRPE | Fundaj). Cogestora do Ayà mi o Já, literatura afrorreferenciada para crianças. A partir dos saberes e práticas populares, da criatividade e da coletividade, gosto de inventar mundos possíveis."
     },
     {
       id: 4,
-      name: "Nome do Membro 1",
-      role: "Função",
-      instagram: "@instagram1",
-      image: "/team-member-1.jpg",
-      bio: "Minibio do membro da equipe..."
+      name: "Sérgio Monteiro (Lelo)",
+      role: "Consultor, desenvolvedor em realidade aumentada (RA)",
+      instagram: "",
+      image: "/images/equipe/sergio-monteiro.jpg",
+      bio: "Profissional de Arte Tecnologia, periférico, pesquisador e desenvolvedor de soluções digitais com foco em web, mobile, realidade aumentada, jogos e IA. Atua como consultor e articulador em projetos periféricos na construção de novas relações com o digital."
     },
     {
       id: 5,
-      name: "Nome do Membro 2", 
-      role: "Função",
-      instagram: "@instagram2",
-      image: "/team-member-2.jpg",
-      bio: "Minibio do membro da equipe..."
+      name: "Daniel da Silva Araújo Lima",
+      role: "Assessoria de imprensa",
+      instagram: "",
+      image: "/images/equipe/daniel-lima.jpg",
+      bio: "Jornalista nasceu em Caruaru, tem formação no Recife e continua realizando comunicação social em produções artístico-culturais. A partir das palavras, imagens e escutas, ele compartilha vivências jornalísticas com o propósito de comunicar coletivamente."
     },
     {
       id: 6,
-      name: "Nome do Membro 3",
-      role: "Função", 
-      instagram: "@instagram3",
-      image: "/team-member-3.jpg",
-      bio: "Minibio do membro da equipe..."
+      name: "Diego Mancha Negra",
+      role: "Direção de arte, diagramação e animação",
+      instagram: "",
+      image: "/images/equipe/diego-mancha.jpg",
+      bio: "Formado em Publicidade e propaganda (2011) e técnico em Design gráfico (2006), Diego Mancha Negra trabalhou alguns anos na área de comunicação em agências de publicidade do Recife como Diretor de Arte. Pesquisa cultura, história e arte africana e isso se tornou o diferencial do seu trabalho autoral. Ilustrador autodidata, se dedica profundamente a essa área e há cerca de 10 anos procura continuamente plataformas para sua arte."
+    },
+    {
+      id: 7,
+      name: "Túlio Filipe Seabra da Silva",
+      role: "Filmmaker e fotógrafo",
+      instagram: "",
+      image: "/images/equipe/tulio-seabra.jpg",
+      bio: "Homem negro, periférico, comunicador e educador social, artísta visual, morador do bairro do Ibura/Cohab, formado em licenciatura em Expressão Gráfica pela Universidade Federal de Pernambuco. Está como coordenador de comunicação da Organização Comunitária Ibura Mais Cultura, é microempreendedor da Negritando Prod. uma micro produtora audiovisual, fotografica e design de comunicação antirracista com experiência em coberturas de eventos e seminários do terceiro setor."
+    },
+    {
+      id: 8,
+      name: "Poliana Alves da Conceição",
+      role: "Consultora em acessibilidade Comunicacional",
+      instagram: "",
+      image: "/images/equipe/poliana-alves.jpg",
+      bio: "Eu sou Poliana Alves da Conceição, de Recife/PE, mulher negra periférica na cena cultural desde 2006. Iniciei no Movimento Tortura Nunca Mais e participei de projetos financiados pelo Funcultura e outros editais. Em 2008, tornei-me Assessora de Acessibilidade e Produtora Cultural para Pessoas com Deficiência. Idealizei o coletivo Centrae, empoderando mulheres negras, LGBTQ+ e com deficiência na acessibilidade. Desde 2004, sou intérprete de Libras em shows, Janelas em Libras para TVs, debates políticos, documentários e séries. Participei dos carnavais de 2019 e 2020 como intérprete de Libras. Desde 2009, coordeno projetos de Fotografia Participativa com Surdos - FOTOLIBRAS e Animalibras. Atuei como assessora parlamentar na câmara do Recife e na Alepe. Minha jornada é dedicada à promoção da acessibilidade e inclusão, contribuindo para o cenário cultural e político."
+    },
+    {
+      id: 9,
+      name: "Edún Àrá Sangô",
+      role: "Arranjo e gravação do single \"Orin Ibeji\"",
+      instagram: "",
+      image: "/images/equipe/edun-ara-sango.jpg",
+      bio: "Edún Àrá Sangô é um grupo musical pernambucano que transforma as tradições dos terreiros em potência sonora. Idealizado por Leonardo Salomão (in memoriam), celebra a ancestralidade e os orixás através de composições autorais e cantos em iorubá. A formação reúne os artistas: Negra Dany, Ninha Meneses, Thúlio Xambá, Madson Japa e Beto Xambá – criando um repertório que é, ao mesmo tempo, expressão de fé, identidade e resistência."
+    },
+    {
+      id: 10,
+      name: "Maria Gesis Morais dos Santos (Maria Gesis)",
+      role: "Produtora",
+      instagram: "",
+      image: "/images/equipe/maria-gesis.jpg",
+      bio: "Maria Gesis, produtora cultural, artesã, educadora, oficineira de crochê e estudante de Agroecologia pela UFRPE."
     }
   ]
 
