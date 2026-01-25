@@ -369,14 +369,15 @@ const ScanPage = () => {
       return
     }
     
-    // MindAR + A-Frame: câmera, target e exibição. Só reagir a targetFound/targetLost (visible + play/pause).
+    // MindAR controla a interação (câmera, target, exibição). Nós reagimos a targetFound/targetLost
+    // mantendo: play/pause, visible, activeTargetIndex, showScanningAnimation → AD, Libras, overlay.
     const handleSceneLoaded = () => {
         setTimeout(() => {
         const target0 = document.getElementById('target0')
         const target1 = document.getElementById('target1')
         const target2 = document.getElementById('target2')
 
-        // anim_2, anim_3, anim_4 têm display aspect 5:2 (ffprobe). Ratio 2.5 evita letterboxing.
+        // Aspect 5:2 (ffprobe) nos planos; ratio 2.5 evita letterboxing.
         const VIDEO_DISPLAY_RATIO = 2.5
         ;[document.getElementById('videoPlane0'), document.getElementById('videoPlane1'), document.getElementById('videoPlane2')].forEach((plane) => {
           if (!plane) return
@@ -384,7 +385,7 @@ const ScanPage = () => {
           plane.setAttribute('height', '1')
         })
 
-        // Target 0 – MindAR monitora; só reagimos com visible + play/pause
+        // Target 0 – reagir: UI state + play/pause + visible
         if (target0) {
           target0.addEventListener('targetFound', () => {
             setActiveTargetIndex(0)
@@ -404,7 +405,7 @@ const ScanPage = () => {
           })
         }
 
-        // Target 1 – MindAR monitora; só reagimos com visible + play/pause
+        // Target 1 – reagir: UI state + play/pause + visible
         if (target1) {
           target1.addEventListener('targetFound', () => {
             setActiveTargetIndex(1)
@@ -424,7 +425,7 @@ const ScanPage = () => {
           })
         }
 
-        // Target 2 – MindAR monitora; só reagimos com visible + play/pause
+        // Target 2 – reagir: UI state + play/pause + visible
         if (target2) {
           target2.addEventListener('targetFound', () => {
             setActiveTargetIndex(2)
