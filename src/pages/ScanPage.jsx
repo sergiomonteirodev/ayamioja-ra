@@ -375,7 +375,29 @@ const ScanPage = () => {
         const target0 = document.getElementById('target0')
         const target1 = document.getElementById('target1')
         const target2 = document.getElementById('target2')
-        
+        const video1 = document.getElementById('video1')
+        const video2 = document.getElementById('video2')
+        const video3 = document.getElementById('video3')
+
+        // Ajustar plano ao aspect ratio do vídeo (evitar letterboxing / retângulo preto)
+        const applyVideoAspectToPlane = (video, plane) => {
+          if (!video || !plane) return
+          const setRatio = () => {
+            if (!video.videoWidth || !video.videoHeight) return
+            const ratio = video.videoWidth / video.videoHeight
+            const height = 1
+            const width = ratio * height
+            plane.setAttribute('width', width.toFixed(3))
+            plane.setAttribute('height', height.toFixed(3))
+          }
+          if (video.readyState >= 1) setRatio()
+          else video.addEventListener('loadedmetadata', setRatio, { once: true })
+        }
+
+        applyVideoAspectToPlane(video1, target0?.querySelector('a-video'))
+        applyVideoAspectToPlane(video2, target1?.querySelector('a-video'))
+        applyVideoAspectToPlane(video3, target2?.querySelector('a-video'))
+
         // Target 0 – MindAR monitora; só reagimos com visible + play/pause
         if (target0) {
           target0.addEventListener('targetFound', () => {
@@ -438,7 +460,11 @@ const ScanPage = () => {
       }, 2000)
     }
     
-    const handleArReady = () => {
+    const handleArReady = (e) => {
+      const el = e?.target || scene
+      if (el?.renderer) {
+        el.renderer.setClearColor(0x000000, 0)
+      }
       console.log('✅ MindAR pronto')
       setIsArReady(true)
     }
@@ -574,7 +600,7 @@ const ScanPage = () => {
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; uiScanning: #ui-scanning; uiLoading: #ui-loading; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
         color-space="sRGB"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump;"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump; alpha: true;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         embedded
@@ -596,8 +622,8 @@ const ScanPage = () => {
             src="#video1" 
             position="0 0 0" 
             rotation="0 0 0" 
-            width="1.6" 
-            height="0.8"
+            width="1" 
+            height="1"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
             visible="false"
@@ -609,8 +635,8 @@ const ScanPage = () => {
             src="#video2" 
             position="0 0 0" 
             rotation="0 0 0" 
-            width="1.6" 
-            height="0.8"
+            width="1" 
+            height="1"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
             visible="false"
@@ -624,8 +650,8 @@ const ScanPage = () => {
             src="#video3" 
             position="0 0 0" 
             rotation="0 0 0" 
-            width="1.6" 
-            height="0.8"
+            width="1" 
+            height="1"
             material="shader: flat; side: double; transparent: false; opacity: 1.0"
             autoplay="true"
             visible="false"
