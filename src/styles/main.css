@@ -698,16 +698,26 @@ footer {
 
 /* ==================== SCAN PAGE STYLES ==================== */
 
-/* Scan Page Container */
+/* Backup-like: body/html transparentes na scan (MindAR + A-Frame gerenciam) */
+body.scan-page-active,
+html.scan-page-active {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    position: relative;
+}
+
+/* Scan Page Container – layout mantido; fundo transparente para câmera */
 .scan-page {
-   
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: #000;
+    background: transparent;
     overflow: hidden;
-    z-index: 10000; /* Acima de tudo para UI funcionar, mas background transparente */
+    z-index: 10000;
 }
 
 /* Toggles na Scan Page */
@@ -744,29 +754,28 @@ footer {
     display: block;
 }
 
-/* A-Frame Scene - APENAS na página de scan */
+/* A-Frame Scene – como backup: absolute, 100%; MindAR gerencia */
 a-scene {
     display: none !important;
 }
 
 .scan-page a-scene {
     display: block !important;
-    position: fixed !important;
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 1 !important;
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* Canvas do A-Frame - Garantir que ocupe 100% */
-a-scene canvas {
-    position: fixed !important;
+.scan-page a-scene canvas {
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important;
 }
 
 /* Container da câmera AR */
@@ -778,38 +787,7 @@ a-scene canvas {
     height: 100vh !important;
 }
 
-/* Vídeo da câmera: MindAR gerencia layout. Apenas garantir que não fique oculto. */
-#arVideo,
-video[id^="mindar"] {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Correção específica para Android - Canvas transparente */
-@supports (-webkit-appearance: none) {
-    /* Android Chrome */
-    a-scene canvas {
-        background-color: transparent !important;
-        background: transparent !important;
-        opacity: 1 !important;
-        mix-blend-mode: normal !important;
-        pointer-events: none !important;
-    }
-    
-    /* Forçar transparência no Android */
-    .scan-page a-scene canvas {
-        background-color: transparent !important;
-        background: transparent !important;
-        opacity: 1 !important;
-    }
-    
-    .scan-page video[id^="mindar"],
-    .scan-page #arVideo {
-        display: block !important;
-        visibility: visible !important;
-    }
-}
+/* Vídeo da câmera: MindAR gerencia (backup não estiliza) */
 
 /* Android específico - garantir que não há fundo preto */
 @media screen and (-webkit-min-device-pixel-ratio: 0) {

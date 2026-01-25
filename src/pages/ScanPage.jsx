@@ -263,40 +263,6 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // Android: Apenas CSS transparente no canvas. SEM interceptar WebGL.
-  // Interceptações (gl.clearColor, clear, drawArrays, etc.) quebram o a-video:
-  // o áudio toca mas o vídeo não aparece (fica "por baixo").
-  useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid || !cameraPermissionGranted) return
-
-    const forceAndroidTransparency = () => {
-      const scene = sceneRef.current
-      if (!scene) return
-      const canvas = scene.querySelector('canvas')
-      if (!canvas) return
-
-      canvas.style.setProperty('background-color', 'transparent', 'important')
-      canvas.style.setProperty('background', 'transparent', 'important')
-      canvas.style.setProperty('opacity', '1', 'important')
-      canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
-      canvas.style.setProperty('pointer-events', 'none', 'important')
-      canvas.style.setProperty('z-index', '1', 'important')
-    }
-
-    forceAndroidTransparency()
-    const interval = setInterval(forceAndroidTransparency, 1000)
-
-    return () => clearInterval(interval)
-  }, [cameraPermissionGranted])
-
-  // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
-
-  // REMOVIDO: Loop duplicado que estava causando conflitos e piscar
-  // O overlay já é gerenciado pelo loop principal em outro useEffect
-
-  // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
-
   // Atualizar videoState continuamente enquanto um vídeo AR está reproduzindo
   // Necessário para sincronizar a audiodescrição com os vídeos AR
   useEffect(() => {
@@ -392,53 +358,17 @@ const ScanPage = () => {
     }
   }, [audioActive])
 
-  // Configurar MindAR quando o componente montar
+  // MindAR + A-Frame gerenciam AR (como backup). Só layout: scan-page-active para CSS.
   useEffect(() => {
-    console.log('🎯 Iniciando configuração do AR...')
-    
-    // NOTA: A permissão da câmera agora é solicitada através do botão inicial
-    // Não solicitar automaticamente para evitar bloqueios de autoplay
-    
-    // Marcar body como scan-page ativa para CSS
     document.body.classList.add('scan-page-active')
     document.documentElement.classList.add('scan-page-active')
-    
-    // FORÇAR background transparente imediatamente
-    // IMPORTANTE: NÃO usar preto, usar transparente para que o vídeo da câmera apareça
-    // CRÍTICO: Garantir que body e html sejam transparentes para o vídeo aparecer
-    document.body.style.setProperty('background-color', 'transparent', 'important')
-    document.body.style.setProperty('background', 'transparent', 'important')
-    document.documentElement.style.setProperty('background-color', 'transparent', 'important')
-    document.documentElement.style.setProperty('background', 'transparent', 'important')
-    // Garantir que body e html não tenham z-index que interfira
-    document.body.style.setProperty('z-index', 'auto', 'important')
-    document.documentElement.style.setProperty('z-index', 'auto', 'important')
-    
-    // Garantir que o elemento .scan-page também seja transparente
-    const scanPage = document.querySelector('.scan-page')
-    if (scanPage) {
-      scanPage.style.setProperty('background-color', 'transparent', 'important')
-      scanPage.style.setProperty('background', 'transparent', 'important')
-    }
-    
-    // Garantir que o body e html não tenham background branco
-    const bodyStyle = window.getComputedStyle(document.body)
-    const htmlStyle = window.getComputedStyle(document.documentElement)
-    console.log('🎨 Background inicial:', {
-      bodyBg: bodyStyle.backgroundColor,
-      bodyBgColor: bodyStyle.backgroundColor,
-      htmlBg: htmlStyle.backgroundColor,
-      htmlBgColor: htmlStyle.backgroundColor
-    })
-    
+
     const scene = sceneRef.current
     if (!scene) {
       console.log('❌ Scene ref não encontrada')
       return
     }
     
-    // MutationObserver será criado depois que ensureCameraVideoVisible estiver definida
-
     // Detectar Android
     const isAndroid = /Android/i.test(navigator.userAgent)
     const isLowPowerDevice = /Android.*(?:ARM|arm|ARMv7|armv7)/i.test(navigator.userAgent)
@@ -600,93 +530,16 @@ const ScanPage = () => {
       }
     }
 
-    // Pré-carregar vídeos logo após a inicialização
-    console.log("🚀 Iniciando pré-carregamento de vídeos...")
+    console.log("🚀 Pré-carregando vídeos AR...")
     preloadVideos()
 
-    // Forçar background transparente periodicamente (caso algum CSS externo sobrescreva)
-    const backgroundCheckInterval = setInterval(() => {
-      document.body.style.setProperty('background-color', 'transparent', 'important')
-      document.body.style.setProperty('background', 'transparent', 'important')
-      document.documentElement.style.setProperty('background-color', 'transparent', 'important')
-      document.documentElement.style.setProperty('background', 'transparent', 'important')
-      
-      // Garantir canvas transparente também
-      const canvas = scene.querySelector('canvas')
-      if (canvas) {
-        canvas.style.setProperty('background-color', 'transparent', 'important')
-        canvas.style.setProperty('background', 'transparent', 'important')
-      }
-    }, 1000) // Verificar a cada 1 segundo
-    
-    // Parar verificação de background após 30 segundos
-    const backgroundCheckTimeout = setTimeout(() => {
-      clearInterval(backgroundCheckInterval)
-    }, 30000)
-    
-    // Depois tentar periodicamente (após a função ser definida)
-    // A função será chamada via ensureCameraVideoVisibleRef.current após ser definida
-    
-    // Parar verificação inicial após 10 segundos
-    initialCameraTimeoutRef.current = setTimeout(() => {
-      if (initialCameraCheckRef.current) {
-        clearInterval(initialCameraCheckRef.current)
-        initialCameraCheckRef.current = null
-        console.log('⏱️ Parando verificação inicial da câmera após 10s')
-      }
-    }, 10000)
-
-    // Função global: apenas CSS no canvas. SEM interceptar WebGL (quebra a-video no Android).
-    const makeRendererTransparent = () => {
-      const canvas = scene.querySelector('canvas')
-      if (!canvas) return false
-      canvas.style.setProperty('background-color', 'transparent', 'important')
-      canvas.style.setProperty('background', 'transparent', 'important')
-      canvas.style.setProperty('opacity', '1', 'important')
-      canvas.style.backgroundColor = 'transparent'
-      canvas.style.background = 'transparent'
-      canvas.style.opacity = '1'
-      return true
-    }
-
-    // Android: apenas CSS (canvas + scene). SEM interceptar WebGL – quebra a-video.
-    const forceAndroidTransparency = () => {
-      const isAndroid = /Android/i.test(navigator.userAgent)
-      if (!isAndroid) return
-      const scene = sceneRef.current
-      if (!scene) return
-      const canvas = scene.querySelector('canvas')
-      if (!canvas) return
-
-      canvas.style.setProperty('background-color', 'transparent', 'important')
-      canvas.style.setProperty('background', 'transparent', 'important')
-      canvas.style.setProperty('opacity', '1', 'important')
-      canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
-      canvas.style.setProperty('pointer-events', 'none', 'important')
-      canvas.style.setProperty('z-index', '1', 'important')
-
-      scene.style.setProperty('background-color', 'transparent', 'important')
-      scene.style.setProperty('background', 'transparent', 'important')
-      scene.style.setProperty('opacity', '1', 'important')
-      // Vídeo da câmera: MindAR gerencia. Não mover nem estilizar.
-    }
-
-    // Primeira interação do usuário (só funciona após permissão concedida)
     let userInteracted = false
     const handleFirstInteraction = async () => {
-      if (!cameraPermissionGranted) {
-        console.log('⏳ Clique recebido, mas aguardando permissão da câmera...')
-        return
-      }
+      if (!cameraPermissionGranted) return
       if (userInteracted) return
       userInteracted = true
-      document.body.removeEventListener("click", handleFirstInteraction)
-      
-      console.log("👆 Primeira interação do usuário detectada")
-      
-      // REMOVIDO: Deixar o MindAR gerenciar completamente a câmera
-      makeRendererTransparent()
-      
+      document.body.removeEventListener('click', handleFirstInteraction)
+      console.log('👆 Primeira interação – habilitando vídeos (estilo backup)')
       for (const video of videos) {
         if (!video) continue
         await ensureVideoSourceAvailable(video)
@@ -708,95 +561,11 @@ const ScanPage = () => {
       }
     }
 
-    // MindAR gerencia vídeo da câmera e interação AR. Só garantir transparência do canvas.
-    const ensureCameraVideoVisible = () => {
-      makeRendererTransparent()
-      forceCanvasTransparency()
-      return true
-    }
-    ensureCameraVideoVisibleRef.current = ensureCameraVideoVisible
-    
-    // Iniciar verificação periódica da câmera após a função ser definida
-    if (!initialCameraCheckRef.current) {
-      let checkCount = 0
-      initialCameraCheckRef.current = setInterval(() => {
-        if (ensureCameraVideoVisibleRef.current) {
-          const found = ensureCameraVideoVisibleRef.current()
-          if (found) {
-            console.log('✅ Câmera encontrada e configurada! Continuando verificação para garantir...')
-            // Não parar a verificação - continuar verificando para garantir que permaneça visível
-          } else {
-            checkCount++
-            if (checkCount % 10 === 0) { // Log a cada 5 segundos (10 * 500ms)
-              console.log('⏳ Ainda procurando vídeo da câmera... (tentativa', checkCount, ')')
-            }
-          }
-        }
-      }, 500) // Verificar a cada 500ms continuamente
-    }
-    
-    // REMOVIDO: MutationObserver - deixar o MindAR gerenciar completamente
-    // Não precisamos observar mudanças - o MindAR gerencia tudo
+    document.body.addEventListener('click', handleFirstInteraction, { once: true })
 
-    // Configuração INICIAL do renderer (uma vez): setClearColor + alpha. SEM interceptar.
-    // Sem isso o canvas limpa para branco opaco → tela branca. Interceptações quebram a-video no Android.
-    const configureRenderer = () => {
-      try {
-        const canvas = scene?.querySelector('canvas')
-        if (!canvas) return
-        canvas.style.setProperty('background-color', 'transparent', 'important')
-        canvas.style.setProperty('background', 'transparent', 'important')
-        canvas.style.setProperty('opacity', '1', 'important')
-        const rendererSystem = scene?.systems?.renderer
-        if (rendererSystem) {
-          const renderer = rendererSystem.renderer || rendererSystem
-          if (renderer && typeof renderer.setClearColor === 'function') {
-            renderer.setClearColor(0x000000, 0)
-          }
-          if (renderer?.domElement) {
-            const gl = renderer.domElement.getContext('webgl') || renderer.domElement.getContext('webgl2')
-            if (gl) {
-              gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              gl.enable(gl.BLEND)
-              gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('configureRenderer:', e)
-      }
-    }
-    if (isArReady) configureRenderer()
-
-    // Aguardar o A-Frame carregar completamente
     const handleSceneLoaded = () => {
         console.log('✅ Scene A-Frame carregada')
-        
-        // FORÇAR background transparente novamente após scene carregar
-        document.body.style.setProperty('background-color', 'transparent', 'important')
-        document.body.style.setProperty('background', 'transparent', 'important')
-        document.documentElement.style.setProperty('background-color', 'transparent', 'important')
-        document.documentElement.style.setProperty('background', 'transparent', 'important')
-        
-        // Garantir que a câmera seja visível imediatamente após scene carregar
-        setTimeout(() => {
-          ensureCameraVideoVisible()
-          makeRendererTransparent()
-          
-          // Forçar canvas transparente novamente
-          const canvas = scene.querySelector('canvas')
-          if (canvas) {
-            canvas.style.setProperty('background-color', 'transparent', 'important')
-            canvas.style.setProperty('background', 'transparent', 'important')
-          }
-        }, 100)
-        
-        // Pré-carregar vídeos imediatamente após scene carregar
-        setTimeout(() => {
-          preloadVideos()
-        }, 500)
-        
-        // Configurar listeners para quando targets são encontrados
+        preloadVideos()
         setTimeout(() => {
         console.log('🔍 Configurando listeners de targets...')
         
@@ -1208,665 +977,22 @@ const ScanPage = () => {
       }, 2000)
     }
     
-    // Função para lidar com arReady - deve ser definida antes de ser usada
     const handleArReady = () => {
-      console.log('✅ MindAR pronto! O MindAR gerencia a câmera completamente.')
+      console.log('✅ MindAR pronto')
       setIsArReady(true)
-      
-      // Aplicar correções Android imediatamente
-      setTimeout(() => {
-        const forceAndroidTransparency = () => {
-          const isAndroid = /Android/i.test(navigator.userAgent)
-          if (!isAndroid) return
-          
-          const scene = sceneRef.current
-          if (!scene) return
-          
-          const canvas = scene.querySelector('canvas')
-          if (!canvas) return
-          
-          console.log('🔧 Aplicando correções Android após arReady...')
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-        }
-        forceAndroidTransparency()
-        makeRendererTransparent()
-      }, 100)
-      
-      // Verificar e iniciar o MindAR se necessário
-      // Aguardar um pouco mais para garantir que o tracker esteja inicializado
-      setTimeout(() => {
-        const mindarSystem = scene.systems?.mindar || 
-                            scene.systems?.['mindar-image-system'] ||
-                            scene.systems?.['mindar-image']
-        
-        if (mindarSystem) {
-          console.log('🔍 Estado do MindAR após arReady:', {
-            isTracking: mindarSystem.isTracking,
-            isReady: mindarSystem.isReady,
-            hasStart: typeof mindarSystem.start === 'function',
-            hasTracker: !!mindarSystem.tracker
-          })
-          
-          // Verificar se o tracker existe antes de tentar iniciar
-          if (mindarSystem.tracker && mindarSystem.start && typeof mindarSystem.start === 'function') {
-            // Verificar se já está rastreando antes de iniciar
-            if (!mindarSystem.isTracking) {
-              console.log('🚀 Iniciando MindAR após arReady...')
-              try {
-                mindarSystem.start()
-                console.log('✅ MindAR iniciado após arReady')
-                
-                // Verificar novamente após iniciar
-                setTimeout(() => {
-                  console.log('🔍 Estado do MindAR após start():', {
-                    isTracking: mindarSystem.isTracking,
-                    isReady: mindarSystem.isReady,
-                    hasTracker: !!mindarSystem.tracker,
-                    trackerState: mindarSystem.tracker?.state || 'unknown'
-                  })
-                }, 500)
-              } catch (e) {
-                console.error('❌ Erro ao iniciar MindAR após arReady:', e)
-              }
-            } else {
-              console.log('✅ MindAR já está rastreando')
-            }
-          } else {
-            if (!mindarSystem.tracker) {
-              console.warn('⚠️ Tracker do MindAR ainda não está inicializado. Aguardando...')
-              // Tentar novamente após mais tempo
-              setTimeout(() => {
-                if (mindarSystem.tracker && mindarSystem.start && typeof mindarSystem.start === 'function' && !mindarSystem.isTracking) {
-                  try {
-                    mindarSystem.start()
-                    console.log('✅ MindAR iniciado após espera adicional')
-                    
-                    // Verificar novamente após iniciar
-                    setTimeout(() => {
-                      console.log('🔍 Estado do MindAR após start() (espera adicional):', {
-                        isTracking: mindarSystem.isTracking,
-                        isReady: mindarSystem.isReady,
-                        hasTracker: !!mindarSystem.tracker,
-                        trackerState: mindarSystem.tracker?.state || 'unknown'
-                      })
-                    }, 500)
-                  } catch (e) {
-                    console.error('❌ Erro ao iniciar MindAR após espera:', e)
-                  }
-                }
-              }, 1000)
-            }
-          }
-        } else {
-          console.warn('⚠️ Sistema MindAR não encontrado após arReady')
-        }
-      }, 1000) // Aumentar o delay para dar tempo do tracker inicializar
-      
-      // Verificar se o MindAR criou o vídeo da câmera e garantir visibilidade
-      setTimeout(() => {
-        // Usar a função centralizada para garantir visibilidade do vídeo
-        if (ensureCameraVideoVisibleRef.current) {
-          const found = ensureCameraVideoVisibleRef.current()
-          if (found) {
-            console.log('✅ Vídeo da câmera encontrado e configurado após arReady')
-          }
-        }
-        
-        // Log detalhado apenas uma vez para debug
-        const mindarVideo = document.querySelector('#arVideo') || 
-                           Array.from(document.querySelectorAll('video')).find(v => {
-                             const id = v.id || ''
-                             if (['video1', 'video2', 'video3'].includes(id)) return false
-                             return (v.videoWidth > 0 || v.srcObject) && !v.src
-                           })
-        
-        if (mindarVideo && !mindarVideo.dataset.logged) {
-          const computedStyle = window.getComputedStyle(mindarVideo)
-          const hasStream = !!(mindarVideo.srcObject || mindarVideo.videoWidth > 0)
-          const isPlaying = !mindarVideo.paused && !mindarVideo.ended
-          
-          console.log('✅ Vídeo do MindAR encontrado após arReady:', {
-            id: mindarVideo.id,
-            videoWidth: mindarVideo.videoWidth,
-            videoHeight: mindarVideo.videoHeight,
-            display: computedStyle.display,
-            visibility: computedStyle.visibility,
-            opacity: computedStyle.opacity,
-            zIndex: computedStyle.zIndex,
-            position: computedStyle.position,
-            width: computedStyle.width,
-            height: computedStyle.height,
-            hasStream,
-            hasSrcObject: !!mindarVideo.srcObject,
-            isPlaying,
-            paused: mindarVideo.paused,
-            readyState: mindarVideo.readyState
-          })
-          mindarVideo.dataset.logged = 'true'
-          
-          // Verificar se o vídeo está realmente atrás do canvas
-          const canvas = scene.querySelector('canvas')
-          if (canvas) {
-            const canvasStyle = window.getComputedStyle(canvas)
-            const videoZ = parseInt(computedStyle.zIndex) || -2
-            const canvasZ = parseInt(canvasStyle.zIndex) || 1
-            
-            console.log('📊 Verificação de z-index:', {
-              videoZIndex: computedStyle.zIndex,
-              canvasZIndex: canvasStyle.zIndex,
-              videoPosition: computedStyle.position,
-              canvasPosition: canvasStyle.position,
-              canvasBackgroundColor: canvasStyle.backgroundColor,
-              canvasOpacity: canvasStyle.opacity
-            })
-            
-            if (canvasZ > videoZ) {
-              console.log('✅ Canvas está na frente do vídeo (correto para overlay AR)')
-              console.log('✅ Canvas deve estar transparente para mostrar o vídeo')
-              
-              // CRÍTICO: Verificar se o canvas realmente permite ver através dele
-              if (canvasStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
-                  canvasStyle.backgroundColor !== 'transparent') {
-                console.error('❌ PROBLEMA: Canvas NÃO está transparente! backgroundColor:', canvasStyle.backgroundColor)
-              }
-            } else {
-              console.warn('⚠️ Canvas pode estar atrás do vídeo - verificar z-index')
-            }
-          }
-        } else if (!mindarVideo) {
-          console.log('⏳ Vídeo do MindAR ainda não foi criado - ele será criado automaticamente')
-        }
-      }, 1000)
-      
-      // Garantir que a animação de scanning apareça se não houver target ativo
-      if (activeTargetIndex === null) {
-        setShowScanningAnimation(true)
-        console.log('✅ Mostrando animação de scanning - nenhum target ativo')
-      }
-      
-      // SIMPLIFICADO: Apenas garantir transparência do canvas
-      // O MindAR gerencia completamente o vídeo da câmera - não precisamos fazer mais nada
-      forceCanvasTransparency()
-      makeRendererTransparent()
-      
-      // GARANTIR que o a-scene esteja visível e transparente
-      if (scene) {
-        // Detectar Android/Chrome para aplicar correções mais agressivas
-        const isAndroid = /Android/i.test(navigator.userAgent)
-        const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
-        const needsAggressiveFix = isAndroid && isChrome
-        
-        scene.style.setProperty('opacity', '1', 'important')
-        scene.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1), mas transparente
-        scene.style.setProperty('background-color', 'transparent', 'important')
-        scene.style.setProperty('background', 'transparent', 'important')
-        scene.style.setProperty('position', 'fixed', 'important')
-        scene.style.setProperty('top', '0', 'important')
-        scene.style.setProperty('left', '0', 'important')
-        scene.style.setProperty('width', '100vw', 'important')
-        scene.style.setProperty('height', '100vh', 'important')
-        
-        // No Android/Chrome, forçar background transparente no atributo também
-        if (needsAggressiveFix) {
-          scene.setAttribute('background', 'color: #000000; opacity: 0')
-          
-          // Interceptar e DESABILITAR completamente o sistema de background do A-Frame
-          if (scene.systems && scene.systems.background) {
-            const backgroundSystem = scene.systems.background
-            
-            // Desabilitar o sistema completamente interceptando seus métodos
-            if (backgroundSystem.update && !backgroundSystem._updateIntercepted) {
-              backgroundSystem._originalUpdate = backgroundSystem.update.bind(backgroundSystem)
-              backgroundSystem.update = function() {
-                // Não fazer nada - desabilitar completamente
-              }
-              backgroundSystem._updateIntercepted = true
-            }
-            
-            // Forçar background transparente no sistema
-            if (backgroundSystem.setBackground) {
-              backgroundSystem.setBackground('transparent', 0)
-            }
-            
-            // Remover ou esconder o elemento de background se existir
-            if (backgroundSystem.el) {
-              const bgEl = backgroundSystem.el
-              if (bgEl) {
-                bgEl.style.setProperty('display', 'none', 'important')
-                bgEl.style.setProperty('visibility', 'hidden', 'important')
-                bgEl.style.setProperty('background-color', 'transparent', 'important')
-                bgEl.style.setProperty('background', 'transparent', 'important')
-                bgEl.style.setProperty('opacity', '0', 'important')
-                bgEl.style.setProperty('pointer-events', 'none', 'important')
-                // Tentar remover do DOM se possível
-                if (bgEl.parentNode) {
-                  try {
-                    bgEl.remove()
-                  } catch (e) {
-                    console.warn('⚠️ Não foi possível remover elemento de background:', e)
-                  }
-                }
-              }
-            }
-          }
-          
-          // Procurar e remover qualquer elemento que possa ser o background do A-Frame
-          const possibleBackgroundElements = scene.querySelectorAll('[data-aframe-background], .a-background, [class*="background"]')
-          possibleBackgroundElements.forEach(bgEl => {
-            if (bgEl.tagName !== 'CANVAS' && bgEl.tagName !== 'VIDEO') {
-              const bgStyle = window.getComputedStyle(bgEl)
-              const bgColor = bgStyle.backgroundColor
-              if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-                console.warn('⚠️ Removendo elemento de background preto do A-Frame:', bgEl)
-                bgEl.style.setProperty('display', 'none', 'important')
-                bgEl.style.setProperty('visibility', 'hidden', 'important')
-                bgEl.style.setProperty('opacity', '0', 'important')
-                try {
-                  bgEl.remove()
-                } catch (e) {
-                  // Ignorar se não puder remover
-                }
-              }
-            }
-          })
-          
-          // Verificar e corrigir elementos filhos do a-scene que possam ter background preto
-          const sceneChildren = scene.querySelectorAll('*')
-          sceneChildren.forEach(child => {
-            const childStyle = window.getComputedStyle(child)
-            const bgColor = childStyle.backgroundColor
-            if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-              // Ignorar canvas e vídeos AR
-              if (child.tagName !== 'CANVAS' && child.tagName !== 'VIDEO' && !child.id.includes('video')) {
-                child.style.setProperty('background-color', 'transparent', 'important')
-                child.style.setProperty('background', 'transparent', 'important')
-                child.style.setProperty('opacity', '1', 'important')
-              }
-            }
-          })
-          
-          // Verificar se há um elemento a-sky ou similar que possa estar criando background
-          const skyElement = scene.querySelector('a-sky')
-          if (skyElement) {
-            console.warn('⚠️ Removendo elemento a-sky que pode estar criando background preto')
-            skyElement.style.setProperty('display', 'none', 'important')
-            skyElement.style.setProperty('visibility', 'hidden', 'important')
-            skyElement.style.setProperty('opacity', '0', 'important')
-            try {
-              skyElement.remove()
-            } catch (e) {
-              // Ignorar se não puder remover
-            }
-          }
-          
-          // Verificação EXTRA AGRESSIVA: Procurar qualquer elemento grande com background preto e remover
-          const allSceneElements = scene.querySelectorAll('*')
-          allSceneElements.forEach(el => {
-            if (el.tagName === 'CANVAS' || el.tagName === 'VIDEO' || el.id.includes('video')) {
-              return // Ignorar canvas e vídeos
-            }
-            
-            const rect = el.getBoundingClientRect()
-            const style = window.getComputedStyle(el)
-            const bgColor = style.backgroundColor
-            
-            // Se o elemento é grande (cobre mais de 50% da tela) e tem background preto
-            if (rect.width > window.innerWidth * 0.5 && 
-                rect.height > window.innerHeight * 0.5 &&
-                bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-              console.error('❌ ELEMENTO GRANDE COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
-                tag: el.tagName,
-                id: el.id,
-                className: el.className,
-                width: rect.width,
-                height: rect.height,
-                backgroundColor: bgColor
-              })
-              el.style.setProperty('display', 'none', 'important')
-              el.style.setProperty('visibility', 'hidden', 'important')
-              el.style.setProperty('opacity', '0', 'important')
-              el.style.setProperty('pointer-events', 'none', 'important')
-              try {
-                el.remove()
-              } catch (e) {
-                console.warn('⚠️ Não foi possível remover elemento:', e)
-              }
-            }
-          })
-        }
-        
-        console.log('✅ a-scene configurado como visível após arReady', needsAggressiveFix ? '[Android/Chrome: correções agressivas]' : '')
-        
-        // Garantir que o canvas também esteja visível e transparente
-        const canvas = scene.querySelector('canvas')
-        if (canvas) {
-          canvas.style.setProperty('opacity', '1', 'important')
-          canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1), mas transparente
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-          canvas.style.setProperty('position', 'fixed', 'important')
-          canvas.style.setProperty('top', '0', 'important')
-          canvas.style.setProperty('left', '0', 'important')
-          canvas.style.setProperty('width', '100vw', 'important')
-          canvas.style.setProperty('height', '100vh', 'important')
-          forceCanvasTransparency()
-          console.log('✅ Canvas configurado como visível e transparente após arReady')
-        }
-      }
-      
-      // Esconder UI de loading manualmente
-      const uiLoading = document.getElementById('ui-loading')
-      if (uiLoading) {
-        uiLoading.style.display = 'none'
-        console.log('✅ UI Loading escondida')
-      }
     }
-    
-    // Aguardar o A-Frame carregar completamente e então configurar listeners
+
     scene.addEventListener('loaded', handleSceneLoaded)
-    
-    // Adicionar listener para arReady
     scene.addEventListener('arReady', handleArReady)
     
-    // Apenas CSS no canvas. SEM interceptar WebGL – quebra a-video no Android (áudio toca, vídeo não aparece).
-    const forceCanvasTransparency = () => {
-      const canvas = scene.querySelector('canvas')
-      if (!canvas) return
-      canvas.style.setProperty('background-color', 'transparent', 'important')
-      canvas.style.setProperty('background', 'transparent', 'important')
-      canvas.style.setProperty('opacity', '1', 'important')
-      canvas.style.setProperty('z-index', '1', 'important')
-      canvas.style.setProperty('position', 'fixed', 'important')
-      canvas.style.setProperty('top', '0', 'important')
-      canvas.style.setProperty('left', '0', 'important')
-      canvas.style.setProperty('width', '100vw', 'important')
-      canvas.style.setProperty('height', '100vh', 'important')
-      canvas.style.setProperty('pointer-events', 'none', 'important')
-    }
-    
-    // Detectar Android/Chrome uma vez para usar em múltiplos lugares
-    const isAndroidDevice = /Android/i.test(navigator.userAgent)
-    const isChromeBrowser = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
-    const needsAggressiveFix = isAndroidDevice && isChromeBrowser
-    
-    // MutationObserver para detectar e remover elementos criados dinamicamente com background preto
-    if (blackElementObserverRef.current) {
-      blackElementObserverRef.current.disconnect()
-    }
-    blackElementObserverRef.current = new MutationObserver((mutations) => {
-      if (!needsAggressiveFix) return
-      
-      if (!needsAggressiveFix) return
-      
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1) { // Element node
-            const el = node
-            // Ignorar canvas e vídeos
-            if (el.tagName === 'CANVAS' || el.tagName === 'VIDEO' || el.id?.includes('video')) {
-              return
-            }
-            
-            const rect = el.getBoundingClientRect()
-            const style = window.getComputedStyle(el)
-            const bgColor = style.backgroundColor
-            
-            // Se o elemento é grande e tem background preto, remover imediatamente
-            if (rect.width > window.innerWidth * 0.3 && 
-                rect.height > window.innerHeight * 0.3 &&
-                bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-              console.error('❌ NOVO ELEMENTO COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
-                tag: el.tagName,
-                id: el.id,
-                className: el.className,
-                width: rect.width,
-                height: rect.height,
-                backgroundColor: bgColor
-              })
-              el.style.setProperty('display', 'none', 'important')
-              el.style.setProperty('visibility', 'hidden', 'important')
-              el.style.setProperty('opacity', '0', 'important')
-              el.style.setProperty('pointer-events', 'none', 'important')
-              try {
-                el.remove()
-              } catch (e) {
-                // Ignorar se não puder remover
-              }
-            }
-          }
-        })
-      })
-    })
-    
-    // Observar mudanças no DOM, especialmente no a-scene
-    if (scene && blackElementObserverRef.current) {
-      blackElementObserverRef.current.observe(scene, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style', 'class']
-      })
-    }
-    
-    // Observar mudanças no body também
-    if (blackElementObserverRef.current) {
-      blackElementObserverRef.current.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style', 'class']
-      })
-    }
-    
-    // Loop para forçar transparência continuamente e garantir visibilidade do vídeo
-    if (transparencyIntervalRef.current) {
-      clearInterval(transparencyIntervalRef.current)
-    }
-    transparencyIntervalRef.current = setInterval(() => {
-      forceCanvasTransparency()
-      makeRendererTransparent()
-      
-      // No Android/Chrome, forçar a-scene e seus elementos a serem transparentes (apenas CSS/DOM, sem WebGL)
-      if (needsAggressiveFix && scene) {
-        // Forçar a-scene transparente
-        scene.style.setProperty('background-color', 'transparent', 'important')
-        scene.style.setProperty('background', 'transparent', 'important')
-        scene.setAttribute('background', 'color: #000000; opacity: 0')
-        
-        // Interceptar e DESABILITAR completamente o sistema de background do A-Frame
-        if (scene.systems && scene.systems.background) {
-          const backgroundSystem = scene.systems.background
-          
-          // Desabilitar o sistema completamente interceptando seus métodos
-          if (backgroundSystem.update && !backgroundSystem._updateIntercepted) {
-            backgroundSystem._originalUpdate = backgroundSystem.update.bind(backgroundSystem)
-            backgroundSystem.update = function() {
-              // Não fazer nada - desabilitar completamente
-            }
-            backgroundSystem._updateIntercepted = true
-          }
-          
-          // Forçar background transparente no sistema
-          if (backgroundSystem.setBackground) {
-            backgroundSystem.setBackground('transparent', 0)
-          }
-          
-          // Remover ou esconder o elemento de background se existir
-          if (backgroundSystem.el) {
-            const bgEl = backgroundSystem.el
-            if (bgEl) {
-              bgEl.style.setProperty('display', 'none', 'important')
-              bgEl.style.setProperty('visibility', 'hidden', 'important')
-              bgEl.style.setProperty('background-color', 'transparent', 'important')
-              bgEl.style.setProperty('background', 'transparent', 'important')
-              bgEl.style.setProperty('opacity', '0', 'important')
-              bgEl.style.setProperty('pointer-events', 'none', 'important')
-              // Tentar remover do DOM se possível
-              if (bgEl.parentNode) {
-                try {
-                  bgEl.remove()
-                } catch (e) {
-                  console.warn('⚠️ Não foi possível remover elemento de background:', e)
-                }
-              }
-            }
-          }
-        }
-        
-        // Procurar e remover qualquer elemento que possa ser o background do A-Frame
-        const possibleBackgroundElements = scene.querySelectorAll('[data-aframe-background], .a-background, [class*="background"]')
-        possibleBackgroundElements.forEach(bgEl => {
-          if (bgEl.tagName !== 'CANVAS' && bgEl.tagName !== 'VIDEO') {
-            const bgStyle = window.getComputedStyle(bgEl)
-            const bgColor = bgStyle.backgroundColor
-            if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-              console.warn('⚠️ Removendo elemento de background preto do A-Frame:', bgEl)
-              bgEl.style.setProperty('display', 'none', 'important')
-              bgEl.style.setProperty('visibility', 'hidden', 'important')
-              bgEl.style.setProperty('opacity', '0', 'important')
-              try {
-                bgEl.remove()
-              } catch (e) {
-                // Ignorar se não puder remover
-              }
-            }
-          }
-        })
-        
-        // Verificar e corrigir elementos filhos do a-scene
-        const sceneChildren = scene.querySelectorAll('*')
-        sceneChildren.forEach(child => {
-          const childStyle = window.getComputedStyle(child)
-          const bgColor = childStyle.backgroundColor
-          // Se não for canvas ou vídeo AR, e tiver background preto, forçar transparente
-          if (child.tagName !== 'CANVAS' && child.tagName !== 'VIDEO' && !child.id.includes('video')) {
-            if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-              child.style.setProperty('background-color', 'transparent', 'important')
-              child.style.setProperty('background', 'transparent', 'important')
-              child.style.setProperty('opacity', '1', 'important')
-            }
-          }
-        })
-        
-        // Verificar se há um elemento a-sky ou similar que possa estar criando background
-        const skyElement = scene.querySelector('a-sky')
-        if (skyElement) {
-          console.warn('⚠️ Removendo elemento a-sky que pode estar criando background preto')
-          skyElement.style.setProperty('display', 'none', 'important')
-          skyElement.style.setProperty('visibility', 'hidden', 'important')
-          skyElement.style.setProperty('opacity', '0', 'important')
-          try {
-            skyElement.remove()
-          } catch (e) {
-            // Ignorar se não puder remover
-          }
-        }
-        
-        // Verificação EXTRA AGRESSIVA: Procurar qualquer elemento grande com background preto e remover
-        const allSceneElements = scene.querySelectorAll('*')
-        allSceneElements.forEach(el => {
-          if (el.tagName === 'CANVAS' || el.tagName === 'VIDEO' || el.id.includes('video')) {
-            return // Ignorar canvas e vídeos
-          }
-          
-          const rect = el.getBoundingClientRect()
-          const style = window.getComputedStyle(el)
-          const bgColor = style.backgroundColor
-          
-          // Se o elemento é grande (cobre mais de 50% da tela) e tem background preto
-          if (rect.width > window.innerWidth * 0.5 && 
-              rect.height > window.innerHeight * 0.5 &&
-              bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-            console.error('❌ ELEMENTO GRANDE COM BACKGROUND PRETO DETECTADO E REMOVIDO:', {
-              tag: el.tagName,
-              id: el.id,
-              className: el.className,
-              width: rect.width,
-              height: rect.height,
-              backgroundColor: bgColor
-            })
-            el.style.setProperty('display', 'none', 'important')
-            el.style.setProperty('visibility', 'hidden', 'important')
-            el.style.setProperty('opacity', '0', 'important')
-            el.style.setProperty('pointer-events', 'none', 'important')
-            try {
-              el.remove()
-            } catch (e) {
-              console.warn('⚠️ Não foi possível remover elemento:', e)
-            }
-          }
-        })
-      }
-      
-      // Verificar e corrigir elementos com background preto que possam estar cobrindo os vídeos
-      const allElements = document.querySelectorAll('*')
-      allElements.forEach(el => {
-        const style = window.getComputedStyle(el)
-        const bgColor = style.backgroundColor
-        // Verificar se tem background preto ou quase preto
-        if (bgColor && (bgColor.includes('rgb(0, 0, 0)') || bgColor.includes('rgba(0, 0, 0, 1)') || bgColor === '#000000' || bgColor === '#000')) {
-          // Ignorar elementos que devem ter background preto (como botões, etc)
-          const tagName = el.tagName.toLowerCase()
-          const className = el.className || ''
-          const id = el.id || ''
-          
-          // Se não for um elemento de UI conhecido e estiver cobrindo a tela
-          if (!['button', 'input', 'select', 'textarea'].includes(tagName) &&
-              !className.includes('back-button') &&
-              !className.includes('toggle') &&
-              !className.includes('nav') &&
-              !id.includes('ui-') &&
-              !id.includes('loading')) {
-            const rect = el.getBoundingClientRect()
-            // Se o elemento está cobrindo uma grande parte da tela
-            if (rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5) {
-              const zIndex = parseInt(style.zIndex) || 0
-              // Se está na frente do canvas (z-index > 1) mas não é um elemento de UI
-              if (zIndex > 1 && zIndex < 100000) {
-                console.warn('⚠️ Elemento com background preto detectado, forçando transparência:', el)
-                el.style.setProperty('background-color', 'transparent', 'important')
-                el.style.setProperty('background', 'transparent', 'important')
-              }
-            }
-          }
-        }
-      })
-      
-      // Garantir que o vídeo da câmera esteja visível (usando a função simplificada)
-      if (ensureCameraVideoVisibleRef.current) {
-        ensureCameraVideoVisibleRef.current()
-      }
-    }, 500) // Verificar a cada 500ms
 
     return () => {
-      // Cleanup: remover listeners e intervalos quando componente desmontar
-      if (transparencyIntervalRef.current) {
-        clearInterval(transparencyIntervalRef.current)
-        transparencyIntervalRef.current = null
-      }
-      if (initialCameraCheckRef.current) {
-        clearInterval(initialCameraCheckRef.current)
-        initialCameraCheckRef.current = null
-      }
-      if (initialCameraTimeoutRef.current) {
-        clearTimeout(initialCameraTimeoutRef.current)
-        initialCameraTimeoutRef.current = null
-      }
-      if (backgroundCheckInterval) {
-        clearInterval(backgroundCheckInterval)
-      }
-      if (backgroundCheckTimeout) {
-        clearTimeout(backgroundCheckTimeout)
-      }
-      if (sceneRef.current) {
-        const scene = sceneRef.current
-        scene.removeEventListener('loaded', handleSceneLoaded)
-        scene.removeEventListener('arReady', handleArReady)
-      }
-      if (blackElementObserverRef.current) {
-        blackElementObserverRef.current.disconnect()
-        blackElementObserverRef.current = null
+      document.body.classList.remove('scan-page-active')
+      document.documentElement.classList.remove('scan-page-active')
+      const s = sceneRef.current
+      if (s) {
+        s.removeEventListener('loaded', handleSceneLoaded)
+        s.removeEventListener('arReady', handleArReady)
       }
     }
   }, [cameraPermissionGranted, isArReady])
@@ -1982,27 +1108,16 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* A-Frame Scene - SIMPLIFICADO: deixar MindAR gerenciar completamente */}
+      {/* A-Frame + MindAR como backup: sem background/style; MindAR gerencia */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 0; autoStart: true; showStats: false; uiScanning: none; uiLoading: none; uiError: none;"
+        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; uiScanning: #ui-scanning; uiLoading: #ui-loading; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
+        color-space="sRGB"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        renderer={`colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; precision: highp; logarithmicDepthBuffer: true; preserveDrawingBuffer: ${/Android/i.test(navigator.userAgent) ? 'false' : 'false'}; powerPreference: high-performance;`}
         embedded
-        background="color: transparent; opacity: 0"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 1,
-          pointerEvents: 'none',
-          backgroundColor: 'transparent',
-          background: 'transparent',
-          opacity: 1
-        }}
+        ui="enabled: false"
       >
         {/* Assets - Vídeos */}
         <a-assets>
@@ -2061,7 +1176,8 @@ const ScanPage = () => {
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
       </a-scene>
 
-      {/* UI Elements */}
+      {/* Placeholders para MindAR (uiScanning/uiLoading); nosso overlay "Aponte câmera..." mantido abaixo */}
+      <div id="ui-scanning" style={{ display: 'none' }} aria-hidden="true" />
       {!isArReady && (
         <div id="ui-loading" className="ui-loading" style={{ display: 'flex' }}>
           <div className="loading-content">
