@@ -460,11 +460,7 @@ const ScanPage = () => {
       }, 2000)
     }
     
-    const handleArReady = (e) => {
-      const el = e?.target || scene
-      if (el?.renderer) {
-        el.renderer.setClearColor(0x000000, 0)
-      }
+    const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
     }
@@ -598,9 +594,9 @@ const ScanPage = () => {
       {/* A-Frame + MindAR como backup; sem background/style para câmera aparecer */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; uiScanning: #ui-scanning; uiLoading: #ui-loading; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
+        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
         color-space="sRGB"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump; alpha: true;"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         embedded
@@ -616,13 +612,13 @@ const ScanPage = () => {
           <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
         </a-assets>
 
-        {/* Targets – a-plane + material src como no backup (evita retângulo preto do a-video) */}
+        {/* Targets – a-plane + material src como no backup */}
         <a-entity id="target0" mindar-image-target="targetIndex: 0">
           <a-plane
             id="videoPlane0"
             width="1"
             height="1"
-            position="0 0 0"
+            position="0 0 0.005"
             material="shader: flat; side: double; src: #video1"
             visible="false"
           ></a-plane>
@@ -633,7 +629,7 @@ const ScanPage = () => {
             id="videoPlane1"
             width="1"
             height="1"
-            position="0 0 0"
+            position="0 0 0.005"
             material="shader: flat; side: double; src: #video2"
             visible="false"
           ></a-plane>
@@ -644,7 +640,7 @@ const ScanPage = () => {
             id="videoPlane2"
             width="1"
             height="1"
-            position="0 0 0"
+            position="0 0 0.005"
             material="shader: flat; side: double; src: #video3"
             visible="false"
           ></a-plane>
