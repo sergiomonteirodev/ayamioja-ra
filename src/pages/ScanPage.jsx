@@ -980,6 +980,23 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
+      // Uma vez: clear transparente para evitar retângulo preto no Android. Sem interceptar WebGL.
+      const s = sceneRef.current
+      if (!s) return
+      try {
+        const r = s.systems?.renderer
+        const renderer = r?.renderer || r
+        if (renderer && typeof renderer.setClearColor === 'function') {
+          renderer.setClearColor(0x000000, 0)
+        }
+        const canvas = s.querySelector('canvas')
+        if (canvas) {
+          canvas.style.setProperty('background-color', 'transparent', 'important')
+          canvas.style.setProperty('background', 'transparent', 'important')
+        }
+      } catch (e) {
+        console.warn('handleArReady clear:', e)
+      }
     }
 
     scene.addEventListener('loaded', handleSceneLoaded)
@@ -1108,16 +1125,17 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* A-Frame + MindAR como backup: sem background/style; MindAR gerencia */}
+      {/* A-Frame + MindAR como backup; background transparente evita retângulo preto no Android */}
       <a-scene 
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; uiScanning: #ui-scanning; uiLoading: #ui-loading; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
         color-space="sRGB"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump;"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump; alpha: true;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         embedded
         ui="enabled: false"
+        background="color: #000000; opacity: 0"
       >
         {/* Assets - Vídeos */}
         <a-assets>
