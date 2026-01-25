@@ -375,28 +375,14 @@ const ScanPage = () => {
         const target0 = document.getElementById('target0')
         const target1 = document.getElementById('target1')
         const target2 = document.getElementById('target2')
-        const video1 = document.getElementById('video1')
-        const video2 = document.getElementById('video2')
-        const video3 = document.getElementById('video3')
 
-        // Ajustar plano ao aspect ratio do vídeo (evitar letterboxing / retângulo preto)
-        const applyVideoAspectToPlane = (video, plane) => {
-          if (!video || !plane) return
-          const setRatio = () => {
-            if (!video.videoWidth || !video.videoHeight) return
-            const ratio = video.videoWidth / video.videoHeight
-            const height = 1
-            const width = ratio * height
-            plane.setAttribute('width', width.toFixed(3))
-            plane.setAttribute('height', height.toFixed(3))
-          }
-          if (video.readyState >= 1) setRatio()
-          else video.addEventListener('loadedmetadata', setRatio, { once: true })
-        }
-
-        applyVideoAspectToPlane(video1, document.getElementById('videoPlane0'))
-        applyVideoAspectToPlane(video2, document.getElementById('videoPlane1'))
-        applyVideoAspectToPlane(video3, document.getElementById('videoPlane2'))
+        // anim_2, anim_3, anim_4 têm display aspect 5:2 (ffprobe). Ratio 2.5 evita letterboxing.
+        const VIDEO_DISPLAY_RATIO = 2.5
+        ;[document.getElementById('videoPlane0'), document.getElementById('videoPlane1'), document.getElementById('videoPlane2')].forEach((plane) => {
+          if (!plane) return
+          plane.setAttribute('width', VIDEO_DISPLAY_RATIO.toFixed(3))
+          plane.setAttribute('height', '1')
+        })
 
         // Target 0 – MindAR monitora; só reagimos com visible + play/pause
         if (target0) {
@@ -612,11 +598,11 @@ const ScanPage = () => {
           <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
         </a-assets>
 
-        {/* Targets – a-plane + material src como no backup */}
+        {/* Targets – a-plane 5:2 (2.5x1), material src como no backup */}
         <a-entity id="target0" mindar-image-target="targetIndex: 0">
           <a-plane
             id="videoPlane0"
-            width="1"
+            width="2.5"
             height="1"
             position="0 0 0.005"
             material="shader: flat; side: double; src: #video1"
@@ -627,7 +613,7 @@ const ScanPage = () => {
         <a-entity id="target1" mindar-image-target="targetIndex: 1">
           <a-plane
             id="videoPlane1"
-            width="1"
+            width="2.5"
             height="1"
             position="0 0 0.005"
             material="shader: flat; side: double; src: #video2"
@@ -638,7 +624,7 @@ const ScanPage = () => {
         <a-entity id="target2" mindar-image-target="targetIndex: 2">
           <a-plane
             id="videoPlane2"
-            width="1"
+            width="2.5"
             height="1"
             position="0 0 0.005"
             material="shader: flat; side: double; src: #video3"
