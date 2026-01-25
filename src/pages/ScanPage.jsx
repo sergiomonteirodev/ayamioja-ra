@@ -369,609 +369,70 @@ const ScanPage = () => {
       return
     }
     
-    // Detectar Android
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    const isLowPowerDevice = /Android.*(?:ARM|arm|ARMv7|armv7)/i.test(navigator.userAgent)
-    
-    // Obter referências aos vídeos
-    const videos = [
-      document.getElementById('video1'),
-      document.getElementById('video2'),
-      document.getElementById('video3')
-    ]
-
-    // Função para garantir que o src do vídeo está disponível
-    const ensureVideoSourceAvailable = async (video) => {
-      try {
-        const src = video.getAttribute('src') || video.src
-        if (!src) throw new Error('src vazio')
-        const response = await fetch(src, { method: 'HEAD', cache: 'no-store' })
-        if (!response.ok) {
-          console.warn(`⚠️ ${src} retornou ${response.status}`)
-          // Não usar fallback, apenas logar
-        }
-      } catch (e) {
-        console.warn(`⚠️ Falha ao verificar vídeo (${video.id}):`, e)
-      }
-    }
-
-    // Pré-carregar vídeos de forma agressiva (especialmente para Android)
-    const preloadVideos = () => {
-      videos.forEach((video, index) => {
-        if (!video) return
-        
-        // Forçar atributos inline para Android
-        video.setAttribute('playsinline', '')
-        video.setAttribute('webkit-playsinline', '')
-        video.playsInline = true
-        
-        // Todos os vídeos AR podem ter áudio quando forem reproduzidos
-        video.muted = false
-        
-        // Forçar load() para iniciar download APENAS se não estiver carregando
-        // networkState: 0=EMPTY, 1=IDLE, 2=LOADING, 3=NO_SOURCE
-        if (video.readyState === 0 && video.networkState !== 2) {
-          console.log(`🔄 Pré-carregando vídeo ${video.id}...`)
-          try {
-            video.load()
-          } catch(e) {
-            console.warn(`⚠️ Erro ao pré-carregar ${video.id}:`, e)
-          }
-        } else if (video.networkState === 2) {
-          console.log(`⏳ Vídeo ${video.id} já está carregando, pulando load()`)
-        }
-        
-        // Adicionar listeners para monitorar progresso
-        video.addEventListener('loadeddata', () => {
-          console.log(`✅ ${video.id} carregado (readyState: ${video.readyState})`)
-        }, { once: true })
-        
-        video.addEventListener('error', (e) => {
-          const error = video.error
-          if (error) {
-            let errorMsg = 'Erro desconhecido'
-            switch (error.code) {
-              case MediaError.MEDIA_ERR_ABORTED:
-                errorMsg = 'Download abortado'
-                break
-              case MediaError.MEDIA_ERR_NETWORK:
-                errorMsg = 'Erro de rede'
-                break
-              case MediaError.MEDIA_ERR_DECODE:
-                errorMsg = 'Erro ao decodificar (codec não suportado ou arquivo corrompido)'
-                break
-              case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                errorMsg = 'Formato não suportado'
-                break
-            }
-            console.error(`❌ Erro ao carregar ${video.id}:`, {
-              code: error.code,
-              message: errorMsg,
-              errorMessage: error.message,
-              src: video.src,
-              currentSrc: video.currentSrc,
-              readyState: video.readyState,
-              networkState: video.networkState
-            })
-            
-            // Sugestão para resolver o problema
-            if (error.code === MediaError.MEDIA_ERR_DECODE) {
-              console.warn(`💡 SOLUÇÃO: O vídeo ${video.id} não pode ser decodificado. Possíveis causas:`)
-              console.warn(`   - Codec não suportado pelo navegador`)
-              console.warn(`   - Arquivo de vídeo corrompido`)
-              console.warn(`   - Formato não compatível`)
-              console.warn(`   - Solução: Converter o vídeo para H.264 (AVC) em MP4`)
-              console.warn(`   - Comando sugerido: ffmpeg -i ${video.src} -c:v libx264 -c:a aac -movflags +faststart output.mp4`)
-            }
-          } else {
-            console.error(`❌ Erro ao carregar ${video.id}:`, e)
-          }
-        }, { once: true })
-      })
-    }
-
-    // Função para ativar vídeo com retry específico para Android
-    const enableVideo = (video, retryCount = 0) => {
-      console.log(`🎥 Tentando reproduzir vídeo: ${video.id} (tentativa ${retryCount + 1})`)
-      
-      // Garantir configurações inline
-      try {
-        video.setAttribute('playsinline', '')
-        video.setAttribute('webkit-playsinline', '')
-      } catch {}
-      video.playsInline = true
-      
-      // Todos os vídeos AR podem ter áudio quando forem reproduzidos
-      video.muted = false
-      
-      // Para Android: sempre forçar load() antes de play() APENAS se não estiver carregando
-      // networkState: 0=EMPTY, 1=IDLE, 2=LOADING, 3=NO_SOURCE
-      const mustLoad = (isAndroid || video.readyState === 0 || video.networkState === 3) && video.networkState !== 2
-      if (mustLoad) {
-        console.log(`📦 Chamando load() no vídeo: ${video.id} (networkState: ${video.networkState}, readyState: ${video.readyState})`)
-        try { 
-          video.load() 
-        } catch(e) { 
-          console.warn("load() falhou", e) 
-        }
-      } else if (video.networkState === 2) {
-        console.log(`⏳ Vídeo ${video.id} já está carregando, pulando load()`)
-      }
-      
-      // Tenta tocar com retry
-      const tryPlay = () => {
-        return video.play().then(() => {
-          console.log(`✅ Vídeo reproduzindo: ${video.id} (readyState: ${video.readyState})`)
-          return true
-        }).catch((e) => {
-          console.warn(`❌ Erro ao reproduzir vídeo: ${video.id}`, e)
-          
-          // Retry para Android (até 3 tentativas)
-          if (isAndroid && retryCount < 3) {
-            console.log(`🔄 Tentando novamente em 500ms... (retry ${retryCount + 1}/3)`)
-            setTimeout(() => {
-              enableVideo(video, retryCount + 1)
-            }, 500)
-          }
-          return false
-        })
-      }
-      
-      if (video.readyState < 2) { // < HAVE_CURRENT_DATA
-        const canplayOnce = () => {
-          video.removeEventListener('canplay', canplayOnce)
-          tryPlay()
-        }
-        video.addEventListener('canplay', canplayOnce, {once: true})
-        // fallback timeout aumentado para Android
-        setTimeout(tryPlay, isAndroid ? 2500 : 1500)
-      } else {
-        tryPlay()
-      }
-    }
-
-    console.log("🚀 Pré-carregando vídeos AR...")
-    preloadVideos()
-
-    let userInteracted = false
-    const handleFirstInteraction = async () => {
-      if (!cameraPermissionGranted) return
-      if (userInteracted) return
-      userInteracted = true
-      document.body.removeEventListener('click', handleFirstInteraction)
-      console.log('👆 Primeira interação – habilitando vídeos (estilo backup)')
-      for (const video of videos) {
-        if (!video) continue
-        await ensureVideoSourceAvailable(video)
-        // Força load antes do play para evitar NS_BINDING_ABORTED
-        try { 
-          if (video.readyState === 0) {
-            video.load() 
-          }
-        } catch(e) {
-          console.warn(`⚠️ Erro ao carregar ${video.id}:`, e)
-        }
-        // Todos os vídeos AR podem ter áudio quando forem reproduzidos
-        video.muted = false
-        // Para evitar áudio antes do target: só toca video1 e video2 quando seus targets forem encontrados
-        // video3 só toca quando target 2 for encontrado
-        if (video.id !== 'video3') {
-          enableVideo(video)
-        }
-      }
-    }
-
-    document.body.addEventListener('click', handleFirstInteraction, { once: true })
-
+    // MindAR + A-Frame: câmera, target e exibição. Só reagir a targetFound/targetLost (visible + play/pause).
     const handleSceneLoaded = () => {
-        console.log('✅ Scene A-Frame carregada')
-        preloadVideos()
         setTimeout(() => {
-        console.log('🔍 Configurando listeners de targets...')
-        
         const target0 = document.getElementById('target0')
         const target1 = document.getElementById('target1')
         const target2 = document.getElementById('target2')
         
-        console.log('Targets encontrados:', { target0: !!target0, target1: !!target1, target2: !!target2 })
-        
-        // Verificar se os targets têm os atributos corretos
+        // Target 0 – MindAR monitora; só reagimos com visible + play/pause
         if (target0) {
-          console.log('Target0 atributos:', {
-            hasMindarTarget: target0.hasAttribute('mindar-image-target'),
-            targetIndex: target0.getAttribute('mindar-image-target'),
-            id: target0.id
-          })
-        }
-        if (target1) {
-          console.log('Target1 atributos:', {
-            hasMindarTarget: target1.hasAttribute('mindar-image-target'),
-            targetIndex: target1.getAttribute('mindar-image-target'),
-            id: target1.id
-          })
-        }
-        if (target2) {
-          console.log('Target2 atributos:', {
-            hasMindarTarget: target2.hasAttribute('mindar-image-target'),
-            targetIndex: target2.getAttribute('mindar-image-target'),
-            id: target2.id
-          })
-        }
-        
-        // Verificar se o MindAR está ativo e rastreando
-        const sceneElement = document.querySelector('a-scene')
-        if (sceneElement && sceneElement.systems) {
-          const mindarSystem = sceneElement.systems.mindar || 
-                              sceneElement.systems['mindar-image-system'] ||
-                              sceneElement.systems['mindar-image']
-          
-          if (mindarSystem) {
-            console.log('✅ Sistema MindAR encontrado ao configurar listeners:', {
-              isTracking: mindarSystem.isTracking,
-              isReady: mindarSystem.isReady,
-              hasTracker: !!mindarSystem.tracker,
-              trackerState: mindarSystem.tracker?.state || 'unknown'
-            })
-          } else {
-            console.warn('⚠️ Sistema MindAR não encontrado ao configurar listeners. Sistemas disponíveis:', Object.keys(sceneElement.systems || {}))
-          }
-        }
-        
-        // Verificar se os targets têm os atributos corretos
-        if (target0) {
-          console.log('Target0 atributos:', {
-            hasMindarTarget: target0.hasAttribute('mindar-image-target'),
-            targetIndex: target0.getAttribute('mindar-image-target'),
-            id: target0.id
-          })
-        }
-        if (target1) {
-          console.log('Target1 atributos:', {
-            hasMindarTarget: target1.hasAttribute('mindar-image-target'),
-            targetIndex: target1.getAttribute('mindar-image-target'),
-            id: target1.id
-          })
-        }
-        if (target2) {
-          console.log('Target2 atributos:', {
-            hasMindarTarget: target2.hasAttribute('mindar-image-target'),
-            targetIndex: target2.getAttribute('mindar-image-target'),
-            id: target2.id
-          })
-        }
-        
-        // Verificar se o MindAR está ativo (mas NÃO iniciar aqui - deixar o arReady fazer isso)
-        // Usar sceneElement que já foi declarado acima
-        if (sceneElement && sceneElement.systems) {
-          // Tentar diferentes nomes de sistema do MindAR
-          const mindarSystem = sceneElement.systems.mindar || 
-                              sceneElement.systems['mindar-image-system'] ||
-                              sceneElement.systems['mindar-image']
-          
-          if (mindarSystem) {
-            console.log('✅ Sistema MindAR encontrado:', {
-              isTracking: mindarSystem.isTracking,
-              isReady: mindarSystem.isReady,
-              hasTracker: !!mindarSystem.tracker,
-              systemName: mindarSystem.constructor?.name || 'unknown'
-            })
-            
-            // NÃO iniciar aqui - o arReady event já faz isso
-            // Apenas verificar o estado
-          } else {
-            console.warn('⚠️ Sistema MindAR não encontrado. Sistemas disponíveis:', Object.keys(sceneElement.systems || {}))
-          }
-        } else {
-          console.warn('⚠️ Scene ou systems não encontrados')
-        }
-        
-        // Target 0 - Habilitar vídeo quando target for encontrado
-        if (target0) {
-          target0.addEventListener('targetFound', async () => {
-            console.log('🎯 Target 0 encontrado!')
+          target0.addEventListener('targetFound', () => {
             setActiveTargetIndex(0)
             setShowScanningAnimation(false)
-            
-            // Habilitar e reproduzir o vídeo AR (continuando de onde parou)
             const video = document.getElementById('video1')
-            if (video) {
-              const savedTime = video.currentTime
-              console.log('🎥 Habilitando vídeo AR para target 0:', video.id, 'continuando de:', savedTime.toFixed(2), 's')
-              try {
-                await ensureVideoSourceAvailable(video)
-                // Só chamar load() se o vídeo realmente não foi carregado ainda
-                if (video.readyState === 0) {
-                  video.load()
-                }
-                // Target 0 (video1/anim_4.mp4) deve ter áudio habilitado
-                video.muted = false
-                video.setAttribute('muted', 'false')
-                // enableVideo vai dar play() mantendo o currentTime atual (continua de onde parou)
-                enableVideo(video)
-                console.log('▶️ Vídeo continuando de:', video.currentTime.toFixed(2), 's')
-                
-                // Garantir que o a-video esteja visível e configurado corretamente
-                const videoPlane = target0.querySelector('a-video')
-                if (videoPlane) {
-                  // CRÍTICO: Garantir que o a-video esteja visível
-                  videoPlane.setAttribute('visible', 'true')
-                  
-                  // Garantir que o material está configurado corretamente
-                  const currentMaterial = videoPlane.getAttribute('material')
-                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
-                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
-                  }
-                  
-                  // Garantir que o vídeo HTML está tocando
-                  console.log('📹 Estado do vídeo HTML:', {
-                    id: video.id,
-                    paused: video.paused,
-                    readyState: video.readyState,
-                    currentTime: video.currentTime,
-                    duration: video.duration,
-                    muted: video.muted
-                  })
-                  
-                  // Verificar se o a-video está realmente visível no DOM
-                  setTimeout(() => {
-                    const isVisible = videoPlane.getAttribute('visible')
-                    const material = videoPlane.getAttribute('material')
-                    const object3D = videoPlane.object3D
-                    console.log('🔍 Verificação do a-video após 500ms:', {
-                      visible: isVisible,
-                      material: material,
-                      object3DExists: !!object3D,
-                      object3DVisible: object3D?.visible,
-                      object3DMatrixWorld: object3D?.matrixWorld?.elements
-                    })
-                  }, 500)
-                  
-                  console.log('✅ a-video do target 0 tornado visível e configurado', {
-                    visible: videoPlane.getAttribute('visible'),
-                    material: videoPlane.getAttribute('material')
-                  })
-                } else {
-                  console.warn('⚠️ a-video do target 0 não encontrado!')
-                }
-              } catch (e) {
-                console.error('❌ Erro ao habilitar vídeo para target 0:', e)
-              }
-            }
+            const plane = target0.querySelector('a-video')
+            if (video) { video.muted = false; video.play().catch(() => {}) }
+            if (plane) plane.setAttribute('visible', 'true')
           })
-          
           target0.addEventListener('targetLost', () => {
-            console.log('❌ Target 0 perdido - pausando vídeo (mantendo posição)')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
-            
-            // Pausar vídeo com múltiplas tentativas para garantir (SEM resetar currentTime)
-            const pauseVideo = (video, attempts = 0) => {
-              if (!video) return
-              
-              if (attempts < 5) {
-                video.pause()
-                if (!video.paused) {
-                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
-                } else {
-                  // NÃO resetar currentTime - manter posição para continuar de onde parou
-                  console.log('✅ Vídeo 1 pausado (posição mantida:', video.currentTime, 's)')
-                }
-              }
-            }
-            
             const video = document.getElementById('video1')
-            pauseVideo(video)
-            
-            // Garantir que o a-video esteja oculto
-            const videoPlane = target0.querySelector('a-video')
-            if (videoPlane) {
-              videoPlane.setAttribute('visible', 'false')
-              console.log('✅ a-video do target 0 oculto')
-            }
-            // A audiodescrição será pausada automaticamente via AudioDescriptionAR quando videoState.isPlaying for false
+            const plane = target0.querySelector('a-video')
+            if (video) video.pause()
+            if (plane) plane.setAttribute('visible', 'false')
           })
         }
 
-        // Target 1 - Habilitar vídeo quando target for encontrado
+        // Target 1 – MindAR monitora; só reagimos com visible + play/pause
         if (target1) {
-          target1.addEventListener('targetFound', async () => {
-            console.log('🎯 Target 1 encontrado!')
+          target1.addEventListener('targetFound', () => {
             setActiveTargetIndex(1)
             setShowScanningAnimation(false)
-            
-            // Habilitar e reproduzir o vídeo AR
             const video = document.getElementById('video2')
-            if (video) {
-              console.log('🎥 Habilitando vídeo AR para target 1:', video.id)
-              try {
-                await ensureVideoSourceAvailable(video)
-                if (video.readyState === 0) {
-                  video.load()
-                }
-                // video2 deve ter áudio (não mutar)
-                video.muted = false
-                video.setAttribute('muted', 'false')
-                console.log('🔊 Áudio do video2 habilitado - muted:', video.muted)
-                enableVideo(video)
-                
-                // Garantir que o a-video esteja visível e configurado corretamente
-                const videoPlane = target1.querySelector('a-video')
-                if (videoPlane) {
-                  // CRÍTICO: Garantir que o a-video esteja visível
-                  videoPlane.setAttribute('visible', 'true')
-                  
-                  // Garantir que o material está configurado corretamente
-                  const currentMaterial = videoPlane.getAttribute('material')
-                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
-                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
-                  }
-                  
-                  // Garantir que o vídeo HTML está tocando
-                  console.log('📹 Estado do vídeo HTML:', {
-                    id: video.id,
-                    paused: video.paused,
-                    readyState: video.readyState,
-                    currentTime: video.currentTime,
-                    duration: video.duration,
-                    muted: video.muted
-                  })
-                  
-                  // Verificar se o a-video está realmente visível no DOM
-                  setTimeout(() => {
-                    const isVisible = videoPlane.getAttribute('visible')
-                    const material = videoPlane.getAttribute('material')
-                    const object3D = videoPlane.object3D
-                    console.log('🔍 Verificação do a-video após 500ms:', {
-                      visible: isVisible,
-                      material: material,
-                      object3DExists: !!object3D,
-                      object3DVisible: object3D?.visible,
-                      object3DMatrixWorld: object3D?.matrixWorld?.elements
-                    })
-                  }, 500)
-                  
-                  console.log('✅ a-video do target 1 tornado visível e configurado', {
-                    visible: videoPlane.getAttribute('visible'),
-                    material: videoPlane.getAttribute('material')
-                  })
-                } else {
-                  console.warn('⚠️ a-video do target 1 não encontrado!')
-                }
-              } catch (e) {
-                console.error('❌ Erro ao habilitar vídeo para target 1:', e)
-              }
-            }
+            const plane = target1.querySelector('a-video')
+            if (video) { video.muted = false; video.play().catch(() => {}) }
+            if (plane) plane.setAttribute('visible', 'true')
           })
-          
           target1.addEventListener('targetLost', () => {
-            console.log('❌ Target 1 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
-            
-            // Pausar vídeo com múltiplas tentativas para garantir
-            const pauseVideo = (video, attempts = 0) => {
-              if (!video) return
-              
-              if (attempts < 5) {
-                video.pause()
-                if (!video.paused) {
-                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
-                } else {
-                  video.currentTime = 0 // Resetar para início apenas quando pausar
-                  console.log('✅ Vídeo 2 pausado e resetado')
-                }
-              }
-            }
-            
             const video = document.getElementById('video2')
-            pauseVideo(video)
-            
-            // Garantir que o a-video esteja oculto
-            const videoPlane = target1.querySelector('a-video')
-            if (videoPlane) {
-              videoPlane.setAttribute('visible', 'false')
-              console.log('✅ a-video do target 1 oculto')
-            }
+            const plane = target1.querySelector('a-video')
+            if (video) video.pause()
+            if (plane) plane.setAttribute('visible', 'false')
           })
         }
 
-        // Target 2 - Habilitar vídeo quando target for encontrado
+        // Target 2 – MindAR monitora; só reagimos com visible + play/pause
         if (target2) {
-          target2.addEventListener('targetFound', async () => {
-            console.log('🎯 Target 2 encontrado!')
+          target2.addEventListener('targetFound', () => {
             setActiveTargetIndex(2)
             setShowScanningAnimation(false)
-            
-            // Habilitar e reproduzir o vídeo AR (com áudio)
             const video = document.getElementById('video3')
-            if (video) {
-              console.log('🎥 Habilitando vídeo AR para target 2:', video.id)
-              try {
-                await ensureVideoSourceAvailable(video)
-                if (video.readyState === 0) {
-                  video.load()
-                }
-                video.muted = false // video3 deve ter áudio
-                enableVideo(video)
-                
-                // Garantir que o a-video esteja visível e configurado corretamente
-                const videoPlane = target2.querySelector('a-video')
-                if (videoPlane) {
-                  // CRÍTICO: Garantir que o a-video esteja visível
-                  videoPlane.setAttribute('visible', 'true')
-                  
-                  // Garantir que o material está configurado corretamente
-                  const currentMaterial = videoPlane.getAttribute('material')
-                  if (!currentMaterial || !currentMaterial.includes('shader: flat')) {
-                    videoPlane.setAttribute('material', 'shader: flat; side: double; transparent: false; opacity: 1.0')
-                  }
-                  
-                  // Garantir que o vídeo HTML está tocando
-                  console.log('📹 Estado do vídeo HTML:', {
-                    id: video.id,
-                    paused: video.paused,
-                    readyState: video.readyState,
-                    currentTime: video.currentTime,
-                    duration: video.duration,
-                    muted: video.muted
-                  })
-                  
-                  // Verificar se o a-video está realmente visível no DOM
-                  setTimeout(() => {
-                    const isVisible = videoPlane.getAttribute('visible')
-                    const material = videoPlane.getAttribute('material')
-                    const object3D = videoPlane.object3D
-                    console.log('🔍 Verificação do a-video após 500ms:', {
-                      visible: isVisible,
-                      material: material,
-                      object3DExists: !!object3D,
-                      object3DVisible: object3D?.visible,
-                      object3DMatrixWorld: object3D?.matrixWorld?.elements
-                    })
-                  }, 500)
-                  
-                  console.log('✅ a-video do target 2 tornado visível e configurado', {
-                    visible: videoPlane.getAttribute('visible'),
-                    material: videoPlane.getAttribute('material')
-                  })
-                } else {
-                  console.warn('⚠️ a-video do target 2 não encontrado!')
-                }
-              } catch (e) {
-                console.error('❌ Erro ao habilitar vídeo para target 2:', e)
-              }
-            }
+            const plane = target2.querySelector('a-video')
+            if (video) { video.muted = false; video.play().catch(() => {}) }
+            if (plane) plane.setAttribute('visible', 'true')
           })
-          
           target2.addEventListener('targetLost', () => {
-            console.log('❌ Target 2 perdido - pausando vídeo')
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
-            
-            // Pausar vídeo com múltiplas tentativas para garantir
-            const pauseVideo = (video, attempts = 0) => {
-              if (!video) return
-              
-              if (attempts < 5) {
-                video.pause()
-                if (!video.paused) {
-                  setTimeout(() => pauseVideo(video, attempts + 1), 100)
-                } else {
-                  video.currentTime = 0 // Resetar para início apenas quando pausar
-                  console.log('✅ Vídeo 3 pausado e resetado')
-                }
-              }
-            }
-            
             const video = document.getElementById('video3')
-            pauseVideo(video)
-            
-            // Garantir que o a-video esteja oculto
-            const videoPlane = target2.querySelector('a-video')
-            if (videoPlane) {
-              videoPlane.setAttribute('visible', 'false')
-              console.log('✅ a-video do target 2 oculto')
-            }
+            const plane = target2.querySelector('a-video')
+            if (video) video.pause()
+            if (plane) plane.setAttribute('visible', 'false')
           })
         }
       }, 2000)
@@ -980,23 +441,6 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-      // Uma vez: clear transparente para evitar retângulo preto no Android. Sem interceptar WebGL.
-      const s = sceneRef.current
-      if (!s) return
-      try {
-        const r = s.systems?.renderer
-        const renderer = r?.renderer || r
-        if (renderer && typeof renderer.setClearColor === 'function') {
-          renderer.setClearColor(0x000000, 0)
-        }
-        const canvas = s.querySelector('canvas')
-        if (canvas) {
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-        }
-      } catch (e) {
-        console.warn('handleArReady clear:', e)
-      }
     }
 
     scene.addEventListener('loaded', handleSceneLoaded)
@@ -1125,26 +569,25 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* A-Frame + MindAR como backup; background transparente evita retângulo preto no Android */}
+      {/* A-Frame + MindAR como backup; sem background/style para câmera aparecer */}
       <a-scene 
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; uiScanning: #ui-scanning; uiLoading: #ui-loading; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
         color-space="sRGB"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump; alpha: true;"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         embedded
         ui="enabled: false"
-        background="color: #000000; opacity: 0"
       >
         {/* Assets - Vídeos */}
         <a-assets>
-          {/* Target 0 → video1 → anim_4.mp4 (substitui antigo ayo_teste.mp4) */}
-          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous"></video>
-          {/* Target 1 → video2 → anim_3.mp4 (mantém) */}
-          <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop muted={false}></video>
-          {/* Target 2 → video3 → anim_2.mp4 (mantém onde estava antes) */}
-          <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop></video>
+          {/* Target 0 → video1 → anim_4.mp4 */}
+          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous" playsInline />
+          {/* Target 1 → video2 → anim_3.mp4 */}
+          <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
+          {/* Target 2 → video3 → anim_2.mp4 */}
+          <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
         </a-assets>
 
         {/* Targets */}
