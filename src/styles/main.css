@@ -778,20 +778,12 @@ a-scene canvas {
     height: 100vh !important;
 }
 
-/* Vídeo da câmera AR do MindAR */
+/* Vídeo da câmera: MindAR gerencia layout. Apenas garantir que não fique oculto. */
 #arVideo,
 video[id^="mindar"] {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    object-fit: cover !important;
-    z-index: -2 !important;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-    background-color: transparent !important;
 }
 
 /* Correção específica para Android - Canvas transparente */
@@ -812,16 +804,10 @@ video[id^="mindar"] {
         opacity: 1 !important;
     }
     
-    /* Garantir que o vídeo da câmera esteja atrás do canvas */
     .scan-page video[id^="mindar"],
     .scan-page #arVideo {
-        z-index: -2 !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover !important;
+        display: block !important;
+        visibility: visible !important;
     }
 }
 
@@ -840,9 +826,7 @@ video[id^="mindar"] {
        não elementos visuais HTML - não precisam de z-index ou estilos de posicionamento */
     
     /* Forçar vídeo atrás do canvas no Android - EXCETO main-video */
-    video:not([id="video1"]):not([id="video2"]):not([id="video3"]):not([id="main-video"]) {
-        z-index: -2 !important;
-    }
+    /* MindAR gerencia vídeo da câmera */
 }
 
 /* Android - Correção adicional para canvas não cobrir vídeo */
