@@ -776,8 +776,6 @@ a-scene {
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    background: transparent !important;
-    background-color: transparent !important;
 }
 
 /* Container da câmera AR */
