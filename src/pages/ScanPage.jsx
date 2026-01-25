@@ -1055,10 +1055,33 @@ const ScanPage = () => {
     // REMOVIDO: MutationObserver - deixar o MindAR gerenciar completamente
     // Não precisamos observar mudanças - o MindAR gerencia tudo
 
-    // Apenas CSS. Não tocar em renderer/WebGL – quebra a-video no Android.
+    // Configuração INICIAL do renderer (uma vez): setClearColor + alpha. SEM interceptar.
+    // Sem isso o canvas limpa para branco opaco → tela branca. Interceptações quebram a-video no Android.
     const configureRenderer = () => {
-      forceCanvasTransparency()
-      makeRendererTransparent()
+      try {
+        const canvas = scene?.querySelector('canvas')
+        if (!canvas) return
+        canvas.style.setProperty('background-color', 'transparent', 'important')
+        canvas.style.setProperty('background', 'transparent', 'important')
+        canvas.style.setProperty('opacity', '1', 'important')
+        const rendererSystem = scene?.systems?.renderer
+        if (rendererSystem) {
+          const renderer = rendererSystem.renderer || rendererSystem
+          if (renderer && typeof renderer.setClearColor === 'function') {
+            renderer.setClearColor(0x000000, 0)
+          }
+          if (renderer?.domElement) {
+            const gl = renderer.domElement.getContext('webgl') || renderer.domElement.getContext('webgl2')
+            if (gl) {
+              gl.clearColor(0.0, 0.0, 0.0, 0.0)
+              gl.enable(gl.BLEND)
+              gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('configureRenderer:', e)
+      }
     }
     if (isArReady) configureRenderer()
 
