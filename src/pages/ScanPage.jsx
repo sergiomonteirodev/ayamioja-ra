@@ -168,21 +168,11 @@ const ScanPage = () => {
       
       // REMOVIDO: Deixar o MindAR gerenciar completamente o vídeo da câmera
       
-      // Garantir que o canvas seja transparente
+      // Garantir que o canvas seja transparente (apenas CSS, sem WebGL)
       if (sceneRef.current) {
         const scene = sceneRef.current
         const canvas = scene.querySelector('canvas')
         if (canvas) {
-          // Forçar transparência via WebGL
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-          if (gl) {
-            gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: transparente
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-            console.log('✅ Canvas WebGL configurado para transparência após permissão')
-          }
-          
-          // Forçar transparência via CSS
           canvas.style.setProperty('background-color', 'transparent', 'important')
           canvas.style.setProperty('background', 'transparent', 'important')
           canvas.style.setProperty('opacity', '1', 'important')
@@ -191,29 +181,6 @@ const ScanPage = () => {
       }
       
       console.log('✅ Permissão concedida. MindAR iniciado, aguardando vídeo aparecer...')
-      
-      // Aplicar correções Android após permissão
-      setTimeout(() => {
-        const scene = sceneRef.current
-        if (scene) {
-          const forceAndroidTransparency = () => {
-            const isAndroid = /Android/i.test(navigator.userAgent)
-            if (!isAndroid) return
-            
-            const canvas = scene.querySelector('canvas')
-            if (!canvas) return
-            
-            console.log('🔧 Aplicando correções Android após permissão...')
-            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-            if (gl) {
-              gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              canvas.style.setProperty('background-color', 'transparent', 'important')
-              canvas.style.setProperty('background', 'transparent', 'important')
-            }
-          }
-          forceAndroidTransparency()
-        }
-      }, 500)
       
       clearTimeout(timeoutId)
       setIsRequestingPermission(false)
@@ -296,152 +263,31 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // AGressivo: Forçar transparência do canvas no Android - interceptar TUDO relacionado ao WebGL
+  // Android: Apenas CSS transparente no canvas. SEM interceptar WebGL.
+  // Interceptações (gl.clearColor, clear, drawArrays, etc.) quebram o a-video:
+  // o áudio toca mas o vídeo não aparece (fica "por baixo").
   useEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
     if (!isAndroid || !cameraPermissionGranted) return
 
-    let rafId = null
-
     const forceAndroidTransparency = () => {
       const scene = sceneRef.current
       if (!scene) return
-      
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
-      
-      // FORÇAR canvas sempre transparente - SEM manipular opacity baseado em targets
+
       canvas.style.setProperty('background-color', 'transparent', 'important')
       canvas.style.setProperty('background', 'transparent', 'important')
-      canvas.style.setProperty('opacity', '1', 'important') // SEMPRE visível
+      canvas.style.setProperty('opacity', '1', 'important')
       canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
       canvas.style.setProperty('pointer-events', 'none', 'important')
-      canvas.style.setProperty('z-index', '1', 'important') // Acima dos vídeos AR (-1)
-      
-      // Forçar via WebGL - CRÍTICO: interceptar clearColor, clear, e usar RAF
-      const gl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
-      if (gl) {
-        // CRÍTICO: Interceptar gl.clearColor() para SEMPRE retornar transparente
-        if (!gl._clearColorIntercepted) {
-          const originalClearColor = gl.clearColor.bind(gl)
-          gl.clearColor = function(r, g, b, a) {
-            // SEMPRE forçar alpha = 0 (transparente), mesmo se o A-Frame tentar definir preto
-            originalClearColor.call(this, r, g, b, 0.0)
-            // Log apenas uma vez para debug
-            if (!this._loggedClearColor) {
-              console.log('🔧 gl.clearColor interceptado - sempre forçando alpha 0.0')
-              this._loggedClearColor = true
-            }
-          }
-          gl._clearColorIntercepted = true
-        }
-        
-        // CRÍTICO: Interceptar setClearColor do renderer do Three.js (se disponível)
-        try {
-          const rendererSystem = scene.systems?.renderer
-          if (rendererSystem) {
-            const renderer = rendererSystem.renderer || rendererSystem
-            if (renderer && typeof renderer.setClearColor === 'function' && !renderer._setClearColorIntercepted) {
-              renderer._originalSetClearColor = renderer.setClearColor.bind(renderer)
-              renderer.setClearColor = function(color, alpha) {
-                // SEMPRE forçar alpha = 0 (transparente)
-                renderer._originalSetClearColor(color, 0)
-                if (!this._loggedSetClearColor) {
-                  console.log('🔧 renderer.setClearColor interceptado - sempre forçando alpha 0')
-                  this._loggedSetClearColor = true
-                }
-              }
-              renderer._setClearColorIntercepted = true
-              // Forçar transparente imediatamente
-              renderer.setClearColor(0x000000, 0)
-            }
-          }
-        } catch (e) {
-          // Ignorar se não conseguir acessar renderer
-        }
-        
-        // CRÍTICO: Interceptar gl.clear() para SEMPRE usar clearColor transparente
-        if (!gl._clearIntercepted) {
-          gl._originalClear = gl.clear.bind(gl)
-          gl.clear = function(mask) {
-            // SEMPRE forçar clearColor transparente antes de limpar
-            gl.clearColor(0.0, 0.0, 0.0, 0.0)
-            gl._originalClear(mask)
-            // Forçar novamente após limpar para garantir
-            gl.clearColor(0.0, 0.0, 0.0, 0.0)
-          }
-          gl._clearIntercepted = true
-        }
-        
-        // CRÍTICO: Interceptar gl.clearColor antes de cada draw para garantir
-        if (!gl._drawIntercepted) {
-          const originalDrawArrays = gl.drawArrays?.bind(gl)
-          const originalDrawElements = gl.drawElements?.bind(gl)
-          
-          if (originalDrawArrays) {
-            gl.drawArrays = function(...args) {
-              gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              return originalDrawArrays.apply(this, args)
-            }
-          }
-          
-          if (originalDrawElements) {
-            gl.drawElements = function(...args) {
-              gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              return originalDrawElements.apply(this, args)
-            }
-          }
-          
-          gl._drawIntercepted = true
-        }
-        
-        // SEMPRE configurar clearColor transparente e blend
-        gl.clearColor(0.0, 0.0, 0.0, 0.0)
-        gl.enable(gl.BLEND)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-        
-        // CRÍTICO: Usar requestAnimationFrame para forçar clearColor a cada frame
-        if (!canvas._rafTransparencyRunning) {
-          canvas._rafTransparencyRunning = true
-          const forceClearColorEveryFrame = () => {
-            const currentGl = canvas.getContext('webgl', { alpha: true }) || canvas.getContext('webgl2', { alpha: true })
-            if (currentGl) {
-              currentGl.clearColor(0.0, 0.0, 0.0, 0.0)
-            }
-            rafId = requestAnimationFrame(forceClearColorEveryFrame)
-          }
-          forceClearColorEveryFrame()
-        }
-      }
-      
-      // Vídeo da câmera fica atrás de tudo
-      const mindarVideo = document.querySelector('#arVideo') || 
-                          Array.from(document.querySelectorAll('video')).find(v => 
-                            v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
-                            (v.srcObject || v.videoWidth > 0)
-                          )
-      if (mindarVideo) {
-        mindarVideo.style.setProperty('z-index', '-2', 'important')
-      }
+      canvas.style.setProperty('z-index', '1', 'important')
     }
 
-    // Chamar imediatamente
     forceAndroidTransparency()
-    
-    // Chamar continuamente a cada 50ms no Android (backup para RAF)
-    const interval = setInterval(forceAndroidTransparency, 50)
-    
-    return () => {
-      clearInterval(interval)
-      if (rafId) {
-        cancelAnimationFrame(rafId)
-      }
-      const canvas = sceneRef.current?.querySelector('canvas')
-      if (canvas) {
-        canvas._rafTransparencyRunning = false
-      }
-    }
+    const interval = setInterval(forceAndroidTransparency, 1000)
+
+    return () => clearInterval(interval)
   }, [cameraPermissionGranted])
 
   // REMOVIDO: Não gerenciar o vídeo manualmente - o MindAR gerencia tudo
@@ -790,318 +636,44 @@ const ScanPage = () => {
       }
     }, 10000)
 
-    // Função global para garantir que o renderer seja transparente
+    // Função global: apenas CSS no canvas. SEM interceptar WebGL (quebra a-video no Android).
     const makeRendererTransparent = () => {
       const canvas = scene.querySelector('canvas')
-      if (!canvas) {
-        return false
-      }
-
-      // FORÇAR CSS transparente com !important via setProperty
+      if (!canvas) return false
       canvas.style.setProperty('background-color', 'transparent', 'important')
       canvas.style.setProperty('background', 'transparent', 'important')
       canvas.style.setProperty('opacity', '1', 'important')
-      
-      // Também garantir via style direto
       canvas.style.backgroundColor = 'transparent'
       canvas.style.background = 'transparent'
       canvas.style.opacity = '1'
-      
-      let rendererFound = false
-      
-      // Tentar acessar renderer via sistema do A-Frame
-      try {
-        const rendererSystem = scene.systems?.renderer
-        if (rendererSystem) {
-          const renderer = rendererSystem.renderer || rendererSystem
-          if (renderer && typeof renderer.setClearColor === 'function') {
-            // Interceptar setClearColor para sempre forçar alpha 0
-            if (!renderer._originalSetClearColor) {
-              renderer._originalSetClearColor = renderer.setClearColor.bind(renderer)
-              renderer.setClearColor = function(color, alpha) {
-                // Sempre forçar alpha 0 (transparente)
-                renderer._originalSetClearColor(color, 0)
-              }
-            }
-            
-            // Configurar clearColor para transparente
-            renderer.setClearColor(0x000000, 0) // Preto com alpha 0 (transparente)
-            renderer.setPixelRatio(window.devicePixelRatio || 1)
-            
-            // Garantir que o renderer está configurado para alpha
-            if (renderer.domElement) {
-              const gl = renderer.getContext()
-              if (gl) {
-                gl.enable(gl.BLEND)
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-                gl.clearColor(0.0, 0.0, 0.0, 0.0) // Forçar transparente
-                
-                // CRÍTICO: Interceptar o método render para sempre limpar com alpha 0
-                if (!renderer._originalRender) {
-                  renderer._originalRender = renderer.render.bind(renderer)
-                  renderer.render = function(scene, camera) {
-                    // Antes de renderizar, garantir que o clearColor está com alpha 0
-                    const gl = this.getContext()
-                    if (gl) {
-                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    }
-                    // Chamar o render original
-                    renderer._originalRender(scene, camera)
-                  }
-                  console.log('✅ Método render interceptado para garantir transparência')
-                }
-              }
-            }
-            
-            console.log('✅ Renderer configurado como transparente via scene.systems')
-            rendererFound = true
-          }
-        }
-      } catch (e) {
-        console.log('⚠️ Erro ao acessar renderer via scene.systems:', e.message)
-      }
-      
-      // Tentar via AFRAME global
-      if (window.AFRAME) {
-        try {
-          const scenes = AFRAME.scenes || []
-          for (const aframeScene of scenes) {
-            const rendererSystem = aframeScene?.systems?.renderer
-            if (rendererSystem) {
-              const renderer = rendererSystem.renderer || rendererSystem
-              if (renderer && typeof renderer.setClearColor === 'function') {
-                renderer.setClearColor(0x000000, 0)
-                
-                // Garantir que o renderer está configurado para alpha
-                if (renderer.domElement) {
-                  const gl = renderer.getContext()
-                  if (gl) {
-                    gl.enable(gl.BLEND)
-                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-                    gl.clearColor(0.0, 0.0, 0.0, 0.0) // Forçar transparente
-                    
-                    // CRÍTICO: Interceptar o método render para sempre limpar com alpha 0
-                    if (!renderer._originalRender) {
-                      renderer._originalRender = renderer.render.bind(renderer)
-                      renderer.render = function(scene, camera) {
-                        // Antes de renderizar, garantir que o clearColor está com alpha 0
-                        const gl = this.getContext()
-                        if (gl) {
-                          gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                        }
-                        // Chamar o render original
-                        renderer._originalRender(scene, camera)
-                      }
-                      console.log('✅ Método render interceptado para garantir transparência (via AFRAME.scenes)')
-                    }
-                  }
-                }
-                
-                if (!rendererFound) {
-                  console.log('✅ Renderer configurado como transparente via AFRAME.scenes')
-                  rendererFound = true
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.log('⚠️ Erro ao acessar renderer via AFRAME:', e.message)
-        }
-      }
-      
-      // Tentar acessar diretamente via THREE.js se disponível
-      if (window.THREE && canvas) {
-        try {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-          if (gl) {
-            // Detectar Android/Chrome para aplicar correções mais agressivas
-            const isAndroid = /Android/i.test(navigator.userAgent)
-            const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
-            const needsAggressiveFix = isAndroid && isChrome
-            
-            // Forçar limpar o canvas com alpha transparente
-            gl.clearColor(0.0, 0.0, 0.0, 0.0)
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-            
-            // Interceptar gl.clear() de forma inteligente: apenas garantir clearColor 0 antes de limpar
-            // Mas permitir que a limpeza aconteça normalmente (incluindo depth buffer para AR)
-            if (!gl._originalClear) {
-              gl._originalClear = gl.clear.bind(gl)
-              gl.clear = function(mask) {
-                // SEMPRE garantir clearColor com alpha 0 antes de limpar
-                // Isso garante transparência sem interferir na detecção
-                gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                // Permitir que a limpeza aconteça normalmente (incluindo depth buffer)
-                gl._originalClear(mask)
-                // No Android/Chrome, forçar clearColor novamente após limpar
-                if (needsAggressiveFix) {
-                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                }
-              }
-              console.log('✅ gl.clear interceptado para garantir transparência (permitindo limpeza normal)', needsAggressiveFix ? '[Android/Chrome: modo agressivo]' : '')
-            }
-            
-            // No Android/Chrome, adicionar um intervalo que força clearColor a 0 continuamente
-            if (needsAggressiveFix && !gl._androidClearColorInterval) {
-              gl._androidClearColorInterval = setInterval(() => {
-                try {
-                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                } catch (e) {
-                  // Ignorar erros se o contexto foi perdido
-                }
-              }, 100) // A cada 100ms
-              console.log('✅ Intervalo de correção de clearColor ativado para Android/Chrome')
-            }
-            
-            console.log('✅ Canvas WebGL configurado para transparência', needsAggressiveFix ? '[Android/Chrome]' : '')
-          }
-        } catch (e) {
-          console.warn('⚠️ Erro ao configurar WebGL:', e)
-        }
-      }
-      
-      return rendererFound
+      return true
     }
 
-    // Função específica para corrigir transparência no Android
+    // Android: apenas CSS (canvas + scene). SEM interceptar WebGL – quebra a-video.
     const forceAndroidTransparency = () => {
       const isAndroid = /Android/i.test(navigator.userAgent)
       if (!isAndroid) return
-      
       const scene = sceneRef.current
       if (!scene) return
-      
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
-      
-      console.log('🔧 Aplicando correções específicas para Android...')
-      
-      // Forçar transparência via CSS de forma mais agressiva
+
       canvas.style.setProperty('background-color', 'transparent', 'important')
       canvas.style.setProperty('background', 'transparent', 'important')
       canvas.style.setProperty('opacity', '1', 'important')
       canvas.style.setProperty('mix-blend-mode', 'normal', 'important')
       canvas.style.setProperty('pointer-events', 'none', 'important')
-      
-      // Garantir que o canvas não cubra o vídeo - ajustar z-index
       canvas.style.setProperty('z-index', '1', 'important')
-      
-      // Garantir dimensões corretas
-      canvas.style.setProperty('width', '100vw', 'important')
-      canvas.style.setProperty('height', '100vh', 'important')
-      canvas.style.setProperty('position', 'fixed', 'important')
-      canvas.style.setProperty('top', '0', 'important')
-      canvas.style.setProperty('left', '0', 'important')
-      
-      // Acessar WebGL diretamente
-      const gl = canvas.getContext('webgl', { 
-        alpha: true, 
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: false,
-        antialias: true
-      }) || canvas.getContext('webgl2', { 
-        alpha: true, 
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: false,
-        antialias: true
-      })
-      
-      if (gl) {
-        // Configurar para transparência
-        gl.clearColor(0.0, 0.0, 0.0, 0.0)
-        gl.enable(gl.BLEND)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-        
-        // Interceptar clear para sempre usar alpha 0
-        if (!gl._androidClearIntercepted) {
-          const originalClear = gl.clear.bind(gl)
-          gl.clear = function(mask) {
-            gl.clearColor(0.0, 0.0, 0.0, 0.0)
-            originalClear(mask)
-            // Forçar novamente após clear
-            gl.clearColor(0.0, 0.0, 0.0, 0.0)
-          }
-          gl._androidClearIntercepted = true
-          console.log('✅ gl.clear interceptado para Android')
-        }
-        
-        // Interceptar render do renderer se disponível
-        try {
-          const rendererSystem = scene.systems?.renderer
-          if (rendererSystem) {
-            const renderer = rendererSystem.renderer || rendererSystem
-            if (renderer && typeof renderer.render === 'function' && !renderer._androidRenderIntercepted) {
-              const originalRender = renderer.render.bind(renderer)
-              renderer.render = function(scene, camera) {
-                const gl = this.getContext()
-                if (gl) {
-                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                }
-                originalRender(scene, camera)
-                if (gl) {
-                  gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                }
-              }
-              renderer._androidRenderIntercepted = true
-              console.log('✅ renderer.render interceptado para Android')
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ Erro ao interceptar renderer:', e)
-        }
-        
-        // Intervalo agressivo para Android + requestAnimationFrame
-        if (!canvas._androidTransparencyInterval) {
-          // Usar setInterval para CSS
-          canvas._androidTransparencyInterval = setInterval(() => {
-            try {
-              gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              canvas.style.setProperty('background-color', 'transparent', 'important')
-              canvas.style.setProperty('background', 'transparent', 'important')
-              canvas.style.setProperty('opacity', '1', 'important')
-            } catch (e) {
-              // Contexto pode ter sido perdido
-            }
-          }, 50) // A cada 50ms no Android
-          
-          // Usar requestAnimationFrame para WebGL (mais suave)
-          let rafId = null
-          const forceTransparencyRAF = () => {
-            try {
-              if (gl) {
-                gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              }
-              canvas.style.setProperty('background-color', 'transparent', 'important')
-              canvas.style.setProperty('background', 'transparent', 'important')
-              rafId = requestAnimationFrame(forceTransparencyRAF)
-            } catch (e) {
-              // Parar se contexto foi perdido
-              if (rafId) {
-                cancelAnimationFrame(rafId)
-              }
-            }
-          }
-          rafId = requestAnimationFrame(forceTransparencyRAF)
-          canvas._androidRAFId = rafId
-          
-          console.log('✅ Intervalo agressivo de transparência ativado para Android (50ms + RAF)')
-        }
-      }
-      
-      // Também forçar no elemento a-scene
+
       scene.style.setProperty('background-color', 'transparent', 'important')
       scene.style.setProperty('background', 'transparent', 'important')
       scene.style.setProperty('opacity', '1', 'important')
-      
-      // Garantir que o vídeo da câmera esteja visível e atrás do canvas
-      const mindarVideo = document.querySelector('#arVideo') || 
-                          Array.from(document.querySelectorAll('video')).find(v => 
-                            v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' && 
-                            (v.srcObject || v.videoWidth > 0)
-                          )
-      
+
+      const mindarVideo = document.querySelector('#arVideo') ||
+        Array.from(document.querySelectorAll('video')).find(v =>
+          v.id !== 'video1' && v.id !== 'video2' && v.id !== 'video3' &&
+          (v.srcObject || v.videoWidth > 0)
+        )
       if (mindarVideo) {
         mindarVideo.style.setProperty('z-index', '-2', 'important')
         mindarVideo.style.setProperty('position', 'fixed', 'important')
@@ -1110,10 +682,7 @@ const ScanPage = () => {
         mindarVideo.style.setProperty('width', '100vw', 'important')
         mindarVideo.style.setProperty('height', '100vh', 'important')
         mindarVideo.style.setProperty('object-fit', 'cover', 'important')
-        console.log('✅ Vídeo da câmera reposicionado para Android')
       }
-      
-      console.log('✅ Correções Android aplicadas')
     }
 
     // Primeira interação do usuário (só funciona após permissão concedida)
@@ -1453,50 +1022,8 @@ const ScanPage = () => {
                 makeRendererTransparent()
               }
             } else {
-              // Canvas está transparente no CSS, mas pode estar sendo limpo com cor opaca pelo WebGL
-              console.warn('⚠️ Canvas está transparente no CSS, mas pode estar sendo limpo com cor opaca pelo WebGL')
-              console.log('🔧 Configurando WebGL clearColor para transparência (sem interceptar gl.clear para não interferir na detecção)...')
-              
-              // Interceptar gl.clear() de forma inteligente: apenas garantir clearColor 0 antes de limpar
-              // Mas permitir que a limpeza aconteça normalmente (incluindo depth buffer para AR)
-              const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-              if (gl) {
-                // Detectar Android/Chrome para aplicar correções mais agressivas
-                const isAndroid = /Android/i.test(navigator.userAgent)
-                const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
-                const needsAggressiveFix = isAndroid && isChrome
-                
-                gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                gl.enable(gl.BLEND)
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-                
-                if (!gl._originalClear) {
-                  gl._originalClear = gl.clear.bind(gl)
-                  gl.clear = function(mask) {
-                    // SEMPRE garantir clearColor com alpha 0 antes de limpar
-                    gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    // Permitir que a limpeza aconteça normalmente
-                    gl._originalClear(mask)
-                    // No Android/Chrome, forçar clearColor novamente após limpar
-                    if (needsAggressiveFix) {
-                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    }
-                  }
-                  console.log('✅ gl.clear interceptado no diagnóstico (permitindo limpeza normal)', needsAggressiveFix ? '[Android/Chrome: modo agressivo]' : '')
-                }
-                
-                // No Android/Chrome, adicionar um intervalo que força clearColor a 0 continuamente
-                if (needsAggressiveFix && !gl._androidClearColorInterval) {
-                  gl._androidClearColorInterval = setInterval(() => {
-                    try {
-                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    } catch (e) {
-                      // Ignorar erros se o contexto foi perdido
-                    }
-                  }, 100) // A cada 100ms
-                  console.log('✅ Intervalo de correção de clearColor ativado no diagnóstico para Android/Chrome')
-                }
-              }
+              // Canvas já transparente no CSS – nada a fazer. Não interceptar WebGL (quebra a-video no Android).
+              makeRendererTransparent()
             }
           }
         }
@@ -1528,43 +1055,12 @@ const ScanPage = () => {
     // REMOVIDO: MutationObserver - deixar o MindAR gerenciar completamente
     // Não precisamos observar mudanças - o MindAR gerencia tudo
 
-    // NÃO interceptar o loop de renderização - o MindAR precisa gerenciar isso normalmente
-    // Apenas configurar transparência uma vez no início
+    // Apenas CSS. Não tocar em renderer/WebGL – quebra a-video no Android.
     const configureRenderer = () => {
-      try {
-        const rendererSystem = scene.systems?.renderer
-        if (rendererSystem) {
-          const renderer = rendererSystem.renderer || rendererSystem
-          if (renderer) {
-            // Configurar clear color transparente APENAS uma vez
-            if (typeof renderer.setClearColor === 'function') {
-              renderer.setClearColor(0x000000, 0)
-              console.log('✅ Renderer configurado para transparência')
-            }
-            
-            // Configurar WebGL context APENAS uma vez
-            if (renderer.domElement) {
-              const canvas = renderer.domElement
-              const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-              if (gl) {
-                // Configurar clear color transparente APENAS uma vez
-                gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                gl.enable(gl.BLEND)
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-                console.log('✅ WebGL context configurado para transparência')
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.log('⚠️ Erro ao configurar renderer:', e.message)
-      }
+      forceCanvasTransparency()
+      makeRendererTransparent()
     }
-    
-    // Chamar apenas uma vez após o AR estar pronto
-    if (isArReady) {
-      configureRenderer()
-    }
+    if (isArReady) configureRenderer()
 
     // Aguardar o A-Frame carregar completamente
     const handleSceneLoaded = () => {
@@ -2024,14 +1520,8 @@ const ScanPage = () => {
           if (!canvas) return
           
           console.log('🔧 Aplicando correções Android após arReady...')
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-          if (gl) {
-            gl.clearColor(0.0, 0.0, 0.0, 0.0)
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-            canvas.style.setProperty('background-color', 'transparent', 'important')
-            canvas.style.setProperty('background', 'transparent', 'important')
-          }
+          canvas.style.setProperty('background-color', 'transparent', 'important')
+          canvas.style.setProperty('background', 'transparent', 'important')
         }
         forceAndroidTransparency()
         makeRendererTransparent()
@@ -2373,144 +1863,20 @@ const ScanPage = () => {
     // Adicionar listener para arReady
     scene.addEventListener('arReady', handleArReady)
     
-    // Função SIMPLIFICADA: Apenas garantir que o canvas seja transparente
-    // O MindAR gerencia completamente o vídeo da câmera - não interferimos
+    // Apenas CSS no canvas. SEM interceptar WebGL – quebra a-video no Android (áudio toca, vídeo não aparece).
     const forceCanvasTransparency = () => {
       const canvas = scene.querySelector('canvas')
       if (!canvas) return
-      
-      // CSS transparente
       canvas.style.setProperty('background-color', 'transparent', 'important')
       canvas.style.setProperty('background', 'transparent', 'important')
       canvas.style.setProperty('opacity', '1', 'important')
-      canvas.style.setProperty('z-index', '1', 'important') // Acima do vídeo (-1)
+      canvas.style.setProperty('z-index', '1', 'important')
       canvas.style.setProperty('position', 'fixed', 'important')
       canvas.style.setProperty('top', '0', 'important')
       canvas.style.setProperty('left', '0', 'important')
       canvas.style.setProperty('width', '100vw', 'important')
       canvas.style.setProperty('height', '100vh', 'important')
       canvas.style.setProperty('pointer-events', 'none', 'important')
-          
-      // Renderer transparente - CRÍTICO
-      try {
-        const rendererSystem = scene.systems?.renderer
-        if (rendererSystem) {
-          const renderer = rendererSystem.renderer || rendererSystem
-          if (renderer) {
-            // Interceptar setClearColor para sempre forçar alpha 0
-            if (typeof renderer.setClearColor === 'function' && !renderer._transparencyIntercepted) {
-              renderer._originalSetClearColor = renderer.setClearColor.bind(renderer)
-              renderer.setClearColor = function(color, alpha) {
-                // Sempre forçar alpha 0 (transparente)
-                renderer._originalSetClearColor(color, 0)
-              }
-              renderer._transparencyIntercepted = true
-            }
-            
-            // Configurar clearColor para transparente
-            if (typeof renderer.setClearColor === 'function') {
-              renderer.setClearColor(0x000000, 0) // Preto com alpha 0 (transparente)
-            }
-            
-            // Interceptar render() para garantir transparência a cada frame
-            if (typeof renderer.render === 'function' && !renderer._renderIntercepted) {
-              // Detectar Android/Chrome para aplicar correções mais agressivas
-              const isAndroid = /Android/i.test(navigator.userAgent)
-              const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
-              const needsAggressiveFix = isAndroid && isChrome
-              
-              renderer._originalRender = renderer.render.bind(renderer)
-              renderer.render = function(scene, camera) {
-                // CRÍTICO: Garantir clearColor transparente antes de renderizar
-                if (typeof renderer.setClearColor === 'function') {
-                  renderer.setClearColor(0x000000, 0)
-                }
-                // CRÍTICO: Garantir WebGL clearColor transparente diretamente
-                try {
-                  const gl = renderer.getContext && renderer.getContext() || 
-                            renderer.domElement && (renderer.domElement.getContext('webgl') || renderer.domElement.getContext('webgl2'))
-                  if (gl) {
-                    gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: totalmente transparente
-                    gl.enable(gl.BLEND)
-                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-                  }
-                } catch (e) {
-                  // Ignorar erro se não conseguir acessar WebGL
-                }
-                // Chamar render original
-                renderer._originalRender(scene, camera)
-                
-                // No Android/Chrome, forçar clearColor novamente após renderizar
-                if (needsAggressiveFix) {
-                  try {
-                    const gl = renderer.getContext && renderer.getContext() || 
-                              renderer.domElement && (renderer.domElement.getContext('webgl') || renderer.domElement.getContext('webgl2'))
-                    if (gl) {
-                      gl.clearColor(0.0, 0.0, 0.0, 0.0)
-                    }
-                  } catch (e) {
-                    // Ignorar erro
-                  }
-                }
-              }
-              renderer._renderIntercepted = true
-              if (needsAggressiveFix) {
-                console.log('✅ Renderer.render interceptado com correção agressiva para Android/Chrome')
-              }
-            }
-            
-            // Garantir que alpha seja habilitado
-            if (typeof renderer.setClearAlpha === 'function') {
-              renderer.setClearAlpha(0)
-            }
-            // Forçar renderização com alpha
-            if (renderer.domElement) {
-              renderer.domElement.style.backgroundColor = 'transparent'
-            }
-          }
-        }
-        
-        // Também configurar via WebGL diretamente
-        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-        if (gl) {
-          // Detectar Android/Chrome para aplicar correções mais agressivas
-          const isAndroid = /Android/i.test(navigator.userAgent)
-          const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent)
-          const needsAggressiveFix = isAndroid && isChrome
-          
-          gl.clearColor(0.0, 0.0, 0.0, 0.0) // RGBA: transparente
-          gl.enable(gl.BLEND)
-          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-          
-          // Interceptar gl.clear() para garantir transparência
-          if (!gl._originalClear) {
-            gl._originalClear = gl.clear.bind(gl)
-            gl.clear = function(mask) {
-              // SEMPRE garantir clearColor com alpha 0 antes de limpar
-              gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              // Permitir que a limpeza aconteça normalmente
-              gl._originalClear(mask)
-              // No Android/Chrome, forçar clearColor novamente após limpar
-              if (needsAggressiveFix) {
-                gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              }
-            }
-          }
-          
-          // No Android/Chrome, adicionar um intervalo que força clearColor a 0 continuamente
-          if (needsAggressiveFix && !gl._androidClearColorInterval) {
-            gl._androidClearColorInterval = setInterval(() => {
-              try {
-                gl.clearColor(0.0, 0.0, 0.0, 0.0)
-              } catch (e) {
-                // Ignorar erros se o contexto foi perdido
-              }
-            }, 100) // A cada 100ms
-          }
-        }
-      } catch (e) {
-        console.warn('⚠️ Erro ao configurar transparência:', e)
-      }
     }
     
     // Detectar Android/Chrome uma vez para usar em múltiplos lugares
@@ -2592,25 +1958,10 @@ const ScanPage = () => {
       clearInterval(transparencyIntervalRef.current)
     }
     transparencyIntervalRef.current = setInterval(() => {
-      // Sempre garantir transparência do canvas
       forceCanvasTransparency()
       makeRendererTransparent()
       
-      // No Android/Chrome, forçar transparência do canvas a cada frame usando requestAnimationFrame
-      if (needsAggressiveFix) {
-        const canvas = scene?.querySelector('canvas')
-        if (canvas) {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
-          if (gl) {
-            gl.clearColor(0.0, 0.0, 0.0, 0.0)
-          }
-          // Forçar CSS também
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-        }
-      }
-      
-      // No Android/Chrome, forçar a-scene e seus elementos a serem transparentes
+      // No Android/Chrome, forçar a-scene e seus elementos a serem transparentes (apenas CSS/DOM, sem WebGL)
       if (needsAggressiveFix && scene) {
         // Forçar a-scene transparente
         scene.style.setProperty('background-color', 'transparent', 'important')
