@@ -394,9 +394,9 @@ const ScanPage = () => {
           else video.addEventListener('loadedmetadata', setRatio, { once: true })
         }
 
-        applyVideoAspectToPlane(video1, target0?.querySelector('a-video'))
-        applyVideoAspectToPlane(video2, target1?.querySelector('a-video'))
-        applyVideoAspectToPlane(video3, target2?.querySelector('a-video'))
+        applyVideoAspectToPlane(video1, document.getElementById('videoPlane0'))
+        applyVideoAspectToPlane(video2, document.getElementById('videoPlane1'))
+        applyVideoAspectToPlane(video3, document.getElementById('videoPlane2'))
 
         // Target 0 – MindAR monitora; só reagimos com visible + play/pause
         if (target0) {
@@ -404,7 +404,7 @@ const ScanPage = () => {
             setActiveTargetIndex(0)
             setShowScanningAnimation(false)
             const video = document.getElementById('video1')
-            const plane = target0.querySelector('a-video')
+            const plane = document.getElementById('videoPlane0')
             if (video) { video.muted = false; video.play().catch(() => {}) }
             if (plane) plane.setAttribute('visible', 'true')
           })
@@ -412,7 +412,7 @@ const ScanPage = () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             const video = document.getElementById('video1')
-            const plane = target0.querySelector('a-video')
+            const plane = document.getElementById('videoPlane0')
             if (video) video.pause()
             if (plane) plane.setAttribute('visible', 'false')
           })
@@ -424,7 +424,7 @@ const ScanPage = () => {
             setActiveTargetIndex(1)
             setShowScanningAnimation(false)
             const video = document.getElementById('video2')
-            const plane = target1.querySelector('a-video')
+            const plane = document.getElementById('videoPlane1')
             if (video) { video.muted = false; video.play().catch(() => {}) }
             if (plane) plane.setAttribute('visible', 'true')
           })
@@ -432,7 +432,7 @@ const ScanPage = () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             const video = document.getElementById('video2')
-            const plane = target1.querySelector('a-video')
+            const plane = document.getElementById('videoPlane1')
             if (video) video.pause()
             if (plane) plane.setAttribute('visible', 'false')
           })
@@ -444,7 +444,7 @@ const ScanPage = () => {
             setActiveTargetIndex(2)
             setShowScanningAnimation(false)
             const video = document.getElementById('video3')
-            const plane = target2.querySelector('a-video')
+            const plane = document.getElementById('videoPlane2')
             if (video) { video.muted = false; video.play().catch(() => {}) }
             if (plane) plane.setAttribute('visible', 'true')
           })
@@ -452,7 +452,7 @@ const ScanPage = () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
             const video = document.getElementById('video3')
-            const plane = target2.querySelector('a-video')
+            const plane = document.getElementById('videoPlane2')
             if (video) video.pause()
             if (plane) plane.setAttribute('visible', 'false')
           })
@@ -616,47 +616,38 @@ const ScanPage = () => {
           <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
         </a-assets>
 
-        {/* Targets */}
+        {/* Targets – a-plane + material src como no backup (evita retângulo preto do a-video) */}
         <a-entity id="target0" mindar-image-target="targetIndex: 0">
-          <a-video 
-            src="#video1" 
-            position="0 0 0" 
-            rotation="0 0 0" 
-            width="1" 
+          <a-plane
+            id="videoPlane0"
+            width="1"
             height="1"
-            material="shader: flat; side: double; transparent: false; opacity: 1.0"
-            autoplay="true"
+            position="0 0 0"
+            material="shader: flat; side: double; src: #video1"
             visible="false"
-          ></a-video>
+          ></a-plane>
         </a-entity>
 
         <a-entity id="target1" mindar-image-target="targetIndex: 1">
-          <a-video 
-            src="#video2" 
-            position="0 0 0" 
-            rotation="0 0 0" 
-            width="1" 
+          <a-plane
+            id="videoPlane1"
+            width="1"
             height="1"
-            material="shader: flat; side: double; transparent: false; opacity: 1.0"
-            autoplay="true"
+            position="0 0 0"
+            material="shader: flat; side: double; src: #video2"
             visible="false"
-            loop="true"
-          ></a-video>
+          ></a-plane>
         </a-entity>
 
         <a-entity id="target2" mindar-image-target="targetIndex: 2">
-          <a-video 
-            id="target2-video"
-            src="#video3" 
-            position="0 0 0" 
-            rotation="0 0 0" 
-            width="1" 
+          <a-plane
+            id="videoPlane2"
+            width="1"
             height="1"
-            material="shader: flat; side: double; transparent: false; opacity: 1.0"
-            autoplay="true"
+            position="0 0 0"
+            material="shader: flat; side: double; src: #video3"
             visible="false"
-            loop="true"
-          ></a-video>
+          ></a-plane>
         </a-entity>
 
         {/* Camera */}
