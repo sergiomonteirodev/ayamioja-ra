@@ -20,7 +20,6 @@ const ScanPage = () => {
   const [isRequestingPermission, setIsRequestingPermission] = useState(false) // Controla se está solicitando permissão
   
   const sceneRef = useRef(null)
-  const rendererCheckIntervalRef = useRef(null)
   const rafIdRef = useRef(null)
   const initialCameraCheckRef = useRef(null)
   const initialCameraTimeoutRef = useRef(null)
@@ -44,9 +43,6 @@ const ScanPage = () => {
     setAudioActive(active)
     console.log('Toggle Audio:', active)
   }
-
-  // REMOVIDO: updateCanvasVisibility - deixar MindAR gerenciar canvas completamente
-  // O canvas deve sempre estar transparente e visível, sem manipulações condicionais
 
   const handleBackClick = () => {
     // Garantir que a URL tenha a barra no final para carregar o background corretamente
@@ -165,22 +161,7 @@ const ScanPage = () => {
       await Promise.race([startMindAR(), mindarTimeout])
 
       setCameraPermissionGranted(true)
-      
-      // REMOVIDO: Deixar o MindAR gerenciar completamente o vídeo da câmera
-      
-      // Garantir que o canvas seja transparente (apenas CSS, sem WebGL)
-      if (sceneRef.current) {
-        const scene = sceneRef.current
-        const canvas = scene.querySelector('canvas')
-        if (canvas) {
-          canvas.style.setProperty('background-color', 'transparent', 'important')
-          canvas.style.setProperty('background', 'transparent', 'important')
-          canvas.style.setProperty('opacity', '1', 'important')
-          console.log('✅ Canvas CSS configurado para transparência após permissão')
-        }
-      }
-      
-      console.log('✅ Permissão concedida. MindAR iniciado, aguardando vídeo aparecer...')
+      console.log('✅ Permissão concedida. MindAR iniciado.')
       
       clearTimeout(timeoutId)
       setIsRequestingPermission(false)

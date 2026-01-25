@@ -787,35 +787,7 @@ a-scene {
     height: 100vh !important;
 }
 
-/* Vídeo da câmera: MindAR gerencia (backup não estiliza) */
-
-/* Android específico - garantir que não há fundo preto */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-    a-scene canvas {
-        background: transparent !important;
-        background-color: transparent !important;
-        opacity: 1 !important;
-        mix-blend-mode: normal !important;
-        pointer-events: none !important;
-    }
-    
-    /* REMOVIDO: Não manipular vídeos AR - eles são renderizados dentro do a-video pelo A-Frame
-       Os vídeos AR (video1, video2, video3) são elementos de áudio/vídeo usados pelo a-video,
-       não elementos visuais HTML - não precisam de z-index ou estilos de posicionamento */
-    
-    /* Forçar vídeo atrás do canvas no Android - EXCETO main-video */
-    /* MindAR gerencia vídeo da câmera */
-}
-
-/* Android - Correção adicional para canvas não cobrir vídeo */
-@media screen and (max-width: 1024px) {
-    a-scene canvas {
-        background: transparent !important;
-        background-color: transparent !important;
-        opacity: 1 !important;
-        mix-blend-mode: normal !important;
-    }
-}
+/* MindAR controla câmera e canvas; sem regras Android/WebGL que causem retângulo preto */
 
 /* Esconder UI padrão do MindAR */
 .mindar-ui-overlay,
