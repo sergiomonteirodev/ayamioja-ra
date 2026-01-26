@@ -580,14 +580,14 @@ const ScanPage = () => {
           <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
         </a-assets>
 
-        {/* Targets – a-plane 5:2 (2.5x1), material src como no backup */}
+        {/* Targets – como backup: flat src sem side:double; posições 0 0.1 0.1 / 0 0 0.005 */}
         <a-entity id="target0" mindar-image-target="targetIndex: 0">
           <a-plane
             id="videoPlane0"
-            width="2.5"
+            width="1"
             height="1"
-            position="0 0 0.005"
-            material="shader: flat; side: double; src: #video1"
+            position="0 0.1 0.1"
+            material="shader: flat; src: #video1"
             visible="false"
           ></a-plane>
         </a-entity>
@@ -595,10 +595,10 @@ const ScanPage = () => {
         <a-entity id="target1" mindar-image-target="targetIndex: 1">
           <a-plane
             id="videoPlane1"
-            width="2.5"
+            width="1"
             height="1"
-            position="0 0 0.005"
-            material="shader: flat; side: double; src: #video2"
+            position="0 0.1 0.1"
+            material="shader: flat; src: #video2"
             visible="false"
           ></a-plane>
         </a-entity>
@@ -606,10 +606,10 @@ const ScanPage = () => {
         <a-entity id="target2" mindar-image-target="targetIndex: 2">
           <a-plane
             id="videoPlane2"
-            width="2.5"
+            width="1"
             height="1"
             position="0 0 0.005"
-            material="shader: flat; side: double; src: #video3"
+            material="shader: flat; src: #video3"
             visible="false"
           ></a-plane>
         </a-entity>
