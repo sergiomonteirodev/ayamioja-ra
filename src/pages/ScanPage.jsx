@@ -358,14 +358,26 @@ const ScanPage = () => {
         const target1 = document.getElementById('target1')
         const target2 = document.getElementById('target2')
 
-        // Planos 1x1 fixo; sem resize via JS (teste Android).
+        // Aspect 5:2 nos planos (vídeos são 5:2); reduz letterboxing.
+        const R = 2.5
+        ;['videoPlane0','videoPlane1','videoPlane2'].forEach(id => {
+          const p = document.getElementById(id)
+          if (p) { p.setAttribute('width', R.toFixed(3)); p.setAttribute('height', '1') }
+        })
 
         const isAndroid = /Android/i.test(navigator.userAgent)
         const showPlane = (plane, video) => {
           if (!plane) return
-          if (video) { video.muted = false; video.play().catch(() => {}) }
+          if (!video) { plane.setAttribute('visible', 'true'); return }
+          video.muted = false
+          video.play().catch(() => {})
           if (isAndroid) {
-            setTimeout(() => plane.setAttribute('visible', 'true'), 150)
+            const onPlaying = () => {
+              video.removeEventListener('playing', onPlaying)
+              plane.setAttribute('visible', 'true')
+            }
+            if (video.readyState >= 2 && !video.paused) plane.setAttribute('visible', 'true')
+            else video.addEventListener('playing', onPlaying, { once: true })
           } else {
             plane.setAttribute('visible', 'true')
           }
