@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>AR - Ayà mi o já</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
+    a-scene { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+    a-scene.ready { display: block !important; }
+    #permission {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.95); color: #fff; text-align: center; padding: 20px; z-index: 9999;
+    }
+    #permission.hidden { display: none !important; }
+    #permission button {
+      margin-top: 20px; padding: 14px 28px; font-size: 18px; background: #4CAF50; color: #fff;
+      border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+    }
+    #permission button:disabled { background: #666; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div id="permission">
+    <p style="font-size: 18px;">Para usar a Realidade Aumentada, precisamos acessar sua câmera.</p>
+    <button id="btn-allow">Permitir acesso à câmera</button>
+  </div>
+
+  <a-scene id="scene" mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
+    color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump;"
+    vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded ui="enabled: false">
+    <a-assets>
+      <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous" playsinline></video>
+      <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop playsinline></video>
+      <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsinline></video>
+    </a-assets>
+    <a-entity id="target0" mindar-image-target="targetIndex: 0">
+      <a-plane id="videoPlane0" width="1" height="1" position="0 0.1 0.1" material="shader: flat; src: #video1" visible="false"></a-plane>
+    </a-entity>
+    <a-entity id="target1" mindar-image-target="targetIndex: 1">
+      <a-plane id="videoPlane1" width="1" height="1" position="0 0.1 0.1" material="shader: flat; src: #video2" visible="false"></a-plane>
+    </a-entity>
+    <a-entity id="target2" mindar-image-target="targetIndex: 2">
+      <a-plane id="videoPlane2" width="1" height="1" position="0 0 0.005" material="shader: flat; src: #video3" visible="false"></a-plane>
+    </a-entity>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  </a-scene>
+
+  <script>
+(function() {
+  var sceneEl = document.getElementById('scene');
+  var perm = document.getElementById('permission');
+  var btn = document.getElementById('btn-allow');
+  var mindarStarted = false;
+
+  function post(type, payload) {
+    try { if (window.parent !== window) window.parent.postMessage({ type: type, payload: payload || {} }, '*'); } catch (e) {}
+  }
+
+  function startMindAR() {
+    if (mindarStarted) return;
+    var sys = sceneEl.systems['mindar-image-system'] || sceneEl.systems['mindar-image'];
+    if (sys && sys.start) { sys.start(); mindarStarted = true; }
+  }
+
+  function startAR() {
+    var sys = sceneEl.systems['mindar-image-system'] || sceneEl.systems['mindar-image'];
+    if (sys && sys.start && !mindarStarted) {
+      sys.start();
+      mindarStarted = true;
+    }
+  }
+
+  sceneEl.addEventListener('loaded', startAR);
+  sceneEl.addEventListener('arReady', function() { post('arReady'); });
+
+  btn.addEventListener('click', function() {
+    btn.disabled = true;
+    btn.textContent = 'Solicitando…';
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function(stream) {
+        stream.getTracks().forEach(function(t) { t.stop(); });
+        perm.classList.add('hidden');
+        sceneEl.classList.add('ready');
+        if (sceneEl.hasLoaded) startAR();
+        else setTimeout(startAR, 300);
+      })
+      .catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Permitir acesso à câmera';
+        alert('Não foi possível acessar a câmera. Verifique as permissões.');
+      });
+  });
+
+  var activeIndex = null;
+  var timeInterval = null;
+
+  function setupTarget(idx, videoId, planeId) {
+    var target = document.getElementById('target' + idx);
+    var video = document.getElementById(videoId);
+    var plane = document.getElementById(planeId);
+    if (!target || !plane) return;
+    target.addEventListener('targetFound', function() {
+      if (video) { video.muted = false; video.play().catch(function(){}); }
+      plane.setAttribute('visible', 'true');
+      activeIndex = idx;
+      post('targetFound', { index: idx });
+      if (timeInterval) clearInterval(timeInterval);
+      timeInterval = setInterval(function() {
+        if (video && !video.paused) post('videoTime', { index: idx, currentTime: video.currentTime });
+      }, 300);
+    });
+    target.addEventListener('targetLost', function() {
+      if (video) video.pause();
+      plane.setAttribute('visible', 'false');
+      if (timeInterval) { clearInterval(timeInterval); timeInterval = null; }
+      activeIndex = null;
+      post('targetLost', { index: idx });
+    });
+  }
+  setupTarget(0, 'video1', 'videoPlane0');
+  setupTarget(1, 'video2', 'videoPlane1');
+  setupTarget(2, 'video3', 'videoPlane2');
+})();
+  </script>
+</body>
+</html>
