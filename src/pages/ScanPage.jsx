@@ -358,71 +358,67 @@ const ScanPage = () => {
         const target1 = document.getElementById('target1')
         const target2 = document.getElementById('target2')
 
-        // Aspect 5:2 (ffprobe) nos planos; ratio 2.5 evita letterboxing.
-        const VIDEO_DISPLAY_RATIO = 2.5
-        ;[document.getElementById('videoPlane0'), document.getElementById('videoPlane1'), document.getElementById('videoPlane2')].forEach((plane) => {
-          if (!plane) return
-          plane.setAttribute('width', VIDEO_DISPLAY_RATIO.toFixed(3))
-          plane.setAttribute('height', '1')
-        })
+        // Planos 1x1 fixo; sem resize via JS (teste Android).
 
-        // Target 0 – reagir: UI state + play/pause + visible
+        const isAndroid = /Android/i.test(navigator.userAgent)
+        const showPlane = (plane, video) => {
+          if (!plane) return
+          if (video) { video.muted = false; video.play().catch(() => {}) }
+          if (isAndroid) {
+            setTimeout(() => plane.setAttribute('visible', 'true'), 150)
+          } else {
+            plane.setAttribute('visible', 'true')
+          }
+        }
+
+        // Target 0
         if (target0) {
           target0.addEventListener('targetFound', () => {
             setActiveTargetIndex(0)
             setShowScanningAnimation(false)
-            const video = document.getElementById('video1')
-            const plane = document.getElementById('videoPlane0')
-            if (video) { video.muted = false; video.play().catch(() => {}) }
-            if (plane) plane.setAttribute('visible', 'true')
+            showPlane(document.getElementById('videoPlane0'), document.getElementById('video1'))
           })
           target0.addEventListener('targetLost', () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
-            const video = document.getElementById('video1')
-            const plane = document.getElementById('videoPlane0')
-            if (video) video.pause()
-            if (plane) plane.setAttribute('visible', 'false')
+            const v = document.getElementById('video1')
+            const p = document.getElementById('videoPlane0')
+            if (v) v.pause()
+            if (p) p.setAttribute('visible', 'false')
           })
         }
 
-        // Target 1 – reagir: UI state + play/pause + visible
+        // Target 1
         if (target1) {
           target1.addEventListener('targetFound', () => {
             setActiveTargetIndex(1)
             setShowScanningAnimation(false)
-            const video = document.getElementById('video2')
-            const plane = document.getElementById('videoPlane1')
-            if (video) { video.muted = false; video.play().catch(() => {}) }
-            if (plane) plane.setAttribute('visible', 'true')
+            showPlane(document.getElementById('videoPlane1'), document.getElementById('video2'))
           })
           target1.addEventListener('targetLost', () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
-            const video = document.getElementById('video2')
-            const plane = document.getElementById('videoPlane1')
-            if (video) video.pause()
-            if (plane) plane.setAttribute('visible', 'false')
+            const v = document.getElementById('video2')
+            const p = document.getElementById('videoPlane1')
+            if (v) v.pause()
+            if (p) p.setAttribute('visible', 'false')
           })
         }
 
-        // Target 2 – reagir: UI state + play/pause + visible
+        // Target 2
         if (target2) {
           target2.addEventListener('targetFound', () => {
             setActiveTargetIndex(2)
             setShowScanningAnimation(false)
-            const video = document.getElementById('video3')
-            const plane = document.getElementById('videoPlane2')
-            if (video) { video.muted = false; video.play().catch(() => {}) }
-            if (plane) plane.setAttribute('visible', 'true')
+            showPlane(document.getElementById('videoPlane2'), document.getElementById('video3'))
           })
           target2.addEventListener('targetLost', () => {
             setActiveTargetIndex(null)
             setShowScanningAnimation(true)
-            const video = document.getElementById('video3')
-            const plane = document.getElementById('videoPlane2')
-            if (video) video.pause()
-            if (plane) plane.setAttribute('visible', 'false')
+            const v = document.getElementById('video3')
+            const p = document.getElementById('videoPlane2')
+            if (v) v.pause()
+            if (p) p.setAttribute('visible', 'false')
           })
         }
       }, 2000)
