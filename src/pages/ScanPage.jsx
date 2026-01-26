@@ -6,18 +6,20 @@ import ToggleControls from '../components/ToggleControls'
 import SafeImage from '../components/SafeImage'
 import AudioDescriptionAR from '../components/AudioDescriptionAR'
 
+const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+const useArIframe = isAndroid // Android: AR em iframe standalone (evitar retângulo preto)
+
 const ScanPage = () => {
-  const [librasActive, setLibrasActive] = useState(true) // ✅ Iniciar com Libras ativado
+  const [librasActive, setLibrasActive] = useState(true)
   const [audioActive, setAudioActive] = useState(false)
   const [videoState, setVideoState] = useState(null)
   const [activeTargetIndex, setActiveTargetIndex] = useState(null)
   const [arVideoStates, setArVideoStates] = useState({})
   const [isArReady, setIsArReady] = useState(false)
   const [showScanningAnimation, setShowScanningAnimation] = useState(true)
-  // const [currentLibrasVideo, setCurrentLibrasVideo] = useState(null) // DESATIVADO - vídeo de libras desativado
-  const [deviceOrientation, setDeviceOrientation] = useState('portrait') // 'portrait' ou 'landscape'
-  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false) // Controla se a permissão da câmera foi concedida
-  const [isRequestingPermission, setIsRequestingPermission] = useState(false) // Controla se está solicitando permissão
+  const [deviceOrientation, setDeviceOrientation] = useState('portrait')
+  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false)
   
   const sceneRef = useRef(null)
   const rafIdRef = useRef(null)
@@ -244,9 +246,9 @@ const ScanPage = () => {
     }
   }, [activeTargetIndex])
 
-  // Atualizar videoState continuamente enquanto um vídeo AR está reproduzindo
-  // Necessário para sincronizar a audiodescrição com os vídeos AR
+  // Atualizar videoState continuamente enquanto um vídeo AR está reproduzindo (só não-Android)
   useEffect(() => {
+    if (useArIframe) return
     if (activeTargetIndex === null) {
       // Nenhum target ativo - pausar estado do vídeo
       setVideoState({
@@ -298,11 +300,11 @@ const ScanPage = () => {
       video.removeEventListener('timeupdate', handleTimeUpdate)
       video.removeEventListener('ended', handleEnded)
     }
-  }, [activeTargetIndex])
+  }, [activeTargetIndex, useArIframe])
 
-  // Controlar volume dos vídeos AR quando audiodescrição está ativa
+  // Controlar volume dos vídeos AR quando audiodescrição está ativa (só não-Android)
   useEffect(() => {
-    // Controlar volume de todos os vídeos AR que têm áudio (video1, video2 e video3)
+    if (useArIframe) return
     const video1 = document.getElementById('video1')
     const video2 = document.getElementById('video2')
     const video3 = document.getElementById('video3')
@@ -337,12 +339,42 @@ const ScanPage = () => {
         video3.volume = 1.0
       }
     }
-  }, [audioActive])
+  }, [audioActive, useArIframe])
 
-  // MindAR + A-Frame gerenciam AR (como backup). Só layout: scan-page-active para CSS.
+  // Android: AR em iframe standalone (ar-standalone.html). postMessage → state.
+  useEffect(() => {
+    if (!useArIframe) return
+    const onMessage = (e) => {
+      const d = e?.data
+      if (!d || typeof d.type !== 'string') return
+      if (d.type === 'arReady') setIsArReady(true)
+      if (d.type === 'targetFound') {
+        setActiveTargetIndex(d.payload?.index ?? null)
+        setShowScanningAnimation(false)
+        setVideoState(s => ({ ...(s || {}), isPlaying: true, currentTime: d.payload?.currentTime ?? 0 }))
+      }
+      if (d.type === 'targetLost') {
+        setActiveTargetIndex(null)
+        setShowScanningAnimation(true)
+        setVideoState(s => ({ ...(s || {}), isPlaying: false }))
+      }
+      if (d.type === 'videoTime') setVideoState(s => ({ ...(s || {}), isPlaying: true, currentTime: d.payload?.currentTime ?? 0 }))
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [useArIframe])
+
+  // MindAR + A-Frame (não-Android). scan-page-active para CSS.
   useEffect(() => {
     document.body.classList.add('scan-page-active')
     document.documentElement.classList.add('scan-page-active')
+
+    if (useArIframe) {
+      return () => {
+        document.body.classList.remove('scan-page-active')
+        document.documentElement.classList.remove('scan-page-active')
+      }
+    }
 
     const scene = sceneRef.current
     if (!scene) {
@@ -516,8 +548,26 @@ const ScanPage = () => {
       {/* Vídeo de fundo da câmera - DEVE estar PRIMEIRO para ficar atrás de tudo */}
       {/* NÃO criar overlay separado - o MindAR gerencia o vídeo da câmera (#arVideo) */}
 
-      {/* Botão para solicitar permissão da câmera */}
-      {!cameraPermissionGranted && (
+      {/* Android: AR em iframe standalone (evita retângulo preto) */}
+      {useArIframe && (
+        <iframe
+          src="/ayamioja-ra/ar-standalone.html"
+          title="AR"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            border: 'none',
+            zIndex: 0,
+            pointerEvents: 'auto'
+          }}
+        />
+      )}
+
+      {/* Botão para solicitar permissão da câmera (só não-Android) */}
+      {!useArIframe && !cameraPermissionGranted && (
         <div
           style={{
             position: 'fixed',
@@ -567,7 +617,8 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* A-Frame + MindAR como backup; sem background/style para câmera aparecer */}
+      {/* A-Frame + MindAR (só não-Android; Android usa iframe ar-standalone) */}
+      {!useArIframe && (
       <a-scene 
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
@@ -625,10 +676,10 @@ const ScanPage = () => {
         {/* Camera */}
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
       </a-scene>
+      )}
 
-      {/* Placeholders para MindAR (uiScanning/uiLoading); nosso overlay "Aponte câmera..." mantido abaixo */}
       <div id="ui-scanning" style={{ display: 'none' }} aria-hidden="true" />
-      {!isArReady && (
+      {!useArIframe && !isArReady && (
         <div id="ui-loading" className="ui-loading" style={{ display: 'flex' }}>
           <div className="loading-content">
             <div className="loading-spinner"></div>
@@ -637,8 +688,8 @@ const ScanPage = () => {
         </div>
       )}
 
-      {/* Animação de Scanning - mostra quando não há target ativo */}
-      {cameraPermissionGranted && showScanningAnimation && activeTargetIndex === null && (
+      {/* Aponte a câmera – Android: isArReady do iframe; não-Android: cameraPermissionGranted */}
+      {(useArIframe ? isArReady : cameraPermissionGranted) && showScanningAnimation && activeTargetIndex === null && (
         <div 
           className="ar-scanning-overlay" 
           style={{
