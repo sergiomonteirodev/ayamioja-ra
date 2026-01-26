@@ -778,16 +778,7 @@ a-scene {
     height: 100% !important;
 }
 
-/* Container da câmera AR */
-.a-canvas {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-}
-
-/* MindAR controla câmera e canvas; sem regras Android/WebGL que causem retângulo preto */
+/* Backup não usa .a-canvas; MindAR controla. Sem regras extra que causem retângulo preto. */
 
 /* Esconder UI padrão do MindAR */
 .mindar-ui-overlay,
