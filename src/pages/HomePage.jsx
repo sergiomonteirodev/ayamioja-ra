@@ -7,8 +7,8 @@ import InterpreterVideo from '../components/InterpreterVideo'
 import AudioDescription from '../components/AudioDescription'
 import ActionButtons from '../components/ActionButtons'
 
-/** Momento (s) em que a bonequinha surge na animação – ajustar conforme o vídeo. */
-const BONEQUINHA_TIME_SEC = 1
+/** Momento (s) em que a bonequinha surge na animação – só no fluxo "AD antes do play". */
+const BONEQUINHA_TIME_SEC = 4
 
 const HomePage = () => {
   const [librasActive, setLibrasActive] = useState(false)
