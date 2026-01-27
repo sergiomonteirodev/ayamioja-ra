@@ -22,11 +22,11 @@ const ActionButtons = ({ showScanButton = true, showAccessButton = true }) => {
       )}
       {showAccessButton && (
         <button className="btn-secondary" onClick={handleAccessClick}>
-          Acesse a história
+          Ouvir o livro
         </button>
       )}
       <a href="#" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>
-        Ouvir música
+        Ouvir a música
       </a>
     </div>
   )
