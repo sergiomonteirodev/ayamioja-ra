@@ -233,6 +233,17 @@ body {
     transform: translateX(26px);
 }
 
+.toggle-input:disabled + .toggle-slider {
+    background-color: #999;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.toggle-label:has(.toggle-input:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .toggle-text {
     font-size: 25px;
 }
