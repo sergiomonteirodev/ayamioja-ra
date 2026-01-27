@@ -792,13 +792,13 @@ a-scene {
 /* Backup não usa .a-canvas; MindAR controla. Sem regras extra que causem retângulo preto. */
 
 /* Correção para retângulo preto no Android - garantir que planos não apareçam antes do vídeo */
-.scan-page a-plane {
+.scan-page a-plane[visible="false"] {
     opacity: 0 !important;
-    transition: opacity 0.3s ease !important;
 }
 
 .scan-page a-plane[visible="true"] {
     opacity: 1 !important;
+    transition: opacity 0.2s ease !important;
 }
 
 /* Garantir que vídeos AR sejam pré-carregados */
