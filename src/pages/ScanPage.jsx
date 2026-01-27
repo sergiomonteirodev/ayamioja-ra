@@ -347,90 +347,45 @@ const ScanPage = () => {
       return
     }
     
-    // MindAR controla a interação (câmera, target, exibição). Nós reagimos a targetFound/targetLost
-    // mantendo: play/pause, visible, activeTargetIndex, showScanningAnimation → AD, Libras, overlay.
+    // MindAR controla ao máximo (Android inclusive). Só reagimos: play/pause, visible, estado React.
     const handleSceneLoaded = () => {
-        setTimeout(() => {
-        const target0 = document.getElementById('target0')
-        const target1 = document.getElementById('target1')
-        const target2 = document.getElementById('target2')
+      const target0 = document.getElementById('target0')
+      const target1 = document.getElementById('target1')
+      const target2 = document.getElementById('target2')
 
-        // Aspect 5:2 nos planos (vídeos são 5:2); reduz letterboxing.
-        const R = 2.5
-        ;['videoPlane0','videoPlane1','videoPlane2'].forEach(id => {
-          const p = document.getElementById(id)
-          if (p) { p.setAttribute('width', R.toFixed(3)); p.setAttribute('height', '1') }
-        })
-
-        const isAndroid = /Android/i.test(navigator.userAgent)
-        const showPlane = (plane, video) => {
-          if (!plane) return
-          if (!video) { plane.setAttribute('visible', 'true'); return }
+      const onFound = (idx, planeId, videoId) => {
+        setActiveTargetIndex(idx)
+        setShowScanningAnimation(false)
+        const plane = document.getElementById(planeId)
+        const video = document.getElementById(videoId)
+        if (video) {
           video.muted = false
           video.play().catch(() => {})
-          if (isAndroid) {
-            const onPlaying = () => {
-              video.removeEventListener('playing', onPlaying)
-              plane.setAttribute('visible', 'true')
-            }
-            if (video.readyState >= 2 && !video.paused) plane.setAttribute('visible', 'true')
-            else video.addEventListener('playing', onPlaying, { once: true })
-          } else {
-            plane.setAttribute('visible', 'true')
-          }
         }
+        if (plane) plane.setAttribute('visible', 'true')
+      }
 
-        // Target 0
-        if (target0) {
-          target0.addEventListener('targetFound', () => {
-            setActiveTargetIndex(0)
-            setShowScanningAnimation(false)
-            showPlane(document.getElementById('videoPlane0'), document.getElementById('video1'))
-          })
-          target0.addEventListener('targetLost', () => {
-            setActiveTargetIndex(null)
-            setShowScanningAnimation(true)
-            const v = document.getElementById('video1')
-            const p = document.getElementById('videoPlane0')
-            if (v) v.pause()
-            if (p) p.setAttribute('visible', 'false')
-          })
-        }
+      const onLost = (planeId, videoId) => {
+        setActiveTargetIndex(null)
+        setShowScanningAnimation(true)
+        const v = document.getElementById(videoId)
+        const p = document.getElementById(planeId)
+        if (v) v.pause()
+        if (p) p.setAttribute('visible', 'false')
+      }
 
-        // Target 1
-        if (target1) {
-          target1.addEventListener('targetFound', () => {
-            setActiveTargetIndex(1)
-            setShowScanningAnimation(false)
-            showPlane(document.getElementById('videoPlane1'), document.getElementById('video2'))
-          })
-          target1.addEventListener('targetLost', () => {
-            setActiveTargetIndex(null)
-            setShowScanningAnimation(true)
-            const v = document.getElementById('video2')
-            const p = document.getElementById('videoPlane1')
-            if (v) v.pause()
-            if (p) p.setAttribute('visible', 'false')
-          })
-        }
-
-        // Target 2
-        if (target2) {
-          target2.addEventListener('targetFound', () => {
-            setActiveTargetIndex(2)
-            setShowScanningAnimation(false)
-            showPlane(document.getElementById('videoPlane2'), document.getElementById('video3'))
-          })
-          target2.addEventListener('targetLost', () => {
-            setActiveTargetIndex(null)
-            setShowScanningAnimation(true)
-            const v = document.getElementById('video3')
-            const p = document.getElementById('videoPlane2')
-            if (v) v.pause()
-            if (p) p.setAttribute('visible', 'false')
-          })
-        }
-      }, 2000)
+      if (target0) {
+        target0.addEventListener('targetFound', () => onFound(0, 'videoPlane0', 'video1'))
+        target0.addEventListener('targetLost', () => onLost('videoPlane0', 'video1'))
+      }
+      if (target1) {
+        target1.addEventListener('targetFound', () => onFound(1, 'videoPlane1', 'video2'))
+        target1.addEventListener('targetLost', () => onLost('videoPlane1', 'video2'))
+      }
+      if (target2) {
+        target2.addEventListener('targetFound', () => onFound(2, 'videoPlane2', 'video3'))
+        target2.addEventListener('targetLost', () => onLost('videoPlane2', 'video3'))
+      }
     }
     
     const handleArReady = () => {
@@ -574,48 +529,22 @@ const ScanPage = () => {
         embedded
         ui="enabled: false"
       >
-        {/* Assets - Vídeos */}
+        {/* Assets - Vídeos (como backup: loop, muted 1/2, playsinline) */}
         <a-assets>
-          {/* Target 0 → video1 → anim_4.mp4 */}
-          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous" playsInline />
-          {/* Target 1 → video2 → anim_3.mp4 */}
-          <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
-          {/* Target 2 → video3 → anim_2.mp4 */}
+          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous" loop playsInline muted />
+          <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop playsInline muted />
           <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
         </a-assets>
 
-        {/* Targets – como backup: flat src sem side:double; posições 0 0.1 0.1 / 0 0 0.005 */}
+        {/* Targets – MindAR controla; planos 1x1, sem lógica extra */}
         <a-entity id="target0" mindar-image-target="targetIndex: 0">
-          <a-plane
-            id="videoPlane0"
-            width="1"
-            height="1"
-            position="0 0.1 0.1"
-            material="shader: flat; src: #video1"
-            visible="false"
-          ></a-plane>
+          <a-plane id="videoPlane0" width="1" height="1" position="0 0.1 0.1" material="shader: flat; src: #video1" visible="false"></a-plane>
         </a-entity>
-
         <a-entity id="target1" mindar-image-target="targetIndex: 1">
-          <a-plane
-            id="videoPlane1"
-            width="1"
-            height="1"
-            position="0 0.1 0.1"
-            material="shader: flat; src: #video2"
-            visible="false"
-          ></a-plane>
+          <a-plane id="videoPlane1" width="1" height="1" position="0 0.1 0.1" material="shader: flat; src: #video2" visible="false"></a-plane>
         </a-entity>
-
         <a-entity id="target2" mindar-image-target="targetIndex: 2">
-          <a-plane
-            id="videoPlane2"
-            width="1"
-            height="1"
-            position="0 0 0.005"
-            material="shader: flat; src: #video3"
-            visible="false"
-          ></a-plane>
+          <a-plane id="videoPlane2" width="1" height="1" position="0 0 0.005" material="shader: flat; src: #video3" visible="false"></a-plane>
         </a-entity>
 
         {/* Camera */}
