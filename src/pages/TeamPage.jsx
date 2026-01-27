@@ -66,7 +66,7 @@ const TeamPage = () => {
       role: "Escritora e Cogestão do Projeto",
       instagram: "@keise.b.silva",
       instagramUrl: "https://www.instagram.com/keise.b.silva",
-      image: `${baseImg}/keise-barbosa.jpg`,
+      image: `${baseImg}/keise.jpg`,
       bio: "Mulher Negra, periférica, professora, escritora, Mestra em Educação, Culturas e Identidades (UFRPE/Fundaj), e Co gestora do projeto Ayàmi Ò Já Literatura Afro Referenciada para Crianças."
     },
     {
@@ -75,7 +75,7 @@ const TeamPage = () => {
       role: "Escritora e Cogestão do Projeto",
       instagram: "@jamilaomarques",
       instagramUrl: "https://www.instagram.com/jamilaomarques",
-      image: `${baseImg}/jamila-marques.jpg`,
+      image: `${baseImg}/jamila.jpg`,
       bio: "Traço minhas experiências como artista da dança, escritora, pesquisadora, brincante, curadora, produtora e gestora cultural, entre outras movimentações. Bacharel em Ciências Sociais (UFRPE) e mestra em Educação (PPGECI UFRPE | Fundaj). Co Gestora do Ayà mi o Já, literatura afro referenciada para crianças. A partir dos saberes e práticas populares, da criatividade e da coletividade, gosto de inventar mundos possíveis."
     },
     {
@@ -84,7 +84,7 @@ const TeamPage = () => {
       role: "Capa, Ilustração e Animação",
       instagram: "@leticafe",
       instagramUrl: "https://www.instagram.com/leticafe",
-      image: `${baseImg}/leticia-carvalho.jpg`,
+      image: `${baseImg}/leticia.jpg`,
       bio: "Letícia Carvalho é ilustradora, designer e produtora cultural, formada em Artes Visuais (Licenciatura) pela UFPE. Criada na periferia de Jaboatão dos Guararapes (PE), constrói imagens que celebram a negritude, a infância e as narrativas afetivas. Com seus desenhos cria universos que transformam as perspectivas sobre as belezas do mundo."
     },
     {
@@ -93,7 +93,7 @@ const TeamPage = () => {
       role: "Revisão textual",
       instagram: "@mariana_contra_um",
       instagramUrl: "https://www.instagram.com/mariana_contra_um",
-      image: `${baseImg}/mariana-andrade.jpg`,
+      image: `${baseImg}/mariana.jpg`,
       bio: "Mariana Andrade é uma mulher negra, cis, candombleicista, filha de José Carlos e de Maria do Carmo, dra. em Literatura e Cultura (UFBA), mestra em Comunicação Social (UFPE) e graduada em Letras (licenciatura (UNICAP) e bacharelado (UFPE)). É professora, revisora e, atualmente, atua como bolsista de Difusão do Conhecimento 1A do CNPq no LabEshu-UFPE."
     },
     {
@@ -102,7 +102,7 @@ const TeamPage = () => {
       role: "Diagramação, Animação e Direção artística",
       instagram: "@diegomanchanegra",
       instagramUrl: "https://www.instagram.com/diegomanchanegra",
-      image: `${baseImg}/diego-mancha.jpg`,
+      image: `${baseImg}/diego.jpg`,
       bio: "Formado em Publicidade e propaganda (2011) e técnico em Design gráfico (2006), Diego Mancha Negra trabalhou alguns anos na área de comunicação em agências de publicidade do Recife como Diretor de Arte. Pesquisa cultura, história e arte africana e isso se tornou o diferencial do seu trabalho autoral. Ilustrador autodidata, se dedica profundamente a essa área e há cerca de 10 anos procura continuamente plataformas para sua arte."
     },
     {
@@ -120,7 +120,7 @@ const TeamPage = () => {
       role: "Desenvolvedor e Consultor em Realidade Aumentada (RA)",
       instagram: null,
       instagramUrl: null,
-      image: `${baseImg}/sergio-monteiro.jpg`,
+      image: `${baseImg}/sergio.jpg`,
       bio: "Profissional de Arte Tecnologia, periférico, pesquisador e desenvolvedor de soluções digitais com foco em web, mobile, realidade aumentada, jogos e IA. Atua como consultor e articulador em projetos periféricos na construção de novas relações com o digital."
     },
     {
@@ -129,7 +129,7 @@ const TeamPage = () => {
       role: "Parcerias",
       instagram: "@joaninhadias",
       instagramUrl: "https://www.instagram.com/joaninhadiass",
-      image: `${baseImg}/joaninha-dias.jpg`,
+      image: `${baseImg}/joaninha.jpg`,
       bio: "Joaninha Dias: Negra mulher, 42 anos, Candomblecista e Juremeira, poeta, professora, escritora, faladeira de histórias ancestrais e batuqueira. Parceria com o Centro Cultural Grupo Bongar - Nação Xambá."
     },
     {
@@ -156,7 +156,7 @@ const TeamPage = () => {
       role: "Canção Orìn Ibejì",
       instagram: "@edunarasango",
       instagramUrl: "https://www.instagram.com/edunarasango",
-      image: `${baseImg}/edun-ara-sango.jpg`,
+      image: `${baseImg}/edunara.jpg`,
       bio: "Edún Àrá Sangô é um grupo musical pernambucano que transforma as tradições dos terreiros em potência sonora. Idealizado por Leonardo Salomão (in memoriam), celebra a ancestralidade e os orixás através de composições autorais e cantos em iorubá. A formação reúne os artistas: Negra Dany, Ninha Meneses, Thúlio Xambá, Madson Japa e Beto Xambá – criando um repertório que é, ao mesmo tempo, expressão de fé, identidade e resistência."
     },
     {
@@ -165,7 +165,7 @@ const TeamPage = () => {
       role: "Leitura e Contação de História",
       instagram: "@joaninhadias",
       instagramUrl: "https://www.instagram.com/joaninhadiass",
-      image: `${baseImg}/joaninha-dias.jpg`,
+      image: `${baseImg}/joaninha.jpg`,
       bio: "Joaninha Dias: Negra mulher, 42 anos, Candomblecista e Juremeira, poeta, professora, escritora, faladeira de histórias ancestrais e batuqueira."
     },
     {
@@ -174,7 +174,7 @@ const TeamPage = () => {
       role: "Fotografia e vídeo maker",
       instagram: "@tulioseabra",
       instagramUrl: "https://www.instagram.com/tuliooseabra",
-      image: `${baseImg}/tulio-seabra.jpg`,
+      image: `${baseImg}/tulio.jpg`,
       bio: "Homem negro, periférico, comunicador e educador social, artista visual, morador do bairro do Ibura/Cohab, formado em licenciatura em Expressão Gráfica pela Universidade Federal de Pernambuco. Coordenador de comunicação da Organização Comunitária Ibura Mais Cultura, microempreendedor da Negritando Prod., micro produtora audiovisual, fotográfica e design de comunicação antirracista."
     },
     {
@@ -183,7 +183,7 @@ const TeamPage = () => {
       role: "Fotografia e vídeo maker",
       instagram: "@ubirafotografia",
       instagramUrl: "https://www.instagram.com/ubirafotografia",
-      image: `${baseImg}/ubira-machado.jpg`,
+      image: `${baseImg}/ubira.jpg`,
       bio: "Fotógrafo, artista visual, afro periférico, baseado na vibrante comunidade de Brasília Teimosa, formado em Artes Visuais no Instituto Federal de Pernambuco/Campus Olinda, tem sua jornada marcada por resistências e reinvenções através da arte."
     },
     {
@@ -192,7 +192,7 @@ const TeamPage = () => {
       role: "Social media",
       instagram: "@rebsantoss",
       instagramUrl: "https://www.instagram.com/rebsantoss",
-      image: `${baseImg}/rebecka-santos.jpg`,
+      image: `${baseImg}/rebeca.jpg`,
       bio: "Jornalista (UNICAP), pós graduanda em Comunicação Estratégica e Gestão de Marcas (UFBA), Técnica em Comunicação Visual (ETEPAM), e defensora do direito humano à comunicação. Atua, sobretudo, com gestão de comunicação, Educomunicação e mídia Advocacy em organizações sociais de Pernambuco desde 2018."
     },
     {
@@ -201,7 +201,7 @@ const TeamPage = () => {
       role: "Assessoria de Imprensa",
       instagram: "@daniel_sal94",
       instagramUrl: "https://www.instagram.com/daniel_sal94",
-      image: `${baseImg}/daniel-lima.jpg`,
+      image: `${baseImg}/daniel.jpg`,
       bio: "Jornalista, nasceu em Caruaru, tem formação no Recife e continua realizando comunicação social em produções artístico-culturais. A partir das palavras, imagens e escutas, ele compartilha vivências jornalísticas com o propósito de comunicar coletivamente."
     },
     {
@@ -210,7 +210,7 @@ const TeamPage = () => {
       role: "Produção",
       instagram: "@sgesis",
       instagramUrl: "https://www.instagram.com/sgesis",
-      image: `${baseImg}/maria-gesis.jpg`,
+      image: `${baseImg}/geises.jpg`,
       bio: "Maria Gesis, produtora cultural, artesã, educadora, oficineira de crochê e estudante de Agroecologia pela UFRPE."
     }
   ]
