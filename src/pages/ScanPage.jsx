@@ -349,6 +349,32 @@ const ScanPage = () => {
     
     // MindAR controla ao máximo (Android inclusive). Só reagimos: play/pause, visible, estado React.
     const handleSceneLoaded = () => {
+      // Pré-carregar vídeos para evitar retângulo preto no Android
+      const preloadVideos = () => {
+        const videos = ['video1', 'video2', 'video3']
+        videos.forEach((videoId) => {
+          const video = document.getElementById(videoId)
+          if (video) {
+            // Forçar carregamento
+            if (video.readyState === 0) {
+              video.load()
+            }
+            // Garantir que vídeos estejam prontos
+            const ensureReady = () => {
+              if (video.readyState >= 2) {
+                console.log('✅ Vídeo AR pré-carregado:', videoId)
+              } else {
+                setTimeout(ensureReady, 100)
+              }
+            }
+            ensureReady()
+          }
+        })
+      }
+      
+      // Pré-carregar vídeos após um pequeno delay para garantir que a cena esteja pronta
+      setTimeout(preloadVideos, 500)
+      
       const target0 = document.getElementById('target0')
       const target1 = document.getElementById('target1')
       const target2 = document.getElementById('target2')
@@ -358,11 +384,66 @@ const ScanPage = () => {
         setShowScanningAnimation(false)
         const plane = document.getElementById(planeId)
         const video = document.getElementById(videoId)
-        if (video) {
-          video.muted = false
-          video.play().catch(() => {})
+        
+        if (video && plane) {
+          // Garantir que o vídeo esteja pronto antes de mostrar o plano (evita retângulo preto no Android)
+          const ensureVideoReady = () => {
+            if (video.readyState >= 2) { // HAVE_CURRENT_DATA ou superior
+              // Vídeo está pronto - configurar material e mostrar plano
+              plane.setAttribute('material', {
+                shader: 'flat',
+                src: `#${videoId}`,
+                transparent: true,
+                opacity: 1,
+                side: 'double'
+              })
+              
+              // Garantir que o vídeo não esteja muted
+              video.muted = false
+              
+              // Reproduzir vídeo
+              video.play().catch((err) => {
+                console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
+              })
+              
+              // Mostrar plano apenas após vídeo estar pronto
+              plane.setAttribute('visible', 'true')
+              
+              console.log('✅ Vídeo AR pronto e plano visível:', videoId)
+            } else {
+              // Vídeo ainda não está pronto - tentar novamente
+              console.log('⏳ Aguardando vídeo estar pronto:', videoId, 'readyState:', video.readyState)
+              setTimeout(ensureVideoReady, 100)
+            }
+          }
+          
+          // Se vídeo já está pronto, executar imediatamente
+          if (video.readyState >= 2) {
+            ensureVideoReady()
+          } else {
+            // Aguardar evento de carregamento
+            const handleCanPlay = () => {
+              video.removeEventListener('canplay', handleCanPlay)
+              video.removeEventListener('loadeddata', handleCanPlay)
+              ensureVideoReady()
+            }
+            
+            video.addEventListener('canplay', handleCanPlay)
+            video.addEventListener('loadeddata', handleCanPlay)
+            
+            // Forçar carregamento se necessário
+            if (video.readyState === 0) {
+              video.load()
+            }
+            
+            // Timeout de segurança
+            setTimeout(() => {
+              video.removeEventListener('canplay', handleCanPlay)
+              video.removeEventListener('loadeddata', handleCanPlay)
+              ensureVideoReady() // Tentar mesmo se não estiver totalmente pronto
+            }, 2000)
+          }
         }
-        if (plane) plane.setAttribute('visible', 'true')
       }
 
       const onLost = (planeId, videoId) => {
@@ -391,6 +472,75 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
+      
+      // Observer para detectar e corrigir retângulos pretos no Android
+      const isAndroid = /Android/i.test(navigator.userAgent)
+      if (isAndroid) {
+        console.log('🤖 Android detectado - configurando observer para retângulos pretos')
+        
+        // Função para corrigir planos pretos
+        const fixBlackPlanes = () => {
+          const planes = ['videoPlane0', 'videoPlane1', 'videoPlane2']
+          planes.forEach((planeId, idx) => {
+            const plane = document.getElementById(planeId)
+            const video = document.getElementById(`video${idx + 1}`)
+            
+            if (plane && video) {
+              const isVisible = plane.getAttribute('visible')
+              
+              // Se o plano está visível mas o vídeo não está pronto, esconder temporariamente
+              if (isVisible === 'true' || isVisible === true) {
+                if (video.readyState < 2) {
+                  console.log('⚠️ Plano visível mas vídeo não pronto - escondendo temporariamente:', planeId)
+                  plane.setAttribute('visible', 'false')
+                  
+                  // Tentar novamente quando vídeo estiver pronto
+                  const checkVideo = () => {
+                    if (video.readyState >= 2) {
+                      plane.setAttribute('material', {
+                        shader: 'flat',
+                        src: `#video${idx + 1}`,
+                        transparent: true,
+                        opacity: 1,
+                        side: 'double'
+                      })
+                      plane.setAttribute('visible', 'true')
+                      video.removeEventListener('canplay', checkVideo)
+                      video.removeEventListener('loadeddata', checkVideo)
+                    }
+                  }
+                  
+                  video.addEventListener('canplay', checkVideo)
+                  video.addEventListener('loadeddata', checkVideo)
+                } else {
+                  // Garantir que o material está correto
+                  const material = plane.getAttribute('material')
+                  if (!material || !material.src || material.src === '') {
+                    plane.setAttribute('material', {
+                      shader: 'flat',
+                      src: `#video${idx + 1}`,
+                      transparent: true,
+                      opacity: 1,
+                      side: 'double'
+                    })
+                  }
+                }
+              }
+            }
+          })
+        }
+        
+        // Executar periodicamente no Android
+        const intervalId = setInterval(fixBlackPlanes, 500)
+        
+        // Limpar após 30 segundos (não precisa rodar indefinidamente)
+        setTimeout(() => {
+          clearInterval(intervalId)
+        }, 30000)
+        
+        // Executar imediatamente
+        fixBlackPlanes()
+      }
     }
 
     scene.addEventListener('loaded', handleSceneLoaded)
@@ -530,22 +680,69 @@ const ScanPage = () => {
         embedded
         ui="enabled: false"
       >
-        {/* Assets - Vídeos (como backup: loop, muted 1/2, playsinline) */}
+        {/* Assets - Vídeos com pré-carregamento otimizado para Android */}
         <a-assets>
-          <video id="video1" src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" preload="auto" crossOrigin="anonymous" loop playsInline muted />
-          <video id="video2" src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" preload="auto" crossOrigin="anonymous" loop playsInline muted />
-          <video id="video3" src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" preload="auto" crossOrigin="anonymous" loop playsInline />
+          <video 
+            id="video1" 
+            src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" 
+            preload="auto" 
+            crossOrigin="anonymous" 
+            loop 
+            playsInline 
+            muted
+            style="display: none;"
+          />
+          <video 
+            id="video2" 
+            src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" 
+            preload="auto" 
+            crossOrigin="anonymous" 
+            loop 
+            playsInline 
+            muted
+            style="display: none;"
+          />
+          <video 
+            id="video3" 
+            src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" 
+            preload="auto" 
+            crossOrigin="anonymous" 
+            loop 
+            playsInline
+            style="display: none;"
+          />
         </a-assets>
 
-        {/* Targets – MindAR controla; planos 1x1, sem lógica extra */}
+        {/* Targets – MindAR controla; planos 1x1, com material otimizado para Android */}
         <a-entity id="target0" mindar-image-target="targetIndex: 0">
-          <a-plane id="videoPlane0" width="1" height="1" position="0 0.1 0.1" material="shader: flat; src: #video1" visible="false"></a-plane>
+          <a-plane 
+            id="videoPlane0" 
+            width="1" 
+            height="1" 
+            position="0 0.1 0.1" 
+            material="shader: flat; src: #video1; transparent: true; opacity: 1; side: double" 
+            visible="false"
+          ></a-plane>
         </a-entity>
         <a-entity id="target1" mindar-image-target="targetIndex: 1">
-          <a-plane id="videoPlane1" width="1" height="1" position="0 0.1 0.1" material="shader: flat; src: #video2" visible="false"></a-plane>
+          <a-plane 
+            id="videoPlane1" 
+            width="1" 
+            height="1" 
+            position="0 0.1 0.1" 
+            material="shader: flat; src: #video2; transparent: true; opacity: 1; side: double" 
+            visible="false"
+          ></a-plane>
         </a-entity>
         <a-entity id="target2" mindar-image-target="targetIndex: 2">
-          <a-plane id="videoPlane2" width="1" height="1" position="0 0 0.005" material="shader: flat; src: #video3" visible="false"></a-plane>
+          <a-plane 
+            id="videoPlane2" 
+            width="1" 
+            height="1" 
+            position="0 0 0.005" 
+            material="shader: flat; src: #video3; transparent: true; opacity: 1; side: double" 
+            visible="false"
+          ></a-plane>
         </a-entity>
 
         {/* Camera */}
