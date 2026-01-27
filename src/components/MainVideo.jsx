@@ -711,9 +711,31 @@ const MainVideo = ({
     setShowReplay(false)
     setHasEnded(false)
     video.currentTime = 0
-    video.play().catch(() => {
-      // Ignorar erro
-    })
+
+    const prev = bonequinhaTimeupdateHandlerRef.current
+    if (prev) {
+      video.removeEventListener('timeupdate', prev)
+      bonequinhaTimeupdateHandlerRef.current = null
+    }
+
+    if (audioActive && onPauseForAD) {
+      setWaitingBonequinha(true)
+      const handler = () => {
+        if (video.currentTime >= bonequinhaTime) {
+          video.removeEventListener('timeupdate', handler)
+          bonequinhaTimeupdateHandlerRef.current = null
+          const resumeAt = video.currentTime
+          video.pause()
+          video.currentTime = bonequinhaTime
+          onPauseForAD(resumeAt)
+          setWaitingBonequinha(false)
+        }
+      }
+      video.addEventListener('timeupdate', handler)
+      bonequinhaTimeupdateHandlerRef.current = handler
+    }
+
+    video.play().catch(() => {})
   }
 
   return (

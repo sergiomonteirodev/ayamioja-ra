@@ -8,7 +8,7 @@ import AudioDescription from '../components/AudioDescription'
 import ActionButtons from '../components/ActionButtons'
 
 /** Momento (s) em que a bonequinha surge na animação – só no fluxo "AD antes do play". */
-const BONEQUINHA_TIME_SEC = 4
+const BONEQUINHA_TIME_SEC = 2
 
 const HomePage = () => {
   const [librasActive, setLibrasActive] = useState(false)
