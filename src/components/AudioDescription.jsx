@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-const AudioDescription = ({ audioActive, videoState }) => {
+const AudioDescription = ({ audioActive, videoState, playAdStandalone, onADEnded }) => {
   const audioRef = useRef(null)
   const [isAudioReady, setIsAudioReady] = useState(false)
 
@@ -14,30 +14,21 @@ const AudioDescription = ({ audioActive, videoState }) => {
       return
     }
 
-    // Configurar volume do áudio de audiodescrição
-    audio.volume = 0.8 // Volume adequado para audiodescrição (80%)
-
-    console.log('✅ AudioDescription: audioRef disponível, iniciando carregamento')
+    audio.volume = 0.8
 
     const handleCanPlay = () => {
-      console.log('✅ Áudio de Audiodescrição pronto para reproduzir')
       setIsAudioReady(true)
-      // Garantir volume configurado
       audio.volume = 0.8
     }
 
     const handleLoadedData = () => {
-      console.log('✅ Áudio de Audiodescrição - dados carregados')
       setIsAudioReady(true)
-      // Garantir volume configurado
       audio.volume = 0.8
     }
 
     audio.addEventListener('canplay', handleCanPlay)
     audio.addEventListener('loadeddata', handleLoadedData)
-    
-    console.log('⏳ Forçando carregamento do áudio de Audiodescrição...')
-    audio.load() // Forçar carregamento
+    audio.load()
 
     return () => {
       audio.removeEventListener('canplay', handleCanPlay)
@@ -45,60 +36,35 @@ const AudioDescription = ({ audioActive, videoState }) => {
     }
   }, [])
 
+  // Modo sincronizado: pause → AD → resume. Só toca AD quando playAdStandalone.
   useEffect(() => {
     const audio = audioRef.current
-    if (!audio) {
-      console.log('❌ AudioDescription: Áudio ref não disponível')
-      return
-    }
+    if (!audio || !isAudioReady) return
 
-    console.log('🎧 AudioDescription - audioActive:', audioActive, 'videoState:', videoState, 'isAudioReady:', isAudioReady)
-
-    if (!isAudioReady) {
-      console.log('⏳ AudioDescription: Áudio ainda não está pronto, aguardando...')
-      return
-    }
-
-    // Se Audiodescrição está ativo
-    if (audioActive) {
-      // Vídeo principal está reproduzindo
-      if (videoState?.isPlaying) {
-        console.log('✅ Reproduzindo áudio de Audiodescrição - videoState.currentTime:', videoState.currentTime)
-        
-        // Sincronizar com o vídeo principal apenas se houver diferença significativa
-        const timeDiff = Math.abs(audio.currentTime - videoState.currentTime)
-        if (timeDiff > 0.5) {
-          console.log('🔄 Sincronizando Audiodescrição - diff:', timeDiff.toFixed(2), 's')
-          audio.currentTime = videoState.currentTime
-        }
-        
-        // Reproduzir áudio de Audiodescrição
-        if (audio.paused) {
-          // Garantir volume configurado antes de reproduzir
-          audio.volume = 0.8
-          console.log('▶️ Reproduzindo áudio de Audiodescrição')
-          audio.play()
-            .then(() => {
-              console.log('✅ Áudio de Audiodescrição reproduzindo')
-              // Garantir volume após play
-              audio.volume = 0.8
-            })
-            .catch(e => console.log('❌ Erro ao reproduzir áudio de audiodescrição:', e))
-        } else {
-          // Se já está reproduzindo, garantir volume
-          audio.volume = 0.8
-        }
-      } else {
-        // Vídeo principal pausado/terminou - PAUSAR áudio
-        console.log('⏸️ Vídeo principal pausado - pausando áudio de Audiodescrição')
-        audio.pause()
-      }
-    } else {
-      // Audiodescrição desativado
-      console.log('❌ Pausando áudio de Audiodescrição (toggle desativado)')
+    if (!audioActive) {
       audio.pause()
+      return
     }
-  }, [audioActive, videoState, isAudioReady])
+
+    if (playAdStandalone) {
+      audio.volume = 0.8
+      audio.currentTime = 0
+
+      const handleEnded = () => {
+        audio.removeEventListener('ended', handleEnded)
+        onADEnded?.()
+      }
+      audio.addEventListener('ended', handleEnded)
+
+      if (audio.paused) {
+        audio.play().catch((e) => console.warn('Erro ao reproduzir AD:', e))
+      }
+
+      return () => audio.removeEventListener('ended', handleEnded)
+    }
+
+    audio.pause()
+  }, [audioActive, playAdStandalone, isAudioReady, onADEnded])
 
   return (
     <audio 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import ToggleControls from '../components/ToggleControls'
@@ -7,12 +7,39 @@ import InterpreterVideo from '../components/InterpreterVideo'
 import AudioDescription from '../components/AudioDescription'
 import ActionButtons from '../components/ActionButtons'
 
+/** Momento (s) em que a bonequinha surge na animação – ajustar conforme o vídeo. */
+const BONEQUINHA_TIME_SEC = 8
+
 const HomePage = () => {
   const [librasActive, setLibrasActive] = useState(false)
   const [audioActive, setAudioActive] = useState(false)
   const [videoState, setVideoState] = useState(null)
+  const [adPhase, setAdPhase] = useState('none') // 'none' | 'playing_ad'
+  const [resumeVideoAt, setResumeVideoAt] = useState(null)
+  const [resumeTrigger, setResumeTrigger] = useState(null)
   const location = useLocation()
   const mountedRef = useRef(false)
+
+  const onPauseForAD = useCallback((resumeAt) => {
+    setResumeVideoAt(resumeAt)
+    setAdPhase('playing_ad')
+  }, [])
+
+  const onADEnded = useCallback(() => {
+    setAdPhase('none')
+    setResumeTrigger(Date.now())
+  }, [])
+
+  const onResumed = useCallback(() => {
+    setResumeVideoAt(null)
+    setResumeTrigger(null)
+  }, [])
+
+  const onVideoReset = useCallback(() => {
+    setAdPhase('none')
+    setResumeVideoAt(null)
+    setResumeTrigger(null)
+  }, [])
   
   // Forçar inicialização do vídeo quando a página é montada (Android-friendly)
   useEffect(() => {
@@ -130,6 +157,10 @@ const HomePage = () => {
   const handleAudioToggle = (active) => {
     setAudioActive(active)
     console.log('Toggle Audio:', active)
+    if (!active && adPhase === 'playing_ad') {
+      setAdPhase('none')
+      setResumeTrigger(Date.now())
+    }
   }
 
   const handleVideoStateChange = (state) => {
@@ -156,6 +187,13 @@ const HomePage = () => {
           librasActive={librasActive}
           audioActive={audioActive}
           onVideoStateChange={handleVideoStateChange}
+          bonequinhaTime={BONEQUINHA_TIME_SEC}
+          onPauseForAD={onPauseForAD}
+          resumeFrom={resumeVideoAt}
+          resumeTrigger={resumeTrigger}
+          onResumed={onResumed}
+          onVideoReset={onVideoReset}
+          adPhase={adPhase}
         />
         
         <ActionButtons />
@@ -169,6 +207,8 @@ const HomePage = () => {
       <AudioDescription 
         audioActive={audioActive}
         videoState={videoState}
+        playAdStandalone={adPhase === 'playing_ad'}
+        onADEnded={onADEnded}
       />
       
       <footer>Copyright © 2025 Aya mi o ja - Eu não tenho medo. Todos os direitos reservados</footer>
