@@ -116,8 +116,7 @@ const MainVideo = ({
     }
   }, [audioActive])
 
-  // AD ativado antes do play: aguardar bonequinha; AD ativado com vídeo rodando: pausar e tocar AD.
-  // Sempre buscar o frame da bonequinha e manter o vídeo pausado visível durante a AD.
+  // AD ativado com vídeo já rodando: pausar no ponto atual (sem seek para bonequinha).
   useEffect(() => {
     if (!audioActive) {
       setWaitingBonequinha(false)
@@ -130,10 +129,9 @@ const MainVideo = ({
     if (!video.paused && !video.ended && !waitingBonequinha) {
       const resumeAt = video.currentTime
       video.pause()
-      video.currentTime = bonequinhaTime
       onPauseForAD(resumeAt)
     }
-  }, [audioActive, adPhase, onPauseForAD, waitingBonequinha, bonequinhaTime])
+  }, [audioActive, adPhase, onPauseForAD, waitingBonequinha])
 
   // Retomar vídeo após fim da audiodescrição.
   useEffect(() => {
