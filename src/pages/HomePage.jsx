@@ -8,7 +8,7 @@ import AudioDescription from '../components/AudioDescription'
 import ActionButtons from '../components/ActionButtons'
 
 /** Momento (s) em que a bonequinha surge na animação – ajustar conforme o vídeo. */
-const BONEQUINHA_TIME_SEC = 8
+const BONEQUINHA_TIME_SEC = 1
 
 const HomePage = () => {
   const [librasActive, setLibrasActive] = useState(false)
