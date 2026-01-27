@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase, audioActive }) => {
+const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 'none', audioActive = false }) => {
   const [isVisible, setIsVisible] = useState(false)
   const [showPausedMessage, setShowPausedMessage] = useState(false)
   const videoRef = useRef(null)
@@ -46,12 +46,12 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase, a
     }
   }, [customVideoSrc, isHomePage])
 
-  // Não carregar/reproduzir vídeo de libras se AD estiver tocando
-  const isADPlaying = audioActive && adPhase === 'playing_ad'
-  
   // Sincronização contínua com o vídeo principal
   useEffect(() => {
     const video = videoRef.current
+    // Calcular se AD está tocando dentro do useEffect
+    const isADPlaying = audioActive && adPhase === 'playing_ad'
+    
     if (!video || !librasActive || !isVisible || !videoState?.isPlaying || isADPlaying) {
       return
     }
@@ -69,12 +69,24 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase, a
     }, 150) // Verificar a cada 150ms para sincronização mais precisa e suave
 
     return () => clearInterval(syncInterval)
-  }, [librasActive, videoState?.isPlaying, isVisible, videoState?.currentTime, isADPlaying])
+  }, [librasActive, videoState?.isPlaying, isVisible, videoState?.currentTime, adPhase, audioActive])
 
   // Controlar play/pause e visibilidade baseado no estado do vídeo principal
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
+
+    // Calcular se AD está tocando dentro do useEffect para garantir valores atualizados
+    const isADPlaying = audioActive && adPhase === 'playing_ad'
+    
+    console.log('🎬 InterpreterVideo: Verificando estado', {
+      librasActive,
+      isADPlaying,
+      adPhase,
+      audioActive,
+      videoStateIsPlaying: videoState?.isPlaying,
+      videoPaused: video.paused
+    })
 
     // Limpar timeout anterior
     if (hideTimeoutRef.current) {
@@ -82,20 +94,22 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase, a
       hideTimeoutRef.current = null
     }
 
+    // Se AD está tocando, SEMPRE pausar e esconder vídeo de libras (prioridade máxima)
+    if (isADPlaying) {
+      console.log('⏸️ InterpreterVideo: AD tocando - pausando vídeo de libras')
+      if (!video.paused) {
+        video.pause()
+      }
+      setIsVisible(false)
+      setShowPausedMessage(false)
+      return
+    }
+
     // Se Libras está ativo e (há customVideoSrc OU estamos na HomePage)
     if (librasActive && (customVideoSrc || isHomePage)) {
-      // Se AD está tocando, pausar e esconder vídeo de libras (comportamento atual)
-      if (isADPlaying) {
-        if (!video.paused) {
-          video.pause()
-        }
-        setIsVisible(false)
-        setShowPausedMessage(false)
-        return
-      }
-      
       if (videoState?.isPlaying) {
         // Vídeo principal está reproduzindo e AD não está tocando
+        console.log('▶️ InterpreterVideo: Vídeo principal tocando e AD não está ativa - iniciando libras')
         setIsVisible(true)
         setShowPausedMessage(false)
         
@@ -106,7 +120,8 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase, a
           }
           
           // Reproduzir se estiver pausado (só se AD não estiver tocando)
-          if (video.paused && !isADPlaying) {
+          if (video.paused) {
+            console.log('▶️ InterpreterVideo: Reproduzindo vídeo de libras')
             video.play().catch(e => console.log('❌ Erro ao reproduzir:', e))
           }
         }
@@ -137,7 +152,7 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase, a
         hideTimeoutRef.current = null
       }
     }
-  }, [librasActive, videoState?.isPlaying, customVideoSrc, isHomePage, videoState?.currentTime])
+  }, [librasActive, videoState?.isPlaying, customVideoSrc, isHomePage, videoState?.currentTime, adPhase, audioActive])
 
   // Detectar mobile para usar CSS responsivo ao invés de estilos inline fixos
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
