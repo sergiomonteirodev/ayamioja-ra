@@ -7,7 +7,7 @@ import SafeImage from '../components/SafeImage'
 import AudioDescriptionAR from '../components/AudioDescriptionAR'
 
 const ScanPage = () => {
-  const [librasActive, setLibrasActive] = useState(true)
+  const [librasActive, setLibrasActive] = useState(false)
   const [audioActive, setAudioActive] = useState(false)
   const [videoState, setVideoState] = useState(null)
   const [activeTargetIndex, setActiveTargetIndex] = useState(null)
@@ -445,7 +445,8 @@ const ScanPage = () => {
           onLibrasToggle={handleLibrasToggle}
           onAudioToggle={handleAudioToggle}
           showLogo={false}
-          initialLibrasActive={true}
+          initialLibrasActive={false}
+          librasDisabled={true}
         />
       </div>
 
