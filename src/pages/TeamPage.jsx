@@ -57,85 +57,160 @@ const TeamPage = () => {
     }
   }, [])
 
+  const baseImg = `${import.meta.env.BASE_URL || ''}images/equipe`
+
   const teamMembers = [
     {
       id: 1,
-      name: "Ubirajara Machado da Silva Filho (Ubira Machado)",
-      role: "Fotógrafo e videomaker",
-      instagram: "",
-      image: "/images/equipe/ubira-machado.jpg",
-      bio: "Fotógrafo, artista visual, afro periférico, baseado na vibrante comunidade de Brasília Teimosa, formado em Artes Visuais no Instituto Federal de Pernambuco/ Campus Olinda, tem sua jornada marcada por resistências e reinvenções através da arte."
+      name: "Keise Barbosa",
+      role: "Escritora e Cogestão do Projeto",
+      instagram: "@keise.b.silva",
+      instagramUrl: "https://www.instagram.com/keise.b.silva",
+      image: `${baseImg}/keise-barbosa.jpg`,
+      bio: "Mulher Negra, periférica, professora, escritora, Mestra em Educação, Culturas e Identidades (UFRPE/Fundaj), e Co gestora do projeto Ayàmi Ò Já Literatura Afro Referenciada para Crianças."
     },
     {
       id: 2,
-      name: "Mariana Andrade Gomes",
-      role: "Revisão",
-      instagram: "",
-      image: "/images/equipe/mariana-andrade.jpg",
-      bio: "Mariana Andrade é uma mulher negra, cis, candombleicista, filha de José Carlos e de Maria do Carmo, dra. em Literatura e Cultura (UFBA), mestra em Comunicação Social (UFPE) e graduada em Letras (licenciatura (UNICAP) e bacharelado (UFPE)). É professora, revisora e, atualmente, atua como bolsista de Difusão do Conhecimento 1A do CNPq no LabEshu-UFPE."
+      name: "Jamila de Oliveira Marques",
+      role: "Escritora e Cogestão do Projeto",
+      instagram: "@jamilaomarques",
+      instagramUrl: "https://www.instagram.com/jamilaomarques",
+      image: `${baseImg}/jamila-marques.jpg`,
+      bio: "Traço minhas experiências como artista da dança, escritora, pesquisadora, brincante, curadora, produtora e gestora cultural, entre outras movimentações. Bacharel em Ciências Sociais (UFRPE) e mestra em Educação (PPGECI UFRPE | Fundaj). Co Gestora do Ayà mi o Já, literatura afro referenciada para crianças. A partir dos saberes e práticas populares, da criatividade e da coletividade, gosto de inventar mundos possíveis."
     },
     {
       id: 3,
-      name: "Jamila de Oliveira Marques",
-      role: "Escritora e Cogestão do projeto",
-      instagram: "",
-      image: "/images/equipe/jamila-marques.jpg",
-      bio: "Tranço minhas experiências como artista da dança, escritora, pesquisadora, brincante, curadora, produtora e gestora cultural, entre outras movimentações. Bacharel em Ciências Sociais (UFRPE) e mestra em Educação (PPGECI UFRPE | Fundaj). Cogestora do Ayà mi o Já, literatura afrorreferenciada para crianças. A partir dos saberes e práticas populares, da criatividade e da coletividade, gosto de inventar mundos possíveis."
+      name: "Letícia Carvalho Ferreira",
+      role: "Capa, Ilustração e Animação",
+      instagram: "@leticafe",
+      instagramUrl: "https://www.instagram.com/leticafe",
+      image: `${baseImg}/leticia-carvalho.jpg`,
+      bio: "Letícia Carvalho é ilustradora, designer e produtora cultural, formada em Artes Visuais (Licenciatura) pela UFPE. Criada na periferia de Jaboatão dos Guararapes (PE), constrói imagens que celebram a negritude, a infância e as narrativas afetivas. Com seus desenhos cria universos que transformam as perspectivas sobre as belezas do mundo."
     },
     {
       id: 4,
-      name: "Sérgio Monteiro (Lelo)",
-      role: "Consultor, desenvolvedor em realidade aumentada (RA)",
-      instagram: "",
-      image: "/images/equipe/sergio-monteiro.jpg",
-      bio: "Profissional de Arte Tecnologia, periférico, pesquisador e desenvolvedor de soluções digitais com foco em web, mobile, realidade aumentada, jogos e IA. Atua como consultor e articulador em projetos periféricos na construção de novas relações com o digital."
+      name: "Mariana Andrade Gomes",
+      role: "Revisão textual",
+      instagram: "@mariana_contra_um",
+      instagramUrl: "https://www.instagram.com/mariana_contra_um",
+      image: `${baseImg}/mariana-andrade.jpg`,
+      bio: "Mariana Andrade é uma mulher negra, cis, candombleicista, filha de José Carlos e de Maria do Carmo, dra. em Literatura e Cultura (UFBA), mestra em Comunicação Social (UFPE) e graduada em Letras (licenciatura (UNICAP) e bacharelado (UFPE)). É professora, revisora e, atualmente, atua como bolsista de Difusão do Conhecimento 1A do CNPq no LabEshu-UFPE."
     },
     {
       id: 5,
-      name: "Daniel da Silva Araújo Lima",
-      role: "Assessoria de imprensa",
-      instagram: "",
-      image: "/images/equipe/daniel-lima.jpg",
-      bio: "Jornalista nasceu em Caruaru, tem formação no Recife e continua realizando comunicação social em produções artístico-culturais. A partir das palavras, imagens e escutas, ele compartilha vivências jornalísticas com o propósito de comunicar coletivamente."
-    },
-    {
-      id: 6,
       name: "Diego Mancha Negra",
-      role: "Direção de arte, diagramação e animação",
-      instagram: "",
-      image: "/images/equipe/diego-mancha.jpg",
+      role: "Diagramação, Animação e Direção artística",
+      instagram: "@diegomanchanegra",
+      instagramUrl: "https://www.instagram.com/diegomanchanegra",
+      image: `${baseImg}/diego-mancha.jpg`,
       bio: "Formado em Publicidade e propaganda (2011) e técnico em Design gráfico (2006), Diego Mancha Negra trabalhou alguns anos na área de comunicação em agências de publicidade do Recife como Diretor de Arte. Pesquisa cultura, história e arte africana e isso se tornou o diferencial do seu trabalho autoral. Ilustrador autodidata, se dedica profundamente a essa área e há cerca de 10 anos procura continuamente plataformas para sua arte."
     },
     {
+      id: 6,
+      name: "CENTRAE",
+      role: "Acessibilidade",
+      instagram: "@centraeac",
+      instagramUrl: "https://www.instagram.com/centraeac",
+      image: `${baseImg}/centrae.jpg`,
+      bio: "A CENTRAE Acessibilidade desenvolve serviços de acessibilidade comunicacional (audiodescrição, tradução em libras, locação de equipamentos de tradução e impressão em braille) e oferece coordenação em eventos, cursos de acessibilidade e inclusão cultural, Libras - educacional, empresarial e publicitária. Também é produtora Cultural de projetos para e com pessoas com deficiência. Vem empoderando outras mulheres negras e periféricas, LGBT e com deficiência a atuarem no mercado da acessibilidade."
+    },
+    {
       id: 7,
-      name: "Túlio Filipe Seabra da Silva",
-      role: "Filmmaker e fotógrafo",
-      instagram: "",
-      image: "/images/equipe/tulio-seabra.jpg",
-      bio: "Homem negro, periférico, comunicador e educador social, artísta visual, morador do bairro do Ibura/Cohab, formado em licenciatura em Expressão Gráfica pela Universidade Federal de Pernambuco. Está como coordenador de comunicação da Organização Comunitária Ibura Mais Cultura, é microempreendedor da Negritando Prod. uma micro produtora audiovisual, fotografica e design de comunicação antirracista com experiência em coberturas de eventos e seminários do terceiro setor."
+      name: "Sérgio Monteiro (Lelo)",
+      role: "Desenvolvedor e Consultor em Realidade Aumentada (RA)",
+      instagram: null,
+      instagramUrl: null,
+      image: `${baseImg}/sergio-monteiro.jpg`,
+      bio: "Profissional de Arte Tecnologia, periférico, pesquisador e desenvolvedor de soluções digitais com foco em web, mobile, realidade aumentada, jogos e IA. Atua como consultor e articulador em projetos periféricos na construção de novas relações com o digital."
     },
     {
       id: 8,
-      name: "Poliana Alves da Conceição",
-      role: "Consultora em acessibilidade Comunicacional",
-      instagram: "",
-      image: "/images/equipe/poliana-alves.jpg",
-      bio: "Eu sou Poliana Alves da Conceição, de Recife/PE, mulher negra periférica na cena cultural desde 2006. Iniciei no Movimento Tortura Nunca Mais e participei de projetos financiados pelo Funcultura e outros editais. Em 2008, tornei-me Assessora de Acessibilidade e Produtora Cultural para Pessoas com Deficiência. Idealizei o coletivo Centrae, empoderando mulheres negras, LGBTQ+ e com deficiência na acessibilidade. Desde 2004, sou intérprete de Libras em shows, Janelas em Libras para TVs, debates políticos, documentários e séries. Participei dos carnavais de 2019 e 2020 como intérprete de Libras. Desde 2009, coordeno projetos de Fotografia Participativa com Surdos - FOTOLIBRAS e Animalibras. Atuei como assessora parlamentar na câmara do Recife e na Alepe. Minha jornada é dedicada à promoção da acessibilidade e inclusão, contribuindo para o cenário cultural e político."
+      name: "Centro Cultural Grupo Bongar - Nação Xambá e Joaninha Dias",
+      role: "Parcerias",
+      instagram: "@joaninhadias",
+      instagramUrl: "https://www.instagram.com/joaninhadiass",
+      image: `${baseImg}/joaninha-dias.jpg`,
+      bio: "Joaninha Dias: Negra mulher, 42 anos, Candomblecista e Juremeira, poeta, professora, escritora, faladeira de histórias ancestrais e batuqueira. Parceria com o Centro Cultural Grupo Bongar - Nação Xambá."
     },
     {
       id: 9,
-      name: "Edún Àrá Sangô",
-      role: "Arranjo e gravação do single \"Orin Ibeji\"",
-      instagram: "",
-      image: "/images/equipe/edun-ara-sango.jpg",
-      bio: "Edún Àrá Sangô é um grupo musical pernambucano que transforma as tradições dos terreiros em potência sonora. Idealizado por Leonardo Salomão (in memoriam), celebra a ancestralidade e os orixás através de composições autorais e cantos em iorubá. A formação reúne os artistas: Negra Dany, Ninha Meneses, Thúlio Xambá, Madson Japa e Beto Xambá – criando um repertório que é, ao mesmo tempo, expressão de fé, identidade e resistência."
+      name: "Iyá Marisqueira, Magu, Ronaldo, Omi e toda comunidade",
+      role: "Quilombo de Cuieiras",
+      instagram: null,
+      instagramUrl: null,
+      image: `${baseImg}/quilombo-cuieiras.jpg`,
+      bio: "Comunidade do Quilombo de Cuieiras, guardiã de saberes ancestrais e memórias que atravessam o projeto Ayà mi o Já."
     },
     {
       id: 10,
+      name: "Wassi Kamal Amoussa",
+      role: "Tradução da canção em yorubá Orìn Ibejì",
+      instagram: null,
+      instagramUrl: null,
+      image: `${baseImg}/wassi-kamal.jpg`,
+      bio: "Tradução realizada durante o curso de Yorubá Iniciante - PROLEM/UFF."
+    },
+    {
+      id: 11,
+      name: "Edún Àrá Sangô",
+      role: "Canção Orìn Ibejì",
+      instagram: "@edunarasango",
+      instagramUrl: "https://www.instagram.com/edunarasango",
+      image: `${baseImg}/edun-ara-sango.jpg`,
+      bio: "Edún Àrá Sangô é um grupo musical pernambucano que transforma as tradições dos terreiros em potência sonora. Idealizado por Leonardo Salomão (in memoriam), celebra a ancestralidade e os orixás através de composições autorais e cantos em iorubá. A formação reúne os artistas: Negra Dany, Ninha Meneses, Thúlio Xambá, Madson Japa e Beto Xambá – criando um repertório que é, ao mesmo tempo, expressão de fé, identidade e resistência."
+    },
+    {
+      id: 12,
+      name: "Joaninha Dias",
+      role: "Leitura e Contação de História",
+      instagram: "@joaninhadias",
+      instagramUrl: "https://www.instagram.com/joaninhadiass",
+      image: `${baseImg}/joaninha-dias.jpg`,
+      bio: "Joaninha Dias: Negra mulher, 42 anos, Candomblecista e Juremeira, poeta, professora, escritora, faladeira de histórias ancestrais e batuqueira."
+    },
+    {
+      id: 13,
+      name: "Túlio Filipe Seabra da Silva",
+      role: "Fotografia e vídeo maker",
+      instagram: "@tulioseabra",
+      instagramUrl: "https://www.instagram.com/tuliooseabra",
+      image: `${baseImg}/tulio-seabra.jpg`,
+      bio: "Homem negro, periférico, comunicador e educador social, artista visual, morador do bairro do Ibura/Cohab, formado em licenciatura em Expressão Gráfica pela Universidade Federal de Pernambuco. Coordenador de comunicação da Organização Comunitária Ibura Mais Cultura, microempreendedor da Negritando Prod., micro produtora audiovisual, fotográfica e design de comunicação antirracista."
+    },
+    {
+      id: 14,
+      name: "Ubirajara Machado da Silva Filho (Ubira Machado)",
+      role: "Fotografia e vídeo maker",
+      instagram: "@ubirafotografia",
+      instagramUrl: "https://www.instagram.com/ubirafotografia",
+      image: `${baseImg}/ubira-machado.jpg`,
+      bio: "Fotógrafo, artista visual, afro periférico, baseado na vibrante comunidade de Brasília Teimosa, formado em Artes Visuais no Instituto Federal de Pernambuco/Campus Olinda, tem sua jornada marcada por resistências e reinvenções através da arte."
+    },
+    {
+      id: 15,
+      name: "Rebecka Santos",
+      role: "Social media",
+      instagram: "@rebsantoss",
+      instagramUrl: "https://www.instagram.com/rebsantoss",
+      image: `${baseImg}/rebecka-santos.jpg`,
+      bio: "Jornalista (UNICAP), pós graduanda em Comunicação Estratégica e Gestão de Marcas (UFBA), Técnica em Comunicação Visual (ETEPAM), e defensora do direito humano à comunicação. Atua, sobretudo, com gestão de comunicação, Educomunicação e mídia Advocacy em organizações sociais de Pernambuco desde 2018."
+    },
+    {
+      id: 16,
+      name: "Daniel da Silva Araújo Lima",
+      role: "Assessoria de Imprensa",
+      instagram: "@daniel_sal94",
+      instagramUrl: "https://www.instagram.com/daniel_sal94",
+      image: `${baseImg}/daniel-lima.jpg`,
+      bio: "Jornalista, nasceu em Caruaru, tem formação no Recife e continua realizando comunicação social em produções artístico-culturais. A partir das palavras, imagens e escutas, ele compartilha vivências jornalísticas com o propósito de comunicar coletivamente."
+    },
+    {
+      id: 17,
       name: "Maria Gesis Morais dos Santos (Maria Gesis)",
-      role: "Produtora",
-      instagram: "",
-      image: "/images/equipe/maria-gesis.jpg",
+      role: "Produção",
+      instagram: "@sgesis",
+      instagramUrl: "https://www.instagram.com/sgesis",
+      image: `${baseImg}/maria-gesis.jpg`,
       bio: "Maria Gesis, produtora cultural, artesã, educadora, oficineira de crochê e estudante de Agroecologia pela UFRPE."
     }
   ]
@@ -241,13 +316,32 @@ const TeamPage = () => {
               }}>
                 {member.role}
               </p>
-              <p style={{
-                fontSize: '1rem',
-                color: '#666',
-                fontFamily: 'RooneySans, Arial, sans-serif'
-              }}>
-                {member.instagram}
-              </p>
+              {member.instagramUrl ? (
+                <a
+                  href={member.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    fontSize: '1rem',
+                    color: '#e26a02',
+                    fontFamily: 'RooneySans, Arial, sans-serif',
+                    textDecoration: 'none'
+                  }}
+                >
+                  {member.instagram}
+                </a>
+              ) : (
+                member.instagram && (
+                  <p style={{
+                    fontSize: '1rem',
+                    color: '#666',
+                    fontFamily: 'RooneySans, Arial, sans-serif'
+                  }}>
+                    {member.instagram}
+                  </p>
+                )
+              )}
             </div>
           ))}
         </div>
@@ -347,13 +441,31 @@ const TeamPage = () => {
             }}>
               {selectedMember.bio}
             </p>
-            <p style={{
-              fontSize: '1rem',
-              color: '#666',
-              fontFamily: 'RooneySans, Arial, sans-serif'
-            }}>
-              {selectedMember.instagram}
-            </p>
+            {selectedMember.instagramUrl ? (
+              <a
+                href={selectedMember.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: '1rem',
+                  color: '#e26a02',
+                  fontFamily: 'RooneySans, Arial, sans-serif',
+                  textDecoration: 'none'
+                }}
+              >
+                {selectedMember.instagram}
+              </a>
+            ) : (
+              selectedMember.instagram && (
+                <p style={{
+                  fontSize: '1rem',
+                  color: '#666',
+                  fontFamily: 'RooneySans, Arial, sans-serif'
+                }}>
+                  {selectedMember.instagram}
+                </p>
+              )
+            )}
           </div>
         </div>
       )}
