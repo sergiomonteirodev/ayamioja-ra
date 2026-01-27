@@ -125,15 +125,6 @@ const TeamPage = () => {
     },
     {
       id: 8,
-      name: "Centro Cultural Grupo Bongar - Nação Xambá e Joaninha Dias",
-      role: "Parcerias",
-      instagram: "@joaninhadias",
-      instagramUrl: "https://www.instagram.com/joaninhadiass",
-      image: `${baseImg}/joaninha.jpg`,
-      bio: "Joaninha Dias: Negra mulher, 42 anos, Candomblecista e Juremeira, poeta, professora, escritora, faladeira de histórias ancestrais e batuqueira. Parceria com o Centro Cultural Grupo Bongar - Nação Xambá."
-    },
-    {
-      id: 9,
       name: "Iyá Marisqueira, Magu, Ronaldo, Omi e toda comunidade",
       role: "Quilombo de Cuieiras",
       instagram: null,
@@ -142,16 +133,7 @@ const TeamPage = () => {
       bio: "Comunidade do Quilombo de Cuieiras, guardiã de saberes ancestrais e memórias que atravessam o projeto Ayà mi o Já."
     },
     {
-      id: 10,
-      name: "Wassi Kamal Amoussa",
-      role: "Tradução da canção em yorubá Orìn Ibejì",
-      instagram: null,
-      instagramUrl: null,
-      image: `${baseImg}/wassi-kamal.jpg`,
-      bio: "Tradução realizada durante o curso de Yorubá Iniciante - PROLEM/UFF."
-    },
-    {
-      id: 11,
+      id: 8,
       name: "Edún Àrá Sangô",
       role: "Canção Orìn Ibejì",
       instagram: "@edunarasango",
@@ -160,7 +142,7 @@ const TeamPage = () => {
       bio: "Edún Àrá Sangô é um grupo musical pernambucano que transforma as tradições dos terreiros em potência sonora. Idealizado por Leonardo Salomão (in memoriam), celebra a ancestralidade e os orixás através de composições autorais e cantos em iorubá. A formação reúne os artistas: Negra Dany, Ninha Meneses, Thúlio Xambá, Madson Japa e Beto Xambá – criando um repertório que é, ao mesmo tempo, expressão de fé, identidade e resistência."
     },
     {
-      id: 12,
+      id: 9,
       name: "Joaninha Dias",
       role: "Leitura e Contação de História",
       instagram: "@joaninhadias",
@@ -169,7 +151,7 @@ const TeamPage = () => {
       bio: "Joaninha Dias: Negra mulher, 42 anos, Candomblecista e Juremeira, poeta, professora, escritora, faladeira de histórias ancestrais e batuqueira."
     },
     {
-      id: 13,
+      id: 10,
       name: "Túlio Filipe Seabra da Silva",
       role: "Fotografia e vídeo maker",
       instagram: "@tulioseabra",
@@ -178,7 +160,7 @@ const TeamPage = () => {
       bio: "Homem negro, periférico, comunicador e educador social, artista visual, morador do bairro do Ibura/Cohab, formado em licenciatura em Expressão Gráfica pela Universidade Federal de Pernambuco. Coordenador de comunicação da Organização Comunitária Ibura Mais Cultura, microempreendedor da Negritando Prod., micro produtora audiovisual, fotográfica e design de comunicação antirracista."
     },
     {
-      id: 14,
+      id: 11,
       name: "Ubirajara Machado da Silva Filho (Ubira Machado)",
       role: "Fotografia e vídeo maker",
       instagram: "@ubirafotografia",
@@ -187,7 +169,7 @@ const TeamPage = () => {
       bio: "Fotógrafo, artista visual, afro periférico, baseado na vibrante comunidade de Brasília Teimosa, formado em Artes Visuais no Instituto Federal de Pernambuco/Campus Olinda, tem sua jornada marcada por resistências e reinvenções através da arte."
     },
     {
-      id: 15,
+      id: 12,
       name: "Rebecka Santos",
       role: "Social media",
       instagram: "@rebsantoss",
@@ -196,7 +178,7 @@ const TeamPage = () => {
       bio: "Jornalista (UNICAP), pós graduanda em Comunicação Estratégica e Gestão de Marcas (UFBA), Técnica em Comunicação Visual (ETEPAM), e defensora do direito humano à comunicação. Atua, sobretudo, com gestão de comunicação, Educomunicação e mídia Advocacy em organizações sociais de Pernambuco desde 2018."
     },
     {
-      id: 16,
+      id: 13,
       name: "Daniel da Silva Araújo Lima",
       role: "Assessoria de Imprensa",
       instagram: "@daniel_sal94",
@@ -205,7 +187,7 @@ const TeamPage = () => {
       bio: "Jornalista, nasceu em Caruaru, tem formação no Recife e continua realizando comunicação social em produções artístico-culturais. A partir das palavras, imagens e escutas, ele compartilha vivências jornalísticas com o propósito de comunicar coletivamente."
     },
     {
-      id: 17,
+      id: 14,
       name: "Maria Gesis Morais dos Santos (Maria Gesis)",
       role: "Produção",
       instagram: "@sgesis",
