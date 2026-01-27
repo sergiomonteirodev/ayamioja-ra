@@ -31,6 +31,7 @@ const MainVideo = ({
   
   const [showPlayButton, setShowPlayButton] = useState(!hasVideoBeenStarted())
   const videoRef = useRef(null)
+  const bonequinhaTimeupdateHandlerRef = useRef(null)
   
   // Resetar vídeo quando voltar para a página inicial após navegação
   useEffect(() => {
@@ -75,6 +76,11 @@ const MainVideo = ({
     setShowReplay(false)
     setHasEnded(false)
     setWaitingBonequinha(false)
+    const handler = bonequinhaTimeupdateHandlerRef.current
+    if (handler && video) {
+      video.removeEventListener('timeupdate', handler)
+      bonequinhaTimeupdateHandlerRef.current = null
+    }
     onVideoReset?.()
     
     console.log('✅ Vídeo resetado - botão de play aparecerá')
@@ -128,25 +134,6 @@ const MainVideo = ({
       onPauseForAD(resumeAt)
     }
   }, [audioActive, adPhase, onPauseForAD, waitingBonequinha, bonequinhaTime])
-
-  // Timeupdate: no modo “esperar bonequinha”, pausar ao atingir o tempo e solicitar AD.
-  // Vídeo fica em pause no frame exato da bonequinha (estática) durante a AD.
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !waitingBonequinha || !onPauseForAD) return
-
-    const onTimeUpdate = () => {
-      if (video.currentTime >= bonequinhaTime) {
-        const resumeAt = video.currentTime
-        video.pause()
-        video.currentTime = bonequinhaTime
-        onPauseForAD(resumeAt)
-        setWaitingBonequinha(false)
-      }
-    }
-    video.addEventListener('timeupdate', onTimeUpdate)
-    return () => video.removeEventListener('timeupdate', onTimeUpdate)
-  }, [waitingBonequinha, bonequinhaTime, onPauseForAD])
 
   // Retomar vídeo após fim da audiodescrição.
   useEffect(() => {
@@ -664,7 +651,25 @@ const MainVideo = ({
     }
     
     setShowPlayButton(false)
-    if (audioActive) setWaitingBonequinha(true)
+    let didAddBonequinhaListener = false
+
+    if (audioActive && onPauseForAD) {
+      setWaitingBonequinha(true)
+      const handler = () => {
+        if (video.currentTime >= bonequinhaTime) {
+          video.removeEventListener('timeupdate', handler)
+          bonequinhaTimeupdateHandlerRef.current = null
+          const resumeAt = video.currentTime
+          video.pause()
+          video.currentTime = bonequinhaTime
+          onPauseForAD(resumeAt)
+          setWaitingBonequinha(false)
+        }
+      }
+      video.addEventListener('timeupdate', handler)
+      bonequinhaTimeupdateHandlerRef.current = handler
+      didAddBonequinhaListener = true
+    }
     
     // Garantir que o áudio está habilitado antes de tocar
     const isAndroid = /Android/i.test(navigator.userAgent)
@@ -690,6 +695,10 @@ const MainVideo = ({
     }).catch((err) => {
       console.error('❌ Erro ao iniciar vídeo:', err)
       setWaitingBonequinha(false)
+      if (didAddBonequinhaListener && bonequinhaTimeupdateHandlerRef.current) {
+        video.removeEventListener('timeupdate', bonequinhaTimeupdateHandlerRef.current)
+        bonequinhaTimeupdateHandlerRef.current = null
+      }
       try {
         sessionStorage.removeItem('homepageVideoStarted')
       } catch (e) {}
