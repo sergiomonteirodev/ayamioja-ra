@@ -386,46 +386,42 @@ const ScanPage = () => {
         const video = document.getElementById(videoId)
         
         if (video && plane) {
-          // Garantir que o vídeo esteja pronto antes de mostrar o plano (evita retângulo preto no Android)
-          const ensureVideoReady = () => {
-            if (video.readyState >= 2) { // HAVE_CURRENT_DATA ou superior
-              // Vídeo está pronto - configurar material e mostrar plano
-              plane.setAttribute('material', {
-                shader: 'flat',
-                src: `#${videoId}`,
-                transparent: true,
-                opacity: 1,
-                side: 'double'
-              })
-              
-              // Garantir que o vídeo não esteja muted
-              video.muted = false
-              
-              // Reproduzir vídeo
-              video.play().catch((err) => {
-                console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
-              })
-              
-              // Mostrar plano apenas após vídeo estar pronto
-              plane.setAttribute('visible', 'true')
-              
-              console.log('✅ Vídeo AR pronto e plano visível:', videoId)
-            } else {
-              // Vídeo ainda não está pronto - tentar novamente
-              console.log('⏳ Aguardando vídeo estar pronto:', videoId, 'readyState:', video.readyState)
-              setTimeout(ensureVideoReady, 100)
-            }
-          }
+          // Configurar material do plano (evita retângulo preto no Android)
+          plane.setAttribute('material', {
+            shader: 'flat',
+            src: `#${videoId}`,
+            transparent: true,
+            opacity: 1,
+            side: 'double'
+          })
           
-          // Se vídeo já está pronto, executar imediatamente
+          // Garantir que o vídeo não esteja muted
+          video.muted = false
+          
+          // Se vídeo está pronto, mostrar plano e reproduzir imediatamente
           if (video.readyState >= 2) {
-            ensureVideoReady()
+            plane.setAttribute('visible', 'true')
+            video.play().catch((err) => {
+              console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
+            })
           } else {
+            // Aguardar vídeo estar pronto antes de mostrar (evita retângulo preto)
+            const showWhenReady = () => {
+              if (video.readyState >= 2) {
+                plane.setAttribute('visible', 'true')
+                video.play().catch((err) => {
+                  console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
+                })
+              } else {
+                setTimeout(showWhenReady, 50)
+              }
+            }
+            
             // Aguardar evento de carregamento
             const handleCanPlay = () => {
               video.removeEventListener('canplay', handleCanPlay)
               video.removeEventListener('loadeddata', handleCanPlay)
-              ensureVideoReady()
+              showWhenReady()
             }
             
             video.addEventListener('canplay', handleCanPlay)
@@ -436,12 +432,15 @@ const ScanPage = () => {
               video.load()
             }
             
-            // Timeout de segurança
+            // Timeout de segurança - mostrar mesmo se não estiver totalmente pronto
             setTimeout(() => {
               video.removeEventListener('canplay', handleCanPlay)
               video.removeEventListener('loadeddata', handleCanPlay)
-              ensureVideoReady() // Tentar mesmo se não estiver totalmente pronto
-            }, 2000)
+              if (plane.getAttribute('visible') !== 'true') {
+                plane.setAttribute('visible', 'true')
+                video.play().catch(() => {})
+              }
+            }, 1000)
           }
         }
       }
@@ -476,9 +475,9 @@ const ScanPage = () => {
       // Observer para detectar e corrigir retângulos pretos no Android
       const isAndroid = /Android/i.test(navigator.userAgent)
       if (isAndroid) {
-        console.log('🤖 Android detectado - configurando observer para retângulos pretos')
+        console.log('🤖 Android detectado - configurando correção para retângulos pretos')
         
-        // Função para corrigir planos pretos
+        // Função para corrigir planos pretos (executar apenas quando necessário)
         const fixBlackPlanes = () => {
           const planes = ['videoPlane0', 'videoPlane1', 'videoPlane2']
           planes.forEach((planeId, idx) => {
@@ -488,58 +487,30 @@ const ScanPage = () => {
             if (plane && video) {
               const isVisible = plane.getAttribute('visible')
               
-              // Se o plano está visível mas o vídeo não está pronto, esconder temporariamente
+              // Se o plano está visível, garantir que o material está correto
               if (isVisible === 'true' || isVisible === true) {
-                if (video.readyState < 2) {
-                  console.log('⚠️ Plano visível mas vídeo não pronto - escondendo temporariamente:', planeId)
-                  plane.setAttribute('visible', 'false')
-                  
-                  // Tentar novamente quando vídeo estiver pronto
-                  const checkVideo = () => {
-                    if (video.readyState >= 2) {
-                      plane.setAttribute('material', {
-                        shader: 'flat',
-                        src: `#video${idx + 1}`,
-                        transparent: true,
-                        opacity: 1,
-                        side: 'double'
-                      })
-                      plane.setAttribute('visible', 'true')
-                      video.removeEventListener('canplay', checkVideo)
-                      video.removeEventListener('loadeddata', checkVideo)
-                    }
-                  }
-                  
-                  video.addEventListener('canplay', checkVideo)
-                  video.addEventListener('loadeddata', checkVideo)
-                } else {
-                  // Garantir que o material está correto
-                  const material = plane.getAttribute('material')
-                  if (!material || !material.src || material.src === '') {
-                    plane.setAttribute('material', {
-                      shader: 'flat',
-                      src: `#video${idx + 1}`,
-                      transparent: true,
-                      opacity: 1,
-                      side: 'double'
-                    })
-                  }
+                const material = plane.getAttribute('material')
+                if (!material || !material.src || material.src === '') {
+                  plane.setAttribute('material', {
+                    shader: 'flat',
+                    src: `#video${idx + 1}`,
+                    transparent: true,
+                    opacity: 1,
+                    side: 'double'
+                  })
                 }
               }
             }
           })
         }
         
-        // Executar periodicamente no Android
-        const intervalId = setInterval(fixBlackPlanes, 500)
+        // Executar periodicamente no Android (com intervalo maior para não sobrecarregar)
+        const intervalId = setInterval(fixBlackPlanes, 1000)
         
-        // Limpar após 30 segundos (não precisa rodar indefinidamente)
+        // Limpar após 20 segundos
         setTimeout(() => {
           clearInterval(intervalId)
-        }, 30000)
-        
-        // Executar imediatamente
-        fixBlackPlanes()
+        }, 20000)
       }
     }
 
