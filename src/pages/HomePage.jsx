@@ -202,6 +202,8 @@ const HomePage = () => {
       <InterpreterVideo 
         librasActive={librasActive}
         videoState={videoState}
+        adPhase={adPhase}
+        audioActive={audioActive}
       />
 
       <AudioDescription 
