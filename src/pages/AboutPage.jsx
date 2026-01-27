@@ -89,7 +89,7 @@ const AboutPage = () => {
         </h1>
         
         
-        {/* Descrição com Lorem Ipsum */}
+        {/* Descrição do projeto */}
         <div style={{
           fontSize: '1.1rem',
           lineHeight: '1.8',
@@ -99,19 +99,54 @@ const AboutPage = () => {
           marginBottom: '40px'
         }}>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
-            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
-            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+            Em yorubá, &ldquo;Ayà mi o já&rdquo; significa &ldquo;Eu não tenho medo&rdquo;. Essa é a
+            poderosa mensagem que guia o Projeto Oralituras Digitais em
+            Multimodalidades (RA) da Literatura Ayà mi o já, uma iniciativa que
+            nasce do desejo de potencializar as infâncias negras através de narrativas
+            que celebram suas próprias histórias e ancestralidades. Inspirado na
+            jornada de Ayo, uma menina negra da periferia do Recife que viaja na
+            &ldquo;curva do tempo dos caracóis&rdquo; para se reencontrar com suas raízes
+            quilombolas, o projeto é um convite para que cada criança possa, assim
+            como ela, reconhecer suas potências e trilhar um caminho de
+            autoidentificação.
           </p>
           <p>
-            Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. 
-            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, 
-            eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+            Em um mundo onde as telas digitais são onipresentes, o projeto inova ao
+            unir a tradição da oralitura com a tecnologia da Realidade Aumentada
+            (RA). Mais do que uma simples ferramenta, a RA surge como uma
+            extensão da própria realidade e imaginação, uma forma de potencializar a
+            experiência do livro físico e criar uma relação mais saudável e educativa
+            com o digital. Ao apontar um celular ou tablet para as páginas marcadas,
+            as(os) leitoras(es) são transportados para um universo de animações, sons
+            e interações que aprofundam a narrativa, transformando a leitura em uma
+            experiência multimodal e sensorial, onde a oralidade se manifesta como
+            imagem, texto, som e movimento.
           </p>
           <p>
-            Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos 
-            qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, 
-            adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.
+            A literatura afrorreferenciada é o pilar central desta iniciativa. O projeto se
+            dedica a construir um imaginário centrado em África e na sua diáspora, em
+            diálogo com a Lei Nº 10.639/2003. O objetivo é que as crianças negras
+            possam se ver como autoras de suas próprias histórias, construindo suas
+            subjetividades e autoestima a partir de referências de afeto e comunidade.
+            É uma consulta às memórias para significar o presente com movimentos
+            que nutrem o Orí.
+          </p>
+          <p>
+            Ayà mi o Já é um projeto coletivo, idealizado pelas educadoras Jamila de
+            Oliveira Marques e Keise Barbosa da Silva, que reúne uma equipe de
+            artistas, pesquisadores e técnicos. A sua fonte epistemológica vem com os
+            saberes ancestrais, como as periferias do Recife, Olinda e Jaboatão dos
+            Guararapes, e as memórias que cruzam com o Quilombo de Cuieiras.
+            Fundamentalmente, nutre-se dos conhecimentos do candomblé, dos Ibejis
+            e da espiritualidade africana e afro-brasileira.
+          </p>
+          <p>
+            Financiado pela Lei Paulo Gustavo através do edital Recife Criativo, da
+            Prefeitura da Cidade do Recife, o projeto Ayà mi o Já! Eu não tenho medo
+            é uma afirmação da potência das narrativas negras. É um chamado para
+            que as futuras gerações cresçam cercadas de histórias que as inspirem a
+            sonhar e realizar. Convidamos você a conhecer esta jornada de
+            encantamento, memória e imaginação.
           </p>
         </div>
       </main>

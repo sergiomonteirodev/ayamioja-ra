@@ -1,11 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
-const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
+const MainVideo = ({
+  librasActive,
+  audioActive,
+  onVideoStateChange,
+  bonequinhaTime = 8,
+  onPauseForAD,
+  resumeFrom,
+  resumeTrigger,
+  onResumed,
+  onVideoReset,
+  adPhase
+}) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
+  const [waitingBonequinha, setWaitingBonequinha] = useState(false)
   const location = useLocation()
   
   // Verificar se o vídeo já foi iniciado pelo usuário nesta sessão
@@ -62,9 +74,11 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     setShowPlayButton(true)
     setShowReplay(false)
     setHasEnded(false)
+    setWaitingBonequinha(false)
+    onVideoReset?.()
     
     console.log('✅ Vídeo resetado - botão de play aparecerá')
-  }, [location.pathname])
+  }, [location.pathname, onVideoReset])
 
   // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
   const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
@@ -95,6 +109,54 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       video.volume = 0.7
     }
   }, [audioActive])
+
+  // AD ativado antes do play: aguardar bonequinha; AD ativado com vídeo rodando: pausar e tocar AD.
+  // Sempre buscar o frame da bonequinha e manter o vídeo pausado visível durante a AD.
+  useEffect(() => {
+    if (!audioActive) {
+      setWaitingBonequinha(false)
+      return
+    }
+    const video = videoRef.current
+    if (!video || !onPauseForAD) return
+    if (adPhase === 'playing_ad') return
+
+    if (!video.paused && !video.ended && !waitingBonequinha) {
+      const resumeAt = video.currentTime
+      video.pause()
+      video.currentTime = bonequinhaTime
+      onPauseForAD(resumeAt)
+    }
+  }, [audioActive, adPhase, onPauseForAD, waitingBonequinha, bonequinhaTime])
+
+  // Timeupdate: no modo “esperar bonequinha”, pausar ao atingir o tempo e solicitar AD.
+  // Vídeo fica em pause no frame exato da bonequinha (estática) durante a AD.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !waitingBonequinha || !onPauseForAD) return
+
+    const onTimeUpdate = () => {
+      if (video.currentTime >= bonequinhaTime) {
+        const resumeAt = video.currentTime
+        video.pause()
+        video.currentTime = bonequinhaTime
+        onPauseForAD(resumeAt)
+        setWaitingBonequinha(false)
+      }
+    }
+    video.addEventListener('timeupdate', onTimeUpdate)
+    return () => video.removeEventListener('timeupdate', onTimeUpdate)
+  }, [waitingBonequinha, bonequinhaTime, onPauseForAD])
+
+  // Retomar vídeo após fim da audiodescrição.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || resumeTrigger == null || resumeFrom == null || !onResumed) return
+
+    video.currentTime = resumeFrom
+    video.play().catch(() => {})
+    onResumed()
+  }, [resumeTrigger, resumeFrom, onResumed])
 
   // Atualizar estado do vídeo quando necessário
   useEffect(() => {
@@ -592,7 +654,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     const video = videoRef.current
     if (!video) return
     
-    console.log('▶️ Botão de play clicado - iniciando vídeo')
+    console.log('▶️ Botão de play clicado - iniciando vídeo', { audioActive })
     
     // Marcar que o vídeo foi iniciado pelo usuário (persistir na sessão)
     try {
@@ -602,6 +664,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
     }
     
     setShowPlayButton(false)
+    if (audioActive) setWaitingBonequinha(true)
     
     // Garantir que o áudio está habilitado antes de tocar
     const isAndroid = /Android/i.test(navigator.userAgent)
@@ -626,7 +689,7 @@ const MainVideo = ({ librasActive, audioActive, onVideoStateChange }) => {
       console.log('✅ Vídeo iniciado pelo botão de play')
     }).catch((err) => {
       console.error('❌ Erro ao iniciar vídeo:', err)
-      // Se falhar, mostrar botão novamente e remover flag
+      setWaitingBonequinha(false)
       try {
         sessionStorage.removeItem('homepageVideoStarted')
       } catch (e) {}
