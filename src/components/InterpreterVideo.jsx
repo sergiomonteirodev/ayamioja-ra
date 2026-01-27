@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
+const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase, audioActive }) => {
   const [isVisible, setIsVisible] = useState(false)
   const [showPausedMessage, setShowPausedMessage] = useState(false)
   const videoRef = useRef(null)
@@ -46,10 +46,13 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
     }
   }, [customVideoSrc, isHomePage])
 
+  // Não carregar/reproduzir vídeo de libras se AD estiver tocando
+  const isADPlaying = audioActive && adPhase === 'playing_ad'
+  
   // Sincronização contínua com o vídeo principal
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !librasActive || !isVisible || !videoState?.isPlaying) {
+    if (!video || !librasActive || !isVisible || !videoState?.isPlaying || isADPlaying) {
       return
     }
 
@@ -66,7 +69,7 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
     }, 150) // Verificar a cada 150ms para sincronização mais precisa e suave
 
     return () => clearInterval(syncInterval)
-  }, [librasActive, videoState?.isPlaying, isVisible, videoState?.currentTime])
+  }, [librasActive, videoState?.isPlaying, isVisible, videoState?.currentTime, isADPlaying])
 
   // Controlar play/pause e visibilidade baseado no estado do vídeo principal
   useEffect(() => {
@@ -81,8 +84,18 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
 
     // Se Libras está ativo e (há customVideoSrc OU estamos na HomePage)
     if (librasActive && (customVideoSrc || isHomePage)) {
+      // Se AD está tocando, pausar e esconder vídeo de libras (comportamento atual)
+      if (isADPlaying) {
+        if (!video.paused) {
+          video.pause()
+        }
+        setIsVisible(false)
+        setShowPausedMessage(false)
+        return
+      }
+      
       if (videoState?.isPlaying) {
-        // Vídeo principal está reproduzindo
+        // Vídeo principal está reproduzindo e AD não está tocando
         setIsVisible(true)
         setShowPausedMessage(false)
         
@@ -92,8 +105,8 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc }) => {
             video.currentTime = videoState.currentTime
           }
           
-          // Reproduzir se estiver pausado
-          if (video.paused) {
+          // Reproduzir se estiver pausado (só se AD não estiver tocando)
+          if (video.paused && !isADPlaying) {
             video.play().catch(e => console.log('❌ Erro ao reproduzir:', e))
           }
         }
