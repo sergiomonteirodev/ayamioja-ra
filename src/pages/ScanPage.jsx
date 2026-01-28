@@ -534,18 +534,13 @@ const ScanPage = () => {
       className="scan-page"
       style={{
         backgroundColor: 'transparent',
-        background: 'transparent',
         position: 'fixed',
         top: 0,
         left: 0,
         width: '100vw',
         height: '100vh',
-        zIndex: 1, // Acima do vídeo (-1), mas transparente
+        zIndex: 1,
         overflow: 'hidden',
-        backgroundImage: 'none',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        backgroundPosition: 'center',
         pointerEvents: 'none' // Permitir que eventos passem através
       }}
     >

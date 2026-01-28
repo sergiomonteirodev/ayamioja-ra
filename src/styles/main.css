@@ -722,13 +722,16 @@ html.scan-page-active {
 
 /* Scan Page Container – layout mantido; fundo transparente para câmera */
 .scan-page {
+    position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     background: transparent;
     overflow: hidden;
-    z-index: 10000;
+    z-index: 1;
+    display: block;
+    visibility: visible;
 }
 
 /* Toggles na Scan Page */
@@ -779,6 +782,7 @@ a-scene {
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    z-index: 0 !important; /* Atrás dos elementos de UI */
 }
 
 .scan-page a-scene canvas {
@@ -787,6 +791,8 @@ a-scene {
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    z-index: 0 !important; /* Atrás dos elementos de UI */
+    pointer-events: auto !important; /* Permitir interação com AR */
 }
 
 /* Backup não usa .a-canvas; MindAR controla. Sem regras extra que causem retângulo preto. */
