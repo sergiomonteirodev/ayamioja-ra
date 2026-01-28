@@ -540,7 +540,7 @@ const ScanPage = () => {
         width: '100vw',
         height: '100vh',
         zIndex: 1,
-        overflow: 'hidden',
+        overflow: 'visible', // Mudado para visible para elementos aparecerem
         pointerEvents: 'none' // Permitir que eventos passem através
       }}
     >
