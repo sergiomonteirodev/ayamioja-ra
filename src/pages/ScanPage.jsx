@@ -702,7 +702,7 @@ const ScanPage = () => {
             loop 
             playsInline 
             muted
-            style="display: none;"
+            style={{ display: 'none' }}
           />
           <video 
             id="video2" 
@@ -712,7 +712,7 @@ const ScanPage = () => {
             loop 
             playsInline 
             muted
-            style="display: none;"
+            style={{ display: 'none' }}
           />
           <video 
             id="video3" 
@@ -721,7 +721,7 @@ const ScanPage = () => {
             crossOrigin="anonymous" 
             loop 
             playsInline
-            style="display: none;"
+            style={{ display: 'none' }}
           />
         </a-assets>
 
