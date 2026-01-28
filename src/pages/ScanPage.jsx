@@ -540,8 +540,8 @@ const ScanPage = () => {
         width: '100vw',
         height: '100vh',
         zIndex: 1,
-        overflow: 'visible', // Mudado para visible para elementos aparecerem
-        pointerEvents: 'none' // Permitir que eventos passem através
+        overflow: 'visible',
+        pointerEvents: 'none'
       }}
     >
       {/* Toggles de Libras e Audiodescrição no topo */}
@@ -553,7 +553,9 @@ const ScanPage = () => {
         zIndex: 100000, 
         pointerEvents: 'auto', 
         width: '100%',
-        display: 'block',
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '0 20px',
         visibility: 'visible',
         opacity: 1
       }}>
