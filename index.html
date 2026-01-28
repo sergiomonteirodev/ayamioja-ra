@@ -7,57 +7,8 @@
     <!-- Pré-carregar vídeo principal e audiodescrição ANTES do React inicializar -->
     <link rel="preload" as="video" href="/ayamioja-ra/videos/anim_ayo.mp4" type="video/mp4" />
     <link rel="preload" as="audio" href="/ayamioja-ra/videos/ad_anim_1.m4a" type="audio/mp4" />
-    <!-- Supressão completa: Suprimir erro WebGL em TODAS as formas possíveis -->
-    <!-- O erro é cosmético - MindAR tenta criar contexto mas A-Frame já gerencia -->
-    <script>
-      // Supressão completa: capturar erro em todas as formas possíveis
-      (function() {
-        function isWebGLError(message) {
-          if (!message) return false;
-          const msg = String(message);
-          return msg.includes('Canvas has an existing context') ||
-                 msg.includes('WebGL context could not be created') ||
-                 msg.includes('THREE.WebGLRenderer') ||
-                 msg.includes('existing context of a different type');
-        }
-
-        // Interceptar console.error
-        const originalError = console.error;
-        console.error = function(...args) {
-          const message = args.join(' ');
-          if (isWebGLError(message)) return;
-          originalError.apply(console, args);
-        };
-
-        // Interceptar console.warn (Three.js pode usar warn)
-        const originalWarn = console.warn;
-        console.warn = function(...args) {
-          const message = args.join(' ');
-          if (isWebGLError(message)) return;
-          originalWarn.apply(console, args);
-        };
-
-        // Interceptar console.log (alguns navegadores podem usar log)
-        const originalLog = console.log;
-        console.log = function(...args) {
-          const message = args.join(' ');
-          if (isWebGLError(message)) return;
-          originalLog.apply(console, args);
-        };
-
-        // Interceptar window.onerror
-        const originalOnError = window.onerror;
-        window.onerror = function(message, source, lineno, colno, error) {
-          if (isWebGLError(message) || (error && isWebGLError(error.message))) {
-            return true; // Suprimir erro
-          }
-          if (originalOnError) {
-            return originalOnError(message, source, lineno, colno, error);
-          }
-          return false;
-        };
-      })();
-    </script>
+    <!-- REGRA ABSOLUTA: NUNCA interceptar getContext ou WebGLRenderer -->
+    <!-- O A-Frame + MindAR gerencia completamente o WebGL - não interferir -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script type="module" crossorigin src="/ayamioja-ra/assets/index-B4GHjX7y.js"></script>
