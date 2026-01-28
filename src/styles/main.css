@@ -96,6 +96,17 @@ body {
     overflow-x: hidden;
 }
 
+/* Forçar fundo transparente quando scan-page-active está ativo - máxima prioridade */
+body.scan-page-active {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+html.scan-page-active {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
 /* Navigation */
 .navbar {
     background-color: white;

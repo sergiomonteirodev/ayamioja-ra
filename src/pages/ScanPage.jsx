@@ -208,6 +208,19 @@ const ScanPage = () => {
     }
   }, [isRequestingPermission])
 
+  // Aplicar fundo transparente imediatamente ao montar o componente
+  useEffect(() => {
+    // Forçar fundo transparente ANTES de qualquer outra coisa
+    document.body.style.backgroundColor = 'transparent'
+    document.body.style.background = 'transparent'
+    document.documentElement.style.backgroundColor = 'transparent'
+    document.documentElement.style.background = 'transparent'
+    document.body.classList.add('scan-page-active')
+    document.documentElement.classList.add('scan-page-active')
+    
+    console.log('✅ Fundo transparente aplicado imediatamente')
+  }, [])
+
   // Detectar orientação do dispositivo (apenas para referência, sem ajustar vídeos)
   useEffect(() => {
     const updateOrientation = () => {
@@ -338,13 +351,22 @@ const ScanPage = () => {
 
   // MindAR + A-Frame. scan-page-active para CSS.
   useEffect(() => {
-    // Forçar fundo transparente no body imediatamente
-    document.body.style.backgroundColor = 'transparent'
-    document.body.style.background = 'transparent'
-    document.body.classList.add('scan-page-active')
-    document.documentElement.classList.add('scan-page-active')
-    document.documentElement.style.backgroundColor = 'transparent'
-    document.documentElement.style.background = 'transparent'
+    // Forçar fundo transparente no body imediatamente (executar antes de tudo)
+    const applyTransparentBackground = () => {
+      document.body.style.backgroundColor = 'transparent'
+      document.body.style.background = 'transparent'
+      document.documentElement.style.backgroundColor = 'transparent'
+      document.documentElement.style.background = 'transparent'
+      document.body.classList.add('scan-page-active')
+      document.documentElement.classList.add('scan-page-active')
+    }
+    
+    // Aplicar imediatamente
+    applyTransparentBackground()
+    
+    // Aplicar também após um pequeno delay para garantir
+    setTimeout(applyTransparentBackground, 0)
+    setTimeout(applyTransparentBackground, 100)
 
     const scene = sceneRef.current
     if (!scene) {
@@ -539,6 +561,14 @@ const ScanPage = () => {
     }
   }, [cameraPermissionGranted, isArReady])
 
+  // Debug: verificar se o componente está renderizando
+  console.log('🔍 ScanPage renderizando:', {
+    cameraPermissionGranted,
+    isArReady,
+    showScanningAnimation,
+    activeTargetIndex
+  })
+
   return (
     <div 
       className="scan-page"
@@ -551,7 +581,9 @@ const ScanPage = () => {
         height: '100vh',
         zIndex: 1,
         overflow: 'visible',
-        pointerEvents: 'none'
+        pointerEvents: 'none',
+        display: 'block',
+        visibility: 'visible'
       }}
     >
       {/* Toggles de Libras e Audiodescrição no topo */}
@@ -605,13 +637,15 @@ const ScanPage = () => {
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 100001,
-            gap: '20px'
+            gap: '20px',
+            visibility: 'visible',
+            opacity: 1
           }}
         >
           <div style={{ color: 'white', fontSize: '24px', textAlign: 'center', padding: '0 20px' }}>
