@@ -14,6 +14,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Aplicar fundo transparente imediatamente se estiver na rota /scan
+      if (window.location.pathname.includes('/scan')) {
+        document.body.style.backgroundColor = 'transparent';
+        document.body.style.background = 'transparent';
+        document.documentElement.style.backgroundColor = 'transparent';
+        document.documentElement.style.background = 'transparent';
+        document.body.classList.add('scan-page-active');
+        document.documentElement.classList.add('scan-page-active');
+      }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
     <!-- Eruda - Console Mobile (adicione ?debug=true na URL para ativar) -->
     <script>
