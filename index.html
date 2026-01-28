@@ -11,11 +11,22 @@
     <!-- O A-Frame + MindAR gerencia completamente o WebGL - não interferir -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <script type="module" crossorigin src="/ayamioja-ra/assets/index-BH3hQIQV.js"></script>
-    <link rel="stylesheet" crossorigin href="/ayamioja-ra/assets/index-QRZ8hgoY.css">
+    <script type="module" crossorigin src="/ayamioja-ra/assets/index-0md1qtuy.js"></script>
+    <link rel="stylesheet" crossorigin href="/ayamioja-ra/assets/index-CLNyIhCJ.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Aplicar fundo transparente imediatamente se estiver na rota /scan
+      if (window.location.pathname.includes('/scan')) {
+        document.body.style.backgroundColor = 'transparent';
+        document.body.style.background = 'transparent';
+        document.documentElement.style.backgroundColor = 'transparent';
+        document.documentElement.style.background = 'transparent';
+        document.body.classList.add('scan-page-active');
+        document.documentElement.classList.add('scan-page-active');
+      }
+    </script>
     <!-- Eruda - Console Mobile (adicione ?debug=true na URL para ativar) -->
     <script>
       // Carregar Eruda apenas se houver ?debug=true na URL ou em desenvolvimento
