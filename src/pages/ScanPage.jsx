@@ -338,8 +338,13 @@ const ScanPage = () => {
 
   // MindAR + A-Frame. scan-page-active para CSS.
   useEffect(() => {
+    // Forçar fundo transparente no body imediatamente
+    document.body.style.backgroundColor = 'transparent'
+    document.body.style.background = 'transparent'
     document.body.classList.add('scan-page-active')
     document.documentElement.classList.add('scan-page-active')
+    document.documentElement.style.backgroundColor = 'transparent'
+    document.documentElement.style.background = 'transparent'
 
     const scene = sceneRef.current
     if (!scene) {
@@ -521,6 +526,11 @@ const ScanPage = () => {
     return () => {
       document.body.classList.remove('scan-page-active')
       document.documentElement.classList.remove('scan-page-active')
+      // Restaurar estilos do body
+      document.body.style.backgroundColor = ''
+      document.body.style.background = ''
+      document.documentElement.style.backgroundColor = ''
+      document.documentElement.style.background = ''
       const s = sceneRef.current
       if (s) {
         s.removeEventListener('loaded', handleSceneLoaded)
@@ -718,7 +728,8 @@ const ScanPage = () => {
       </a-scene>
 
       <div id="ui-scanning" style={{ display: 'none' }} aria-hidden="true" />
-      {!isArReady && (
+      {/* Loading apenas se a câmera foi concedida mas o AR ainda não está pronto */}
+      {cameraPermissionGranted && !isArReady && (
         <div id="ui-loading" className="ui-loading" style={{ display: 'flex' }}>
           <div className="loading-content">
             <div className="loading-spinner"></div>
