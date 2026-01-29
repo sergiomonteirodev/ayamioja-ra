@@ -413,62 +413,73 @@ const ScanPage = () => {
         const video = document.getElementById(videoId)
         
         if (video && plane) {
-          // Configurar material do plano (evita retângulo preto no Android)
-          plane.setAttribute('material', {
-            shader: 'flat',
-            src: `#${videoId}`,
-            transparent: true,
-            opacity: 1,
-            side: 'double'
-          })
-          
           // Garantir que o vídeo não esteja muted
           video.muted = false
           
-          // Se vídeo está pronto, mostrar plano e reproduzir imediatamente
-          if (video.readyState >= 2) {
-            plane.setAttribute('visible', 'true')
-            video.play().catch((err) => {
-              console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
+          // Função para garantir que o vídeo está totalmente pronto antes de mostrar o plano
+          const ensureVideoReady = () => {
+            return new Promise((resolve) => {
+              // Se vídeo já está pronto (readyState >= 2 = HAVE_CURRENT_DATA)
+              if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+                resolve()
+                return
+              }
+              
+              // Aguardar vídeo estar totalmente carregado
+              const checkReady = () => {
+                if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+                  video.removeEventListener('canplay', checkReady)
+                  video.removeEventListener('loadeddata', checkReady)
+                  video.removeEventListener('loadedmetadata', checkReady)
+                  resolve()
+                }
+              }
+              
+              video.addEventListener('canplay', checkReady)
+              video.addEventListener('loadeddata', checkReady)
+              video.addEventListener('loadedmetadata', checkReady)
+              
+              // Forçar carregamento se necessário
+              if (video.readyState === 0) {
+                video.load()
+              }
+              
+              // Timeout de segurança
+              setTimeout(() => {
+                video.removeEventListener('canplay', checkReady)
+                video.removeEventListener('loadeddata', checkReady)
+                video.removeEventListener('loadedmetadata', checkReady)
+                resolve()
+              }, 2000)
             })
-          } else {
-            // Aguardar vídeo estar pronto antes de mostrar (evita retângulo preto)
-            const showWhenReady = () => {
-              if (video.readyState >= 2) {
+          }
+          
+          // Aguardar vídeo estar pronto antes de configurar material e mostrar plano
+          ensureVideoReady().then(() => {
+            // Configurar material do plano APÓS vídeo estar pronto (evita retângulo preto)
+            plane.setAttribute('material', {
+              shader: 'flat',
+              src: `#${videoId}`,
+              transparent: true,
+              opacity: 1,
+              side: 'double'
+            })
+            
+            // Pequeno delay para garantir que o material foi aplicado
+            setTimeout(() => {
+              // Só mostrar o plano se o vídeo realmente tem dimensões válidas
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                // Garantir opacidade antes de mostrar
+                plane.setAttribute('opacity', '1')
                 plane.setAttribute('visible', 'true')
                 video.play().catch((err) => {
                   console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
                 })
               } else {
-                setTimeout(showWhenReady, 50)
+                console.warn(`⚠️ Vídeo ${videoId} não tem dimensões válidas`)
               }
-            }
-            
-            // Aguardar evento de carregamento
-            const handleCanPlay = () => {
-              video.removeEventListener('canplay', handleCanPlay)
-              video.removeEventListener('loadeddata', handleCanPlay)
-              showWhenReady()
-            }
-            
-            video.addEventListener('canplay', handleCanPlay)
-            video.addEventListener('loadeddata', handleCanPlay)
-            
-            // Forçar carregamento se necessário
-            if (video.readyState === 0) {
-              video.load()
-            }
-            
-            // Timeout de segurança - mostrar mesmo se não estiver totalmente pronto
-            setTimeout(() => {
-              video.removeEventListener('canplay', handleCanPlay)
-              video.removeEventListener('loadeddata', handleCanPlay)
-              if (plane.getAttribute('visible') !== 'true') {
-                plane.setAttribute('visible', 'true')
-                video.play().catch(() => {})
-              }
-            }, 1000)
-          }
+            }, 100)
+          })
         }
       }
 
@@ -477,8 +488,15 @@ const ScanPage = () => {
         setShowScanningAnimation(true)
         const v = document.getElementById(videoId)
         const p = document.getElementById(planeId)
-        if (v) v.pause()
-        if (p) p.setAttribute('visible', 'false')
+        if (v) {
+          v.pause()
+          v.currentTime = 0 // Resetar vídeo
+        }
+        if (p) {
+          p.setAttribute('visible', 'false')
+          // Garantir que o plano está completamente escondido
+          p.setAttribute('opacity', '0')
+        }
       }
 
       if (target0) {
@@ -514,17 +532,24 @@ const ScanPage = () => {
             if (plane && video) {
               const isVisible = plane.getAttribute('visible')
               
-              // Se o plano está visível, garantir que o material está correto
+              // Se o plano está visível, garantir que o material está correto E o vídeo está pronto
               if (isVisible === 'true' || isVisible === true) {
-                const material = plane.getAttribute('material')
-                if (!material || !material.src || material.src === '') {
-                  plane.setAttribute('material', {
-                    shader: 'flat',
-                    src: `#video${idx + 1}`,
-                    transparent: true,
-                    opacity: 1,
-                    side: 'double'
-                  })
+                // Verificar se o vídeo tem dimensões válidas antes de aplicar material
+                if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                  const material = plane.getAttribute('material')
+                  if (!material || !material.src || material.src === '') {
+                    plane.setAttribute('material', {
+                      shader: 'flat',
+                      src: `#video${idx + 1}`,
+                      transparent: true,
+                      opacity: 1,
+                      side: 'double'
+                    })
+                  }
+                } else {
+                  // Se vídeo não está pronto, esconder o plano temporariamente
+                  console.log(`⚠️ Vídeo ${idx + 1} não está pronto - escondendo plano temporariamente`)
+                  plane.setAttribute('visible', 'false')
                 }
               }
             }
