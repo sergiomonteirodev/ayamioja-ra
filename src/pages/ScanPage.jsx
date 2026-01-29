@@ -208,9 +208,10 @@ const ScanPage = () => {
     }
   }, [isRequestingPermission])
 
-  // Aplicar fundo transparente imediatamente ao montar o componente
+  // Aplicar fundo transparente e classe Android ao montar
   useEffect(() => {
-    // Forçar fundo transparente ANTES de qualquer outra coisa
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    
     document.body.style.backgroundColor = 'transparent'
     document.body.style.background = 'transparent'
     document.documentElement.style.backgroundColor = 'transparent'
@@ -218,7 +219,15 @@ const ScanPage = () => {
     document.body.classList.add('scan-page-active')
     document.documentElement.classList.add('scan-page-active')
     
-    console.log('✅ Fundo transparente aplicado imediatamente')
+    if (isAndroid) {
+      document.body.classList.add('android-scan')
+      document.documentElement.classList.add('android-scan')
+    }
+    
+    return () => {
+      document.body.classList.remove('android-scan')
+      document.documentElement.classList.remove('android-scan')
+    }
   }, [])
 
   // Detectar orientação do dispositivo (apenas para referência, sem ajustar vídeos)
@@ -456,6 +465,10 @@ const ScanPage = () => {
           
           // Aguardar vídeo estar pronto antes de configurar material e mostrar plano
           ensureVideoReady().then(() => {
+            // Android: delay maior antes de mostrar o plano (evita retângulo preto)
+            const isAndroid = /Android/i.test(navigator.userAgent)
+            const showDelay = isAndroid ? 350 : 100
+            
             // Configurar material do plano APÓS vídeo estar pronto (evita retângulo preto)
             plane.setAttribute('material', {
               shader: 'flat',
@@ -465,11 +478,9 @@ const ScanPage = () => {
               side: 'double'
             })
             
-            // Pequeno delay para garantir que o material foi aplicado
             setTimeout(() => {
               // Só mostrar o plano se o vídeo realmente tem dimensões válidas
               if (video.videoWidth > 0 && video.videoHeight > 0) {
-                // Garantir opacidade antes de mostrar
                 plane.setAttribute('opacity', '1')
                 plane.setAttribute('visible', 'true')
                 video.play().catch((err) => {
@@ -478,7 +489,7 @@ const ScanPage = () => {
               } else {
                 console.warn(`⚠️ Vídeo ${videoId} não tem dimensões válidas`)
               }
-            }, 100)
+            }, showDelay)
           })
         }
       }
@@ -556,13 +567,13 @@ const ScanPage = () => {
           })
         }
         
-        // Executar periodicamente no Android (com intervalo maior para não sobrecarregar)
-        const intervalId = setInterval(fixBlackPlanes, 1000)
+        // Executar periodicamente no Android para corrigir retângulos pretos
+        const intervalId = setInterval(fixBlackPlanes, 500)
         
-        // Limpar após 20 segundos
+        // Limpar após 30 segundos (Android precisa de mais tempo)
         setTimeout(() => {
           clearInterval(intervalId)
-        }, 20000)
+        }, 30000)
       }
     }
 
@@ -711,7 +722,8 @@ const ScanPage = () => {
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
         color-space="sRGB"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump;"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump; alpha: true;"
+        background="transparent: true; color: transparent;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         embedded
