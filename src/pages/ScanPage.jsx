@@ -379,22 +379,8 @@ const ScanPage = () => {
     }
     
     // MindAR controla a cena e o canvas; React só reage aos eventos (targetFound/targetLost) para estado e UI.
+    // PASSO 3: Nenhum setClearColor após init – só config declarativa no <a-scene> (alpha: true, background transparent)
     const handleSceneLoaded = () => {
-      // Android: UMA ÚNICA VEZ no loaded – setClearColor + background da cena + estilo do canvas (evita fundo preto; sem RAF/intervalos)
-      if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
-        const scene = sceneRef.current
-        const applyOnce = () => {
-          if (!scene?.renderer) return
-          scene.renderer.setClearColor(0x000000, 0)
-          if (scene.object3D?.background !== undefined) scene.object3D.background = null
-          const canvas = scene.renderer.domElement || scene.querySelector?.('canvas')
-          if (canvas) {
-            canvas.style.backgroundColor = 'transparent'
-            canvas.style.background = 'transparent'
-          }
-        }
-        setTimeout(applyOnce, 600)
-      }
       // Pré-carregar vídeos AR
       const preloadVideos = () => {
         const videos = ['video1', 'video2', 'video3']
@@ -548,7 +534,7 @@ const ScanPage = () => {
         s.removeEventListener('arReady', handleArReady)
       }
     }
-  }, [cameraPermissionGranted, isArReady])
+  }, []) // PASSO 6: setup AR UMA VEZ; estados React controlam só UI, não reconfiguram a cena
 
   // Debug: verificar se o componente está renderizando
   console.log('🔍 ScanPage renderizando:', {
@@ -674,12 +660,11 @@ const ScanPage = () => {
       <a-scene 
         ref={sceneRef}
         mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
-        color-space="sRGB"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: false; precision: mediump; alpha: true;"
-        background="transparent: true; color: transparent;"
+        embedded
+        renderer="alpha: true; antialias: false"
+        background="transparent: true"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        embedded
         ui="enabled: false"
       >
         {/* Assets - Vídeos com pré-carregamento otimizado para Android */}
