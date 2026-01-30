@@ -86,10 +86,6 @@ const OuvirLivroPage = () => {
       />
 
       <main className="main-content">
-        <div className="logo-container">
-          <img src="/ayamioja-ra/images/logo_ayamioja.png" alt="Logo Ayà Mi O Já" />
-        </div>
-
         <MainVideo
           librasActive={librasActive}
           audioActive={audioActive}
