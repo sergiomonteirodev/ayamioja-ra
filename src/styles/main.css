@@ -923,6 +923,13 @@ body.android-scan .scan-page a-plane[visible="true"] {
     z-index: 9999;
 }
 
+/* Android: loading sem fundo preto para não cobrir o vídeo da câmera */
+body.android-scan .ui-loading {
+    background: transparent !important;
+    background-color: transparent !important;
+    pointer-events: none !important;
+}
+
 .loading-content {
     text-align: center;
     color: white;

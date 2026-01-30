@@ -230,6 +230,19 @@ const ScanPage = () => {
     }
   }, [])
 
+  // Android: esconder overlay de loading após timeout para não cobrir o vídeo com fundo preto
+  useEffect(() => {
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    if (!isAndroid || !cameraPermissionGranted) return
+
+    const timer = setTimeout(() => {
+      setIsArReady(true)
+      console.log('🤖 Android: timeout de segurança - escondendo overlay de loading para mostrar vídeo')
+    }, 5000)
+
+    return () => clearTimeout(timer)
+  }, [cameraPermissionGranted])
+
   // Detectar orientação do dispositivo (apenas para referência, sem ajustar vídeos)
   useEffect(() => {
     const updateOrientation = () => {
@@ -385,6 +398,20 @@ const ScanPage = () => {
     
     // MindAR controla ao máximo (Android inclusive). Só reagimos: play/pause, visible, estado React.
     const handleSceneLoaded = () => {
+      // Android: forçar canvas transparente assim que a cena carregar (evita preto cobrindo vídeo)
+      const isAndroid = /Android/i.test(navigator.userAgent)
+      if (isAndroid && sceneRef.current) {
+        const applyTransparentClear = () => {
+          const el = sceneRef.current
+          if (el && el.renderer && typeof el.renderer.setClearColor === 'function') {
+            el.renderer.setClearColor(0x000000, 0)
+            console.log('🤖 Android: clear color transparente aplicado na cena')
+          }
+        }
+        applyTransparentClear()
+        setTimeout(applyTransparentClear, 500)
+      }
+
       // Pré-carregar vídeos para evitar retângulo preto no Android
       const preloadVideos = () => {
         const videos = ['video1', 'video2', 'video3']
@@ -527,9 +554,17 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-      
-      // Observer para detectar e corrigir retângulos pretos no Android
+
+      // Android: forçar canvas transparente para não cobrir o vídeo com preto
       const isAndroid = /Android/i.test(navigator.userAgent)
+      if (isAndroid && sceneRef.current) {
+        const sceneEl = sceneRef.current
+        if (sceneEl.renderer && typeof sceneEl.renderer.setClearColor === 'function') {
+          sceneEl.renderer.setClearColor(0x000000, 0)
+          console.log('🤖 Android: clear color do canvas definido como transparente')
+        }
+      }
+      
       if (isAndroid) {
         console.log('🤖 Android detectado - configurando correção para retângulos pretos')
         
