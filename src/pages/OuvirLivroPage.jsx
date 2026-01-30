@@ -90,6 +90,8 @@ const OuvirLivroPage = () => {
   const videoSrc = `${base}videos/ouvir_livro.mp4`
   /** Vídeo de Libras da página Ouvir o livro – arquivo: public/videos/libras_ouvir_livro.mp4 */
   const librasVideoSrc = `${base}videos/libras_ouvir_livro.mp4`
+  /** Legenda .vtt do vídeo principal – arquivo: public/videos/legenda.vtt */
+  const trackSrc = `${base}videos/legenda.vtt`
 
   return (
     <div>
@@ -119,6 +121,9 @@ const OuvirLivroPage = () => {
           storageKey="ouvirLivroVideoStarted"
           resetWhenPathname="/ouvir-livro"
           canShowReplay={canShowReplay}
+          trackSrc={trackSrc}
+          trackLang="pt-BR"
+          trackLabel="Português"
         />
 
         <ActionButtons showAccessButton={true} activeButton="ouvir-livro" />

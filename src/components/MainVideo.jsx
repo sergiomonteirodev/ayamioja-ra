@@ -16,7 +16,10 @@ const MainVideo = ({
   videoSrc,
   storageKey = 'homepageVideoStarted',
   resetWhenPathname,
-  canShowReplay = true
+  canShowReplay = true,
+  trackSrc,
+  trackLang = 'pt-BR',
+  trackLabel = 'Português'
 }) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -762,6 +765,15 @@ const MainVideo = ({
             }}
           >
             <source src={videoPath} type="video/mp4" />
+            {trackSrc && (
+              <track
+                kind="subtitles"
+                src={trackSrc}
+                srcLang={trackLang}
+                label={trackLabel}
+                default
+              />
+            )}
             Seu navegador não suporta vídeos HTML5.
           </video>
 
