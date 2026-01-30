@@ -854,8 +854,11 @@ body.android-scan .scan-page a-scene .a-canvas,
 body.android-scan .scan-page canvas {
     background: transparent !important;
     background-color: transparent !important;
+    opacity: 1 !important;
 }
-body.android-scan .scan-page a-scene > div {
+/* Qualquer wrapper/div da cena (MindAR/Three) sem fundo preto */
+body.android-scan .scan-page a-scene > div,
+body.android-scan .scan-page a-scene div {
     background: transparent !important;
     background-color: transparent !important;
 }

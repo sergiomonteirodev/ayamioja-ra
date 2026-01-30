@@ -540,12 +540,12 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-      // Android: forçar canvas transparente a cada frame por 8s (MindAR pode resetar a cada frame)
+      // Android: forçar canvas transparente – 8s agressivo + intervalo contínuo toda a sessão (evita parte preta)
       if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
         const applyTransparent = () => forceAndroidCanvasTransparent(sceneRef.current)
         applyTransparent()
-        const interval = setInterval(applyTransparent, 100)
-        setTimeout(() => clearInterval(interval), 8000)
+        const intervalFast = setInterval(applyTransparent, 100)
+        setTimeout(() => clearInterval(intervalFast), 8000)
         let rafId
         const start = Date.now()
         const loop = () => {
@@ -556,6 +556,8 @@ const ScanPage = () => {
         }
         rafId = requestAnimationFrame(loop)
         setTimeout(() => { if (rafId) cancelAnimationFrame(rafId) }, 8000)
+        if (transparencyIntervalRef.current) clearInterval(transparencyIntervalRef.current)
+        transparencyIntervalRef.current = setInterval(applyTransparent, 300)
       }
     }
 
@@ -564,6 +566,10 @@ const ScanPage = () => {
     
 
     return () => {
+      if (transparencyIntervalRef.current) {
+        clearInterval(transparencyIntervalRef.current)
+        transparencyIntervalRef.current = null
+      }
       document.body.classList.remove('scan-page-active')
       document.documentElement.classList.remove('scan-page-active')
       // Restaurar estilos do body
