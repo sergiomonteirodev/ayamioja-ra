@@ -19,13 +19,15 @@ const MainVideo = ({
   canShowReplay = true,
   trackSrc,
   trackLang = 'pt-BR',
-  trackLabel = 'Português'
+  trackLabel = 'Português',
+  captionOutside = false
 }) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
   const [waitingBonequinha, setWaitingBonequinha] = useState(false)
+  const [captionText, setCaptionText] = useState('')
   const location = useLocation()
   
   // Verificar se o vídeo já foi iniciado pelo usuário nesta sessão
@@ -90,6 +92,47 @@ const MainVideo = ({
 
   // Caminho do vídeo (prop ou padrão anim_ayo)
   const videoPath = videoSrc || `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
+
+  // Legenda fora do vídeo: usar TextTrack em modo hidden e exibir texto em div abaixo do círculo
+  const captionTrackCleanupRef = useRef(null)
+  useEffect(() => {
+    if (!trackSrc || !captionOutside) return
+    const video = videoRef.current
+    if (!video) return
+
+    const applyTrack = () => {
+      const tracks = video.textTracks
+      if (!tracks || tracks.length === 0) return
+      const track = tracks[0]
+      track.mode = 'hidden'
+      const onCueChange = () => {
+        let text = ''
+        if (track.activeCues && track.activeCues.length > 0) {
+          for (let i = 0; i < track.activeCues.length; i++) {
+            text += (track.activeCues[i].text || '') + '\n'
+          }
+          text = text.trim()
+        }
+        setCaptionText(text)
+      }
+      track.addEventListener('cuechange', onCueChange)
+      captionTrackCleanupRef.current = () => {
+        track.removeEventListener('cuechange', onCueChange)
+        captionTrackCleanupRef.current = null
+      }
+    }
+
+    if (video.textTracks && video.textTracks.length > 0) {
+      applyTrack()
+      return () => { if (captionTrackCleanupRef.current) captionTrackCleanupRef.current() }
+    }
+    const onLoadedMetadata = () => applyTrack()
+    video.addEventListener('loadedmetadata', onLoadedMetadata)
+    return () => {
+      video.removeEventListener('loadedmetadata', onLoadedMetadata)
+      if (captionTrackCleanupRef.current) captionTrackCleanupRef.current()
+    }
+  }, [trackSrc, captionOutside])
 
   // Detectar mobile e iOS
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -849,6 +892,11 @@ const MainVideo = ({
           )}
         </div>
       </div>
+      {captionOutside && trackSrc && (
+        <div className="caption-outside" aria-live="polite">
+          {captionText}
+        </div>
+      )}
     </section>
   )
 }

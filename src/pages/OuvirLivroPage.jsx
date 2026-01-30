@@ -124,6 +124,7 @@ const OuvirLivroPage = () => {
           trackSrc={trackSrc}
           trackLang="pt-BR"
           trackLabel="Português"
+          captionOutside={true}
         />
 
         <ActionButtons showAccessButton={true} activeButton="ouvir-livro" />
