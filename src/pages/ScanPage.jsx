@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import ToggleControls from '../components/ToggleControls'
@@ -8,6 +8,18 @@ import AudioDescriptionAR from '../components/AudioDescriptionAR'
 
 // Android: side: front evita preto do verso do plano (side: double pode mostrar textura vazia)
 const MATERIAL_SIDE = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) ? 'front' : 'double'
+
+/** No Android: força clear color transparente e estilo do canvas DOM (evita retângulo preto). */
+function forceAndroidCanvasTransparent(sceneEl) {
+  if (!sceneEl || !/Android/i.test(navigator.userAgent)) return
+  if (sceneEl.renderer?.setClearColor) sceneEl.renderer.setClearColor(0x000000, 0)
+  if (sceneEl.object3D?.background !== undefined) sceneEl.object3D.background = null
+  const canvas = sceneEl.renderer?.domElement || sceneEl.querySelector?.('canvas')
+  if (canvas) {
+    canvas.style.backgroundColor = 'transparent'
+    canvas.style.background = 'transparent'
+  }
+}
 
 const ScanPage = () => {
   const [librasActive, setLibrasActive] = useState(false)
@@ -211,22 +223,19 @@ const ScanPage = () => {
     }
   }, [isRequestingPermission])
 
-  // Aplicar fundo transparente e classe Android ao montar
-  useEffect(() => {
+  // Android: aplicar fundo transparente e classe ANTES da primeira pintada (evita retângulo preto)
+  useLayoutEffect(() => {
     const isAndroid = /Android/i.test(navigator.userAgent)
-    
     document.body.style.backgroundColor = 'transparent'
     document.body.style.background = 'transparent'
     document.documentElement.style.backgroundColor = 'transparent'
     document.documentElement.style.background = 'transparent'
     document.body.classList.add('scan-page-active')
     document.documentElement.classList.add('scan-page-active')
-    
     if (isAndroid) {
       document.body.classList.add('android-scan')
       document.documentElement.classList.add('android-scan')
     }
-    
     return () => {
       document.body.classList.remove('android-scan')
       document.documentElement.classList.remove('android-scan')
@@ -388,13 +397,13 @@ const ScanPage = () => {
     
     // MindAR controla a cena e o canvas; React só reage aos eventos (targetFound/targetLost) para estado e UI.
     const handleSceneLoaded = () => {
-      // Android: definir canvas transparente assim que a cena carregar
+      // Android: forçar canvas transparente assim que a cena carregar (várias chamadas para garantir)
       if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
-        const apply = () => {
-          const el = sceneRef.current
-          if (el?.renderer?.setClearColor) el.renderer.setClearColor(0x000000, 0)
-          if (el?.object3D?.background !== undefined) el.object3D.background = null
-        }
+        const apply = () => forceAndroidCanvasTransparent(sceneRef.current)
+        apply()
+        setTimeout(apply, 0)
+        requestAnimationFrame(() => { apply(); requestAnimationFrame(apply) })
+        setTimeout(apply, 50)
         setTimeout(apply, 400)
         setTimeout(apply, 1000)
       }
@@ -533,13 +542,7 @@ const ScanPage = () => {
       setIsArReady(true)
       // Android: forçar canvas transparente a cada frame por 8s (MindAR pode resetar a cada frame)
       if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
-        const el = sceneRef.current
-        const applyTransparent = () => {
-          if (!sceneRef.current) return
-          const s = sceneRef.current
-          if (s.renderer?.setClearColor) s.renderer.setClearColor(0x000000, 0)
-          if (s.object3D?.background !== undefined) s.object3D.background = null
-        }
+        const applyTransparent = () => forceAndroidCanvasTransparent(sceneRef.current)
         applyTransparent()
         const interval = setInterval(applyTransparent, 100)
         setTimeout(() => clearInterval(interval), 8000)
