@@ -6,6 +6,9 @@ import ToggleControls from '../components/ToggleControls'
 import SafeImage from '../components/SafeImage'
 import AudioDescriptionAR from '../components/AudioDescriptionAR'
 
+// Android: side: front evita preto do verso do plano (side: double pode mostrar textura vazia)
+const MATERIAL_SIDE = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) ? 'front' : 'double'
+
 const ScanPage = () => {
   const [librasActive, setLibrasActive] = useState(false)
   const [audioActive, setAudioActive] = useState(false)
@@ -480,7 +483,7 @@ const ScanPage = () => {
               src: `#${videoId}`,
               transparent: true,
               opacity: 1,
-              side: 'double'
+              side: MATERIAL_SIDE
             })
             setTimeout(() => {
               if (video.videoWidth > 0 && video.videoHeight > 0) {
@@ -738,7 +741,7 @@ const ScanPage = () => {
             width="1" 
             height="1" 
             position="0 0.1 0.1" 
-            material="shader: flat; src: #video1; transparent: true; opacity: 1; side: double" 
+            material={`shader: flat; src: #video1; transparent: true; opacity: 1; side: ${MATERIAL_SIDE}`} 
             visible="false"
           ></a-plane>
         </a-entity>
@@ -748,7 +751,7 @@ const ScanPage = () => {
             width="1" 
             height="1" 
             position="0 0.1 0.1" 
-            material="shader: flat; src: #video2; transparent: true; opacity: 1; side: double" 
+            material={`shader: flat; src: #video2; transparent: true; opacity: 1; side: ${MATERIAL_SIDE}`} 
             visible="false"
           ></a-plane>
         </a-entity>
@@ -758,7 +761,7 @@ const ScanPage = () => {
             width="1" 
             height="1" 
             position="0 0 0.005" 
-            material="shader: flat; src: #video3; transparent: true; opacity: 1; side: double" 
+            material={`shader: flat; src: #video3; transparent: true; opacity: 1; side: ${MATERIAL_SIDE}`} 
             visible="false"
           ></a-plane>
         </a-entity>
