@@ -834,6 +834,17 @@ a-scene {
     preload: auto !important;
 }
 
+/* Android: canvas e loading com fundo transparente (evita retângulo preto cobrindo o vídeo) */
+body.android-scan .scan-page a-scene canvas,
+body.android-scan .scan-page canvas {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+body.android-scan .ui-loading {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
 /* Esconder UI padrão do MindAR */
 .mindar-ui-overlay,
 .mindar-ui-loading,

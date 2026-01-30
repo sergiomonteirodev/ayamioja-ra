@@ -518,6 +518,16 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
+      // Android: uma única vez, definir canvas transparente (evita retângulo preto sem manipular continuamente)
+      if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
+        const el = sceneRef.current
+        if (el.renderer && typeof el.renderer.setClearColor === 'function') {
+          el.renderer.setClearColor(0x000000, 0)
+        }
+        if (el.object3D && el.object3D.background !== undefined) {
+          el.object3D.background = null
+        }
+      }
     }
 
     scene.addEventListener('loaded', handleSceneLoaded)
