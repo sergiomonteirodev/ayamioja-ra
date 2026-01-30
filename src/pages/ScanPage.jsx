@@ -379,8 +379,22 @@ const ScanPage = () => {
     }
     
     // MindAR controla a cena e o canvas; React só reage aos eventos (targetFound/targetLost) para estado e UI.
-    // Não mexer no canvas/renderer – A-Frame já usa renderer="alpha: true" e background="transparent: true"
     const handleSceneLoaded = () => {
+      // Android: UMA ÚNICA VEZ no loaded – setClearColor + background da cena + estilo do canvas (evita fundo preto; sem RAF/intervalos)
+      if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
+        const scene = sceneRef.current
+        const applyOnce = () => {
+          if (!scene?.renderer) return
+          scene.renderer.setClearColor(0x000000, 0)
+          if (scene.object3D?.background !== undefined) scene.object3D.background = null
+          const canvas = scene.renderer.domElement || scene.querySelector?.('canvas')
+          if (canvas) {
+            canvas.style.backgroundColor = 'transparent'
+            canvas.style.background = 'transparent'
+          }
+        }
+        setTimeout(applyOnce, 600)
+      }
       // Pré-carregar vídeos AR
       const preloadVideos = () => {
         const videos = ['video1', 'video2', 'video3']
