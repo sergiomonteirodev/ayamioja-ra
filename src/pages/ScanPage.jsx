@@ -9,51 +9,6 @@ import AudioDescriptionAR from '../components/AudioDescriptionAR'
 // Android: side: front evita preto do verso do plano (side: double pode mostrar textura vazia)
 const MATERIAL_SIDE = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) ? 'front' : 'double'
 
-/** No Android: força clear color transparente e estilo do canvas DOM (evita retângulo preto). */
-function forceAndroidCanvasTransparent(sceneEl) {
-  if (!sceneEl || !/Android/i.test(navigator.userAgent)) return
-  const r = sceneEl.renderer
-  if (r) {
-    if (r.setClearColor) r.setClearColor(0x000000, 0)
-    if (typeof r.clearAlpha !== 'undefined') r.clearAlpha = 0
-  }
-  if (sceneEl.object3D?.background !== undefined) sceneEl.object3D.background = null
-  const canvas = sceneEl.renderer?.domElement || sceneEl.querySelector?.('canvas')
-  if (canvas) {
-    canvas.style.backgroundColor = 'transparent'
-    canvas.style.background = 'transparent'
-    let el = canvas.parentElement
-    while (el && el !== document.body) {
-      el.style.backgroundColor = 'transparent'
-      el.style.background = 'transparent'
-      el = el.parentElement
-    }
-  }
-}
-
-/** No Android: força transparência em elementos em tela cheia com fundo preto (cobrem o vídeo). */
-function forceFullscreenBlackElementsTransparent() {
-  if (!/Android/i.test(navigator.userAgent)) return
-  const scan = document.querySelector('.scan-page')
-  if (!scan) return
-  const all = scan.querySelectorAll('div, canvas, section')
-  all.forEach((el) => {
-    const style = window.getComputedStyle(el)
-    const bg = style.backgroundColor
-    const pos = style.position
-    const w = parseFloat(style.width) || 0
-    const h = parseFloat(style.height) || 0
-    const vw = window.innerWidth
-    const vh = window.innerHeight
-    const isFullscreen = (pos === 'fixed' || pos === 'absolute') && (w >= vw * 0.9 || style.width === '100%' || el.offsetWidth >= vw * 0.9) && (h >= vh * 0.9 || style.height === '100%' || el.offsetHeight >= vh * 0.9)
-    const isBlack = /rgba?\(0,\s*0,\s*0|rgb\(0,\s*0,\s*0\)|#000|black/i.test(bg) || (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)')
-    if (isFullscreen && isBlack) {
-      el.style.setProperty('background', 'transparent', 'important')
-      el.style.setProperty('background-color', 'transparent', 'important')
-    }
-  })
-}
-
 const ScanPage = () => {
   const [librasActive, setLibrasActive] = useState(false)
   const [audioActive, setAudioActive] = useState(false)
@@ -67,17 +22,12 @@ const ScanPage = () => {
   const [isRequestingPermission, setIsRequestingPermission] = useState(false)
   
   const sceneRef = useRef(null)
-  const rafIdRef = useRef(null)
   const initialCameraCheckRef = useRef(null)
   const initialCameraTimeoutRef = useRef(null)
   const ensureCameraVideoVisibleRef = useRef(null)
   const cameraOverlayRef = useRef(null)
   const cameraStreamRef = useRef(null)
   const mindarStartedRef = useRef(false)
-  const transparencyIntervalRef = useRef(null)
-  const blackElementObserverRef = useRef(null)
-  // REMOVIDO: Deixar o MindAR gerenciar completamente o vídeo da câmera
-  // Não precisamos fazer nada - o MindAR gerencia tudo
 
   const navigate = useNavigate()
 
@@ -429,17 +379,8 @@ const ScanPage = () => {
     }
     
     // MindAR controla a cena e o canvas; React só reage aos eventos (targetFound/targetLost) para estado e UI.
+    // Não mexer no canvas/renderer – A-Frame já usa renderer="alpha: true" e background="transparent: true"
     const handleSceneLoaded = () => {
-      // Android: forçar canvas transparente assim que a cena carregar (várias chamadas para garantir)
-      if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
-        const apply = () => forceAndroidCanvasTransparent(sceneRef.current)
-        apply()
-        setTimeout(apply, 0)
-        requestAnimationFrame(() => { apply(); requestAnimationFrame(apply) })
-        setTimeout(apply, 50)
-        setTimeout(apply, 400)
-        setTimeout(apply, 1000)
-      }
       // Pré-carregar vídeos AR
       const preloadVideos = () => {
         const videos = ['video1', 'video2', 'video3']
@@ -573,36 +514,6 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-      // Android: transparência a cada frame (raf) + varredura de elementos pretos em tela cheia
-      if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
-        const applyTransparent = () => forceAndroidCanvasTransparent(sceneRef.current)
-        applyTransparent()
-        const intervalFast = setInterval(applyTransparent, 100)
-        setTimeout(() => clearInterval(intervalFast), 8000)
-        let rafId
-        const start = Date.now()
-        const loopAggressive = () => {
-          if (Date.now() - start < 8000) {
-            applyTransparent()
-            rafId = requestAnimationFrame(loopAggressive)
-          }
-        }
-        rafId = requestAnimationFrame(loopAggressive)
-        setTimeout(() => { if (rafId) cancelAnimationFrame(rafId) }, 8000)
-        if (transparencyIntervalRef.current) clearInterval(transparencyIntervalRef.current)
-        transparencyIntervalRef.current = setInterval(() => {
-          applyTransparent()
-          forceFullscreenBlackElementsTransparent()
-        }, 300)
-        // RAF contínuo: transparência a cada frame (evita preto por cima do vídeo)
-        let rafContinuousId
-        const loopContinuous = () => {
-          applyTransparent()
-          rafContinuousId = requestAnimationFrame(loopContinuous)
-        }
-        rafContinuousId = requestAnimationFrame(loopContinuous)
-        rafIdRef.current = rafContinuousId
-      }
     }
 
     scene.addEventListener('loaded', handleSceneLoaded)
@@ -610,14 +521,6 @@ const ScanPage = () => {
     
 
     return () => {
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current)
-        rafIdRef.current = null
-      }
-      if (transparencyIntervalRef.current) {
-        clearInterval(transparencyIntervalRef.current)
-        transparencyIntervalRef.current = null
-      }
       document.body.classList.remove('scan-page-active')
       document.documentElement.classList.remove('scan-page-active')
       // Restaurar estilos do body
@@ -646,21 +549,19 @@ const ScanPage = () => {
       className="scan-page"
       style={{
         backgroundColor: 'transparent',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
         zIndex: 1,
         overflow: 'visible',
-        pointerEvents: 'none',
         display: 'block',
         visibility: 'visible'
       }}
     >
       {/* Toggles de Libras e Audiodescrição no topo */}
       <div style={{
-        position: 'fixed', 
+        position: 'absolute', 
         top: 10, 
         left: 0, 
         right: 0, 
@@ -688,7 +589,7 @@ const ScanPage = () => {
         onClick={handleBackClick} 
         style={{
           zIndex: 100000, 
-          position: 'fixed', 
+          position: 'absolute', 
           pointerEvents: 'auto',
           display: 'block',
           visibility: 'visible',
@@ -704,11 +605,13 @@ const ScanPage = () => {
       {!cameraPermissionGranted && (
         <div
           style={{
-            position: 'fixed',
+            position: 'absolute',
             top: 0,
             left: 0,
-            width: '100vw',
-            height: '100vh',
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100%',
             backgroundColor: 'rgba(0, 0, 0, 0.95)',
             display: 'flex',
             flexDirection: 'column',
@@ -851,7 +754,7 @@ const ScanPage = () => {
           className="ar-scanning-overlay" 
           style={{
             zIndex: 100000, 
-            position: 'fixed', 
+            position: 'absolute', 
             pointerEvents: 'none',
             display: 'flex',
             flexDirection: 'column',

@@ -742,15 +742,14 @@ html.scan-page-active {
     position: relative !important;
 }
 
-/* Scan Page Container – layout mantido; fundo transparente para câmera */
+/* Scan Page Container – absolute no Android evita quebra de composição vídeo+WebGL (não usar fixed) */
 .scan-page {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     background: transparent;
-    overflow: hidden;
+    overflow: visible;
     z-index: 1;
     display: block;
     visibility: visible;
@@ -758,7 +757,7 @@ html.scan-page-active {
 
 /* Toggles na Scan Page */
 .scan-page .toggle-controls {
-    position: fixed;
+    position: absolute;
     top: 10px;
     left: 0;
     right: 0;
@@ -770,7 +769,7 @@ html.scan-page-active {
 
 /* Botão Voltar como Overlay - Sem Fundo */
 .back-button-overlay {
-    position: fixed;
+    position: absolute;
     bottom: 70px;
     right: 20px;
     z-index: 100000 !important; /* Acima da câmera (9998) e canvas (9999) */
@@ -907,7 +906,7 @@ body.android-scan .scan-page video:not(#video1):not(#video2):not(#video3) {
 
 /* UI Loading */
 .ui-loading {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
@@ -945,7 +944,7 @@ body.android-scan .scan-page video:not(#video1):not(#video2):not(#video3) {
 
 /* Animação de Scanning AR */
 .ar-scanning-overlay {
-    position: fixed;
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
