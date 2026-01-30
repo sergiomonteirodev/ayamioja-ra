@@ -72,8 +72,10 @@ const OuvirLivroPage = () => {
     return () => clearTimeout(timer)
   }, [location.pathname])
 
-  const videoSrc = `${import.meta.env.BASE_URL}videos/ouvir_livro.mp4`
-  const librasVideoSrc = `${import.meta.env.BASE_URL}videos/libras_ouvir_livro.mp4`
+  const base = import.meta.env.BASE_URL || '/'
+  const videoSrc = `${base}videos/ouvir_livro.mp4`
+  /** Vídeo de Libras da página Ouvir o livro – arquivo: public/videos/libras_ouvir_livro.mp4 */
+  const librasVideoSrc = `${base}videos/libras_ouvir_livro.mp4`
 
   return (
     <div>
@@ -107,6 +109,7 @@ const OuvirLivroPage = () => {
       </main>
 
       <InterpreterVideo
+        key="ouvir-livro-libras"
         librasActive={librasActive}
         videoState={videoState}
         adPhase={adPhase}
