@@ -385,6 +385,16 @@ const ScanPage = () => {
     
     // MindAR controla a cena e o canvas; React só reage aos eventos (targetFound/targetLost) para estado e UI.
     const handleSceneLoaded = () => {
+      // Android: definir canvas transparente assim que a cena carregar
+      if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
+        const apply = () => {
+          const el = sceneRef.current
+          if (el?.renderer?.setClearColor) el.renderer.setClearColor(0x000000, 0)
+          if (el?.object3D?.background !== undefined) el.object3D.background = null
+        }
+        setTimeout(apply, 400)
+        setTimeout(apply, 1000)
+      }
       // Pré-carregar vídeos AR
       const preloadVideos = () => {
         const videos = ['video1', 'video2', 'video3']
@@ -518,15 +528,21 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-      // Android: uma única vez, definir canvas transparente (evita retângulo preto sem manipular continuamente)
+      // Android: reaplicar clear color por alguns segundos (MindAR pode resetar o canvas)
       if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
-        const el = sceneRef.current
-        if (el.renderer && typeof el.renderer.setClearColor === 'function') {
-          el.renderer.setClearColor(0x000000, 0)
+        const applyTransparent = () => {
+          const el = sceneRef.current
+          if (!el) return
+          if (el.renderer && typeof el.renderer.setClearColor === 'function') {
+            el.renderer.setClearColor(0x000000, 0)
+          }
+          if (el.object3D && el.object3D.background !== undefined) {
+            el.object3D.background = null
+          }
         }
-        if (el.object3D && el.object3D.background !== undefined) {
-          el.object3D.background = null
-        }
+        applyTransparent()
+        const interval = setInterval(applyTransparent, 250)
+        setTimeout(() => clearInterval(interval), 3000)
       }
     }
 
