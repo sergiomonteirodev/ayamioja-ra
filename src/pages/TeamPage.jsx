@@ -129,7 +129,7 @@ const TeamPage = () => {
       role: "Quilombo de Cuieiras",
       instagram: "@iyamarisqueira",
       instagramUrl: "https://www.instagram.com/iyamarisqueira?igsh=MW1lOHNubndyMHJyOQ==",
-      image: `${baseImg}/casa-iya-marisqueira.png`,
+      image: `${baseImg}/casa-iya-marisqueira.jpeg`,
       bio: "A Casa Ìyá Marisqueira é um terreiro de matriz africana. É um espaço de educação afrocentrica e quilombola, composta por mulheres, homens e crianças da comunidade de Cuieiras, localizada em Igarassu-PE. Fundada em julho de 2019, o espaço atua na defesa da ancestralidade africana, do território ribeirinho e da autonomia alimentar, cultural e econômica, sendo um local de resistência e preservação de saberes tradicionais."
     },
     {
