@@ -105,7 +105,7 @@ const OuvirLivroPage = () => {
           resetWhenPathname="/ouvir-livro"
         />
 
-        <ActionButtons showAccessButton={false} />
+        <ActionButtons showAccessButton={true} activeButton="ouvir-livro" />
       </main>
 
       <InterpreterVideo

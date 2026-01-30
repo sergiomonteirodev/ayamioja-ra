@@ -1,8 +1,10 @@
 import React from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 
-const ActionButtons = ({ showScanButton = true, showAccessButton = true }) => {
+const ActionButtons = ({ showScanButton = true, showAccessButton = true, activeButton }) => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const isOuvirLivroActive = activeButton === 'ouvir-livro' || location.pathname === '/ouvir-livro'
 
   const handleScanClick = () => {
     navigate('/scan')
@@ -16,7 +18,11 @@ const ActionButtons = ({ showScanButton = true, showAccessButton = true }) => {
         </button>
       )}
       {showAccessButton && (
-        <Link to="/ouvir-livro" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>
+        <Link
+          to="/ouvir-livro"
+          className={`btn-secondary ${isOuvirLivroActive ? 'btn-secondary--active' : ''}`}
+          style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}
+        >
           Ouvir o livro
         </Link>
       )}
