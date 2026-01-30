@@ -22,6 +22,7 @@ O script redimensiona (máx. 400×400), comprime (JPEG qualidade 82) e sobrescre
 | `sergio-monteiro.jpg` | Sérgio Monteiro (Lelo) (fundo amarelo/cabelo rosa OU fundo folhagem/laranja OU livros) |
 | `joaninha-dias.jpg` | Joaninha Dias (parcerias e Leitura e Contação – mesma foto) |
 | `quilombo-cuieiras.jpg` | Quilombo de Cuieiras (imagem da comunidade, se houver) |
+| `casa-iya-marisqueira.png` | Casa Iyá Marisqueira (logo: fundo marrom, texto “Casa Iyá Marisqueira”, motivo de quatro folhas com listras azul/amarelo e búzios ao centro) |
 | `wassi-kamal.jpg` | Wassi Kamal Amoussa (se houver foto) |
 | `edun-ara-sango.jpg` | Edún Àrá Sangô (grupo de 5, roupa africana rosa/branco/preto, fundo verde) |
 | `tulio-seabra.jpg` | Túlio Filipe Seabra da Silva |

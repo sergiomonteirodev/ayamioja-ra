@@ -26,7 +26,13 @@ const ActionButtons = ({ showScanButton = true, showAccessButton = true, activeB
           Ouvir o livro
         </Link>
       )}
-      <a href="#" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>
+      <a
+        href="https://youtu.be/XHTVWdPQRbw"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-secondary"
+        style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}
+      >
         Ouvir a música
       </a>
     </div>
