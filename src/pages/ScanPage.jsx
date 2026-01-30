@@ -531,21 +531,28 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-      // Android: reaplicar clear color por alguns segundos (MindAR pode resetar o canvas)
+      // Android: forçar canvas transparente a cada frame por 8s (MindAR pode resetar a cada frame)
       if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
+        const el = sceneRef.current
         const applyTransparent = () => {
-          const el = sceneRef.current
-          if (!el) return
-          if (el.renderer && typeof el.renderer.setClearColor === 'function') {
-            el.renderer.setClearColor(0x000000, 0)
-          }
-          if (el.object3D && el.object3D.background !== undefined) {
-            el.object3D.background = null
-          }
+          if (!sceneRef.current) return
+          const s = sceneRef.current
+          if (s.renderer?.setClearColor) s.renderer.setClearColor(0x000000, 0)
+          if (s.object3D?.background !== undefined) s.object3D.background = null
         }
         applyTransparent()
-        const interval = setInterval(applyTransparent, 250)
-        setTimeout(() => clearInterval(interval), 3000)
+        const interval = setInterval(applyTransparent, 100)
+        setTimeout(() => clearInterval(interval), 8000)
+        let rafId
+        const start = Date.now()
+        const loop = () => {
+          if (Date.now() - start < 8000) {
+            applyTransparent()
+            rafId = requestAnimationFrame(loop)
+          }
+        }
+        rafId = requestAnimationFrame(loop)
+        setTimeout(() => { if (rafId) cancelAnimationFrame(rafId) }, 8000)
       }
     }
 

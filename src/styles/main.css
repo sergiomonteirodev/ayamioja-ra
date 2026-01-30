@@ -854,6 +854,20 @@ body.android-scan .ui-loading {
     background-color: transparent !important;
 }
 
+/* Android: vídeo da câmera (MindAR) em tela cheia para não sobrar área preta */
+body.android-scan .scan-page video:not(#video1):not(#video2):not(#video3) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    -webkit-transform: translate(-50%, -50%) !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    min-width: 100vw !important;
+    min-height: 100vh !important;
+    object-fit: cover !important;
+}
+
 /* Esconder UI padrão do MindAR */
 .mindar-ui-overlay,
 .mindar-ui-loading,
