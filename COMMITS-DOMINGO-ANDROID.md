@@ -29,3 +29,5 @@
 - **25/01/2026** – AR planos, MindAR, clear/background transparente, remoção de manipulação canvas/WebGL.
 
 O commit **8ee4a6c8** (14/12) é o que descreve explicitamente que **resolvia** o problema; as regras de composição (overflow visible, transform none, vídeo/canvas com `position: absolute`) foram depois alteradas ou sobrescritas em commits seguintes.
+
+**Nota (jan 2026):** Ao reaplicar no Android o vídeo da câmera com `position: absolute` e canvas `z-index: 1`, o vídeo AR (planos) deixou de ser exibido ao detectar o target (só o áudio tocava). Foi revertido: no Android o vídeo da câmera voltou a `position: fixed` + `transform: translate(-50%, -50%)` para os planos AR ficarem visíveis; mantidos apenas `overflow: visible` e `transform: none` em `body`/`html` na scan.
