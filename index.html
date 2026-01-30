@@ -17,7 +17,7 @@
   <body>
     <div id="root"></div>
     <script>
-      // Aplicar fundo transparente imediatamente se estiver na rota /scan
+      // Aplicar fundo transparente e classe Android imediatamente se estiver na rota /scan
       if (window.location.pathname.includes('/scan')) {
         document.body.style.backgroundColor = 'transparent';
         document.body.style.background = 'transparent';
@@ -25,6 +25,10 @@
         document.documentElement.style.background = 'transparent';
         document.body.classList.add('scan-page-active');
         document.documentElement.classList.add('scan-page-active');
+        if (/Android/i.test(navigator.userAgent)) {
+          document.body.classList.add('android-scan');
+          document.documentElement.classList.add('android-scan');
+        }
       }
     </script>
     <!-- Eruda - Console Mobile (adicione ?debug=true na URL para ativar) -->
