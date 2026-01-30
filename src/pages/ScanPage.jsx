@@ -12,13 +12,46 @@ const MATERIAL_SIDE = typeof navigator !== 'undefined' && /Android/i.test(naviga
 /** No Android: força clear color transparente e estilo do canvas DOM (evita retângulo preto). */
 function forceAndroidCanvasTransparent(sceneEl) {
   if (!sceneEl || !/Android/i.test(navigator.userAgent)) return
-  if (sceneEl.renderer?.setClearColor) sceneEl.renderer.setClearColor(0x000000, 0)
+  const r = sceneEl.renderer
+  if (r) {
+    if (r.setClearColor) r.setClearColor(0x000000, 0)
+    if (typeof r.clearAlpha !== 'undefined') r.clearAlpha = 0
+  }
   if (sceneEl.object3D?.background !== undefined) sceneEl.object3D.background = null
   const canvas = sceneEl.renderer?.domElement || sceneEl.querySelector?.('canvas')
   if (canvas) {
     canvas.style.backgroundColor = 'transparent'
     canvas.style.background = 'transparent'
+    let el = canvas.parentElement
+    while (el && el !== document.body) {
+      el.style.backgroundColor = 'transparent'
+      el.style.background = 'transparent'
+      el = el.parentElement
+    }
   }
+}
+
+/** No Android: força transparência em elementos em tela cheia com fundo preto (cobrem o vídeo). */
+function forceFullscreenBlackElementsTransparent() {
+  if (!/Android/i.test(navigator.userAgent)) return
+  const scan = document.querySelector('.scan-page')
+  if (!scan) return
+  const all = scan.querySelectorAll('div, canvas, section')
+  all.forEach((el) => {
+    const style = window.getComputedStyle(el)
+    const bg = style.backgroundColor
+    const pos = style.position
+    const w = parseFloat(style.width) || 0
+    const h = parseFloat(style.height) || 0
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const isFullscreen = (pos === 'fixed' || pos === 'absolute') && (w >= vw * 0.9 || style.width === '100%' || el.offsetWidth >= vw * 0.9) && (h >= vh * 0.9 || style.height === '100%' || el.offsetHeight >= vh * 0.9)
+    const isBlack = /rgba?\(0,\s*0,\s*0|rgb\(0,\s*0,\s*0\)|#000|black/i.test(bg) || (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)')
+    if (isFullscreen && isBlack) {
+      el.style.setProperty('background', 'transparent', 'important')
+      el.style.setProperty('background-color', 'transparent', 'important')
+    }
+  })
 }
 
 const ScanPage = () => {
@@ -540,7 +573,7 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-      // Android: forçar canvas transparente – 8s agressivo + intervalo contínuo toda a sessão (evita parte preta)
+      // Android: transparência a cada frame (raf) + varredura de elementos pretos em tela cheia
       if (/Android/i.test(navigator.userAgent) && sceneRef.current) {
         const applyTransparent = () => forceAndroidCanvasTransparent(sceneRef.current)
         applyTransparent()
@@ -548,16 +581,27 @@ const ScanPage = () => {
         setTimeout(() => clearInterval(intervalFast), 8000)
         let rafId
         const start = Date.now()
-        const loop = () => {
+        const loopAggressive = () => {
           if (Date.now() - start < 8000) {
             applyTransparent()
-            rafId = requestAnimationFrame(loop)
+            rafId = requestAnimationFrame(loopAggressive)
           }
         }
-        rafId = requestAnimationFrame(loop)
+        rafId = requestAnimationFrame(loopAggressive)
         setTimeout(() => { if (rafId) cancelAnimationFrame(rafId) }, 8000)
         if (transparencyIntervalRef.current) clearInterval(transparencyIntervalRef.current)
-        transparencyIntervalRef.current = setInterval(applyTransparent, 300)
+        transparencyIntervalRef.current = setInterval(() => {
+          applyTransparent()
+          forceFullscreenBlackElementsTransparent()
+        }, 300)
+        // RAF contínuo: transparência a cada frame (evita preto por cima do vídeo)
+        let rafContinuousId
+        const loopContinuous = () => {
+          applyTransparent()
+          rafContinuousId = requestAnimationFrame(loopContinuous)
+        }
+        rafContinuousId = requestAnimationFrame(loopContinuous)
+        rafIdRef.current = rafContinuousId
       }
     }
 
@@ -566,6 +610,10 @@ const ScanPage = () => {
     
 
     return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current)
+        rafIdRef.current = null
+      }
       if (transparencyIntervalRef.current) {
         clearInterval(transparencyIntervalRef.current)
         transparencyIntervalRef.current = null
