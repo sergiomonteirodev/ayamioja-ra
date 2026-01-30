@@ -700,11 +700,11 @@ const ScanPage = () => {
           />
         </a-assets>
 
-        {/* Targets – MindAR controla; planos 1x1, com material otimizado para Android */}
+        {/* Targets – MindAR controla; planos em proporção horizontal 16:9 */}
         <a-entity id="target0" mindar-image-target="targetIndex: 0">
           <a-plane 
             id="videoPlane0" 
-            width="1" 
+            width="1.78" 
             height="1" 
             position="0 0.1 0.1" 
             material={`shader: flat; src: #video1; transparent: true; opacity: 1; side: ${MATERIAL_SIDE}`} 
@@ -714,7 +714,7 @@ const ScanPage = () => {
         <a-entity id="target1" mindar-image-target="targetIndex: 1">
           <a-plane 
             id="videoPlane1" 
-            width="1" 
+            width="1.78" 
             height="1" 
             position="0 0.1 0.1" 
             material={`shader: flat; src: #video2; transparent: true; opacity: 1; side: ${MATERIAL_SIDE}`} 
@@ -724,7 +724,7 @@ const ScanPage = () => {
         <a-entity id="target2" mindar-image-target="targetIndex: 2">
           <a-plane 
             id="videoPlane2" 
-            width="1" 
+            width="1.78" 
             height="1" 
             position="0 0 0.005" 
             material={`shader: flat; src: #video3; transparent: true; opacity: 1; side: ${MATERIAL_SIDE}`} 
