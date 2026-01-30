@@ -17,7 +17,11 @@ const OuvirLivroPage = () => {
   const [adPhase, setAdPhase] = useState('none')
   const [resumeVideoAt, setResumeVideoAt] = useState(null)
   const [resumeTrigger, setResumeTrigger] = useState(null)
+  const [mainVideoEnded, setMainVideoEnded] = useState(false)
+  const [librasVideoEnded, setLibrasVideoEnded] = useState(false)
   const location = useLocation()
+
+  const canShowReplay = mainVideoEnded && (!librasActive || librasVideoEnded)
 
   const onPauseForAD = useCallback((resumeAt) => {
     setResumeVideoAt(resumeAt)
@@ -38,6 +42,16 @@ const OuvirLivroPage = () => {
     setAdPhase('none')
     setResumeVideoAt(null)
     setResumeTrigger(null)
+    setMainVideoEnded(false)
+    setLibrasVideoEnded(false)
+  }, [])
+
+  const onVideoEnded = useCallback(() => {
+    setMainVideoEnded(true)
+  }, [])
+
+  const onLibrasEnded = useCallback(() => {
+    setLibrasVideoEnded(true)
   }, [])
 
   const handleLibrasToggle = (active) => {
@@ -99,10 +113,12 @@ const OuvirLivroPage = () => {
           resumeTrigger={resumeTrigger}
           onResumed={onResumed}
           onVideoReset={onVideoReset}
+          onVideoEnded={onVideoEnded}
           adPhase={adPhase}
           videoSrc={videoSrc}
           storageKey="ouvirLivroVideoStarted"
           resetWhenPathname="/ouvir-livro"
+          canShowReplay={canShowReplay}
         />
 
         <ActionButtons showAccessButton={true} activeButton="ouvir-livro" />
@@ -115,6 +131,8 @@ const OuvirLivroPage = () => {
         adPhase={adPhase}
         audioActive={audioActive}
         customVideoSrc={librasVideoSrc}
+        mainVideoEnded={mainVideoEnded}
+        onLibrasEnded={onLibrasEnded}
       />
 
       <AudioDescription

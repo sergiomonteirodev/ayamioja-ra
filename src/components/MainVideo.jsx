@@ -11,10 +11,12 @@ const MainVideo = ({
   resumeTrigger,
   onResumed,
   onVideoReset,
+  onVideoEnded,
   adPhase,
   videoSrc,
   storageKey = 'homepageVideoStarted',
-  resetWhenPathname
+  resetWhenPathname,
+  canShowReplay = true
 }) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -513,29 +515,9 @@ const MainVideo = ({
 
     const handleEnded = () => {
       console.log('✅ MainVideo: ended event - vídeo terminou')
-      console.log('🔍 MainVideo: Estados ANTES - showReplay:', false, 'hasEnded:', false)
       setShowReplay(true)
       setHasEnded(true)
-      console.log('✅ MainVideo: Estados ATUALIZADOS - showReplay: true, hasEnded: true')
-      console.log('✅ MainVideo: Botão replay deve aparecer agora')
-      
-      // Forçar renderização verificando após um momento
-      setTimeout(() => {
-        console.log('🔍 MainVideo: Verificando se botão está visível no DOM')
-        const button = document.querySelector('.replay-button')
-        if (button) {
-          console.log('✅ Botão encontrado no DOM:', button)
-          const styles = window.getComputedStyle(button)
-          console.log('📊 Estilos do botão:', {
-            display: styles.display,
-            visibility: styles.visibility,
-            opacity: styles.opacity,
-            zIndex: styles.zIndex
-          })
-        } else {
-          console.warn('⚠️ Botão NÃO encontrado no DOM após ended event')
-        }
-      }, 100)
+      onVideoEnded?.()
     }
 
     const handleProgress = () => {
@@ -549,11 +531,11 @@ const MainVideo = ({
     // iOS FALLBACK: Verificar se vídeo terminou via timeupdate (iOS às vezes não dispara 'ended')
     const handleTimeUpdate = () => {
       if (video.duration > 0 && video.currentTime >= video.duration - 0.1) {
-        // Vídeo chegou ao fim (com margem de 0.1s)
         if (!hasEnded) {
           console.log('✅ MainVideo: iOS - Vídeo terminou detectado via timeupdate')
           setShowReplay(true)
           setHasEnded(true)
+          onVideoEnded?.()
         }
       }
     }
@@ -630,7 +612,7 @@ const MainVideo = ({
       video.removeEventListener('error', handleError)
       video.removeEventListener('timeupdate', handleTimeUpdate)
     }
-  }, [hasEnded])
+  }, [hasEnded, onVideoEnded])
 
   const handlePlayButtonClick = () => {
     const video = videoRef.current
@@ -705,6 +687,7 @@ const MainVideo = ({
     const video = videoRef.current
     if (!video) return
 
+    onVideoReset?.()
     setShowReplay(false)
     setHasEnded(false)
     video.currentTime = 0
@@ -830,8 +813,8 @@ const MainVideo = ({
             </button>
           )}
 
-          {/* Botão Assistir Novamente */}
-          {showReplay && hasEnded && (
+          {/* Botão Assistir Novamente - só quando permitido (ex.: após Libras terminar) */}
+          {showReplay && hasEnded && canShowReplay && (
             <button 
               className="replay-button" 
               onClick={handleReplay}

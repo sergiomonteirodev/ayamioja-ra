@@ -17,8 +17,12 @@ const HomePage = () => {
   const [adPhase, setAdPhase] = useState('none') // 'none' | 'playing_ad'
   const [resumeVideoAt, setResumeVideoAt] = useState(null)
   const [resumeTrigger, setResumeTrigger] = useState(null)
+  const [mainVideoEnded, setMainVideoEnded] = useState(false)
+  const [librasVideoEnded, setLibrasVideoEnded] = useState(false)
   const location = useLocation()
   const mountedRef = useRef(false)
+
+  const canShowReplay = mainVideoEnded && (!librasActive || librasVideoEnded)
 
   const onPauseForAD = useCallback((resumeAt) => {
     setResumeVideoAt(resumeAt)
@@ -39,6 +43,16 @@ const HomePage = () => {
     setAdPhase('none')
     setResumeVideoAt(null)
     setResumeTrigger(null)
+    setMainVideoEnded(false)
+    setLibrasVideoEnded(false)
+  }, [])
+
+  const onVideoEnded = useCallback(() => {
+    setMainVideoEnded(true)
+  }, [])
+
+  const onLibrasEnded = useCallback(() => {
+    setLibrasVideoEnded(true)
   }, [])
   
   // Forçar inicialização do vídeo quando a página é montada (Android-friendly)
@@ -193,7 +207,9 @@ const HomePage = () => {
           resumeTrigger={resumeTrigger}
           onResumed={onResumed}
           onVideoReset={onVideoReset}
+          onVideoEnded={onVideoEnded}
           adPhase={adPhase}
+          canShowReplay={canShowReplay}
         />
         
         <ActionButtons />
@@ -204,6 +220,8 @@ const HomePage = () => {
         videoState={videoState}
         adPhase={adPhase}
         audioActive={audioActive}
+        mainVideoEnded={mainVideoEnded}
+        onLibrasEnded={onLibrasEnded}
       />
 
       <AudioDescription 

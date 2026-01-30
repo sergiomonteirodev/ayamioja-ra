@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 'none', audioActive = false }) => {
+const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 'none', audioActive = false, onLibrasEnded, mainVideoEnded = false }) => {
   const [isVisible, setIsVisible] = useState(false)
   const [showPausedMessage, setShowPausedMessage] = useState(false)
   const videoRef = useRef(null)
@@ -32,8 +32,15 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
       console.error('❌ Erro ao carregar vídeo de Libras:', e)
     }
 
+    const handleLibrasEnded = () => {
+      setIsVisible(false)
+      setShowPausedMessage(false)
+      onLibrasEnded?.()
+    }
+
     video.addEventListener('canplay', handleCanPlay)
     video.addEventListener('error', handleError)
+    video.addEventListener('ended', handleLibrasEnded)
     
     // Carregar vídeo apenas se a fonte mudou
     if (video.src !== videoSource && video.src !== window.location.origin + videoSource) {
@@ -43,8 +50,9 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
     return () => {
       video.removeEventListener('canplay', handleCanPlay)
       video.removeEventListener('error', handleError)
+      video.removeEventListener('ended', handleLibrasEnded)
     }
-  }, [customVideoSrc, isHomePage])
+  }, [customVideoSrc, isHomePage, onLibrasEnded])
 
   // Sincronização contínua com o vídeo principal
   useEffect(() => {
@@ -126,16 +134,36 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
           }
         }
       } else {
-        // Vídeo principal está pausado
-        if (!video.paused) {
-          video.pause()
-        }
-        hideTimeoutRef.current = setTimeout(() => {
-          if (!videoState?.isPlaying) {
+        // Vídeo principal pausou ou terminou
+        if (mainVideoEnded) {
+          // Principal terminou: manter Libras visível e tocando até o vídeo de Libras terminar
+          if (video.ended) {
             setIsVisible(false)
             setShowPausedMessage(false)
+            onLibrasEnded?.()
+          } else {
+            if (video.paused) {
+              video.play().catch(() => {})
+            }
           }
-        }, 500)
+        } else {
+          // Apenas pausou: pausar Libras e esconder após 500ms
+          if (!video.paused) {
+            video.pause()
+          }
+          if (video.ended) {
+            setIsVisible(false)
+            setShowPausedMessage(false)
+            onLibrasEnded?.()
+          } else {
+            hideTimeoutRef.current = setTimeout(() => {
+              if (!videoState?.isPlaying) {
+                setIsVisible(false)
+                setShowPausedMessage(false)
+              }
+            }, 500)
+          }
+        }
       }
     } else {
       // Libras desativado
@@ -152,7 +180,7 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
         hideTimeoutRef.current = null
       }
     }
-  }, [librasActive, videoState?.isPlaying, customVideoSrc, isHomePage, videoState?.currentTime, adPhase, audioActive])
+  }, [librasActive, videoState?.isPlaying, customVideoSrc, isHomePage, videoState?.currentTime, adPhase, audioActive, mainVideoEnded])
 
   // Detectar mobile para usar CSS responsivo ao invés de estilos inline fixos
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
