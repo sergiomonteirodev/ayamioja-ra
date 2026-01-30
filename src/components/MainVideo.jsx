@@ -20,7 +20,8 @@ const MainVideo = ({
   trackSrc,
   trackLang = 'pt-BR',
   trackLabel = 'Português',
-  captionOutside = false
+  captionOutside = false,
+  showPauseOnInteract = false
 }) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -28,6 +29,9 @@ const MainVideo = ({
   const [hasEnded, setHasEnded] = useState(false)
   const [waitingBonequinha, setWaitingBonequinha] = useState(false)
   const [captionText, setCaptionText] = useState('')
+  const [videoIsPlaying, setVideoIsPlaying] = useState(false)
+  const [pointerOverVideo, setPointerOverVideo] = useState(false)
+  const pointerHideTimeoutRef = useRef(null)
   const location = useLocation()
   
   // Verificar se o vídeo já foi iniciado pelo usuário nesta sessão
@@ -80,6 +84,11 @@ const MainVideo = ({
     setShowReplay(false)
     setHasEnded(false)
     setWaitingBonequinha(false)
+    setPointerOverVideo(false)
+    if (pointerHideTimeoutRef.current) {
+      clearTimeout(pointerHideTimeoutRef.current)
+      pointerHideTimeoutRef.current = null
+    }
     const handler = bonequinhaTimeupdateHandlerRef.current
     if (handler && video) {
       video.removeEventListener('timeupdate', handler)
@@ -640,12 +649,17 @@ const MainVideo = ({
       }
     }
 
+    const handlePlay = () => setVideoIsPlaying(true)
+    const handlePause = () => setVideoIsPlaying(false)
+
     video.addEventListener('canplay', handleCanPlay)
     video.addEventListener('loadeddata', handleLoadedData)
     video.addEventListener('loadedmetadata', handleLoadedMetadata)
     video.addEventListener('ended', handleEnded)
     video.addEventListener('progress', handleProgress)
     video.addEventListener('error', handleError)
+    video.addEventListener('play', handlePlay)
+    video.addEventListener('pause', handlePause)
     // iOS FALLBACK: Adicionar timeupdate para detectar fim do vídeo
     video.addEventListener('timeupdate', handleTimeUpdate)
 
@@ -655,6 +669,8 @@ const MainVideo = ({
       video.removeEventListener('loadedmetadata', handleLoadedMetadata)
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('progress', handleProgress)
+      video.removeEventListener('play', handlePlay)
+      video.removeEventListener('pause', handlePause)
       video.removeEventListener('error', handleError)
       video.removeEventListener('timeupdate', handleTimeUpdate)
     }
@@ -764,10 +780,46 @@ const MainVideo = ({
     video.play().catch(() => {})
   }
 
+  const showPlayBtn = showPlayButton || (showPauseOnInteract && !videoIsPlaying && !hasEnded)
+  const showPauseBtn = showPauseOnInteract && videoIsPlaying && pointerOverVideo
+
+  const handleVideoAreaMouseEnter = () => {
+    if (pointerHideTimeoutRef.current) {
+      clearTimeout(pointerHideTimeoutRef.current)
+      pointerHideTimeoutRef.current = null
+    }
+    setPointerOverVideo(true)
+  }
+  const handleVideoAreaMouseLeave = () => {
+    setPointerOverVideo(false)
+  }
+  const handleVideoAreaTouchStart = () => {
+    if (pointerHideTimeoutRef.current) {
+      clearTimeout(pointerHideTimeoutRef.current)
+    }
+    setPointerOverVideo(true)
+  }
+  const handleVideoAreaTouchEnd = () => {
+    pointerHideTimeoutRef.current = setTimeout(() => setPointerOverVideo(false), 2500)
+  }
+
+  const handlePauseClick = () => {
+    const video = videoRef.current
+    if (video && !video.paused) video.pause()
+  }
+
   return (
     <section className="circle-section">
       <div className="circular-text-container">
-        <div className="main-circle">
+        <div
+          className="main-circle"
+          {...(showPauseOnInteract && videoIsPlaying ? {
+            onMouseEnter: handleVideoAreaMouseEnter,
+            onMouseLeave: handleVideoAreaMouseLeave,
+            onTouchStart: handleVideoAreaTouchStart,
+            onTouchEnd: handleVideoAreaTouchEnd
+          } : {})}
+        >
           {/* Loading Placeholder - DESABILITADO para garantir que não cubra o vídeo */}
           {/* {showLoading && !isMobile && (
             <div id="video-loading" className="video-loading">
@@ -820,8 +872,8 @@ const MainVideo = ({
             Seu navegador não suporta vídeos HTML5.
           </video>
 
-          {/* Botão de Play Inicial */}
-          {showPlayButton && (
+          {/* Botão de Play (inicial ou após pause) */}
+          {showPlayBtn && (
             <button 
               className="play-button" 
               onClick={handlePlayButtonClick}
@@ -864,6 +916,47 @@ const MainVideo = ({
                 }}
               >
                 <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+          )}
+
+          {/* Botão de Pause (mesmo estilo e posição, só ao interagir com o vídeo) */}
+          {showPauseBtn && (
+            <button 
+              type="button"
+              className="play-button pause-button"
+              onClick={handlePauseClick}
+              style={{
+                zIndex: 25,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.3s ease',
+                padding: 0,
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 1)'
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)'
+              }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="#333">
+                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
               </svg>
             </button>
           )}

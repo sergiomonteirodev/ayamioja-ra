@@ -104,7 +104,7 @@ const OuvirLivroPage = () => {
         audioDisabled={true}
       />
 
-      <main className="main-content main-content--ouvir-livro">
+      <main className="main-content">
         <MainVideo
           librasActive={librasActive}
           audioActive={audioActive}
@@ -125,6 +125,7 @@ const OuvirLivroPage = () => {
           trackLang="pt-BR"
           trackLabel="Português"
           captionOutside={true}
+          showPauseOnInteract={true}
         />
 
         <ActionButtons showAccessButton={true} activeButton="ouvir-livro" />
