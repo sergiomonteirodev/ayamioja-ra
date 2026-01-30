@@ -11,7 +11,10 @@ const MainVideo = ({
   resumeTrigger,
   onResumed,
   onVideoReset,
-  adPhase
+  adPhase,
+  videoSrc,
+  storageKey = 'homepageVideoStarted',
+  resetWhenPathname
 }) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -23,7 +26,7 @@ const MainVideo = ({
   // Verificar se o vídeo já foi iniciado pelo usuário nesta sessão
   const hasVideoBeenStarted = () => {
     try {
-      return sessionStorage.getItem('homepageVideoStarted') === 'true'
+      return sessionStorage.getItem(storageKey) === 'true'
     } catch (e) {
       return false
     }
@@ -33,19 +36,18 @@ const MainVideo = ({
   const videoRef = useRef(null)
   const bonequinhaTimeupdateHandlerRef = useRef(null)
   
-  // Resetar vídeo quando voltar para a página inicial após navegação
+  // Resetar vídeo quando voltar para a página (home ou ouvirlivro)
   useEffect(() => {
-    // Só executar quando estiver na página inicial (/)
-    if (location.pathname !== '/' && location.pathname !== '/ayamioja-ra/') {
+    const isHome = location.pathname === '/' || location.pathname === '/ayamioja-ra/'
+    const isResetPage = resetWhenPathname ? location.pathname === resetWhenPathname : false
+    if (!isHome && !isResetPage) {
       return
     }
     
     const video = videoRef.current
     if (!video) {
-      // Se o vídeo ainda não existe, garantir que o botão apareça
-      // Limpar sessionStorage para mostrar botão de play
       try {
-        sessionStorage.removeItem('homepageVideoStarted')
+        sessionStorage.removeItem(storageKey)
       } catch (e) {
         console.warn('⚠️ Não foi possível limpar sessionStorage:', e)
       }
@@ -53,25 +55,20 @@ const MainVideo = ({
       return
     }
     
-    // SEMPRE resetar quando voltar para a página inicial
-    console.log('🔄 HomePage: Voltando para página inicial - resetando vídeo')
+    console.log('🔄 Voltando para página do vídeo - resetando')
     
-    // Pausar o vídeo se estiver tocando
     if (!video.paused) {
       video.pause()
     }
     
-    // Resetar para o início
     video.currentTime = 0
     
-    // Limpar sessionStorage para mostrar botão de play novamente
     try {
-      sessionStorage.removeItem('homepageVideoStarted')
+      sessionStorage.removeItem(storageKey)
     } catch (e) {
       console.warn('⚠️ Não foi possível limpar sessionStorage:', e)
     }
     
-    // SEMPRE mostrar botão de play ao voltar para a página inicial
     setShowPlayButton(true)
     setShowReplay(false)
     setHasEnded(false)
@@ -84,10 +81,10 @@ const MainVideo = ({
     onVideoReset?.()
     
     console.log('✅ Vídeo resetado - botão de play aparecerá')
-  }, [location.pathname, onVideoReset])
+  }, [location.pathname, onVideoReset, storageKey, resetWhenPathname])
 
-  // Caminho do vídeo usando BASE_URL do Vite (respeita base path)
-  const videoPath = `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
+  // Caminho do vídeo (prop ou padrão anim_ayo)
+  const videoPath = videoSrc || `${import.meta.env.BASE_URL}videos/anim_ayo.mp4`
 
   // Detectar mobile e iOS
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -643,7 +640,7 @@ const MainVideo = ({
     
     // Marcar que o vídeo foi iniciado pelo usuário (persistir na sessão)
     try {
-      sessionStorage.setItem('homepageVideoStarted', 'true')
+      sessionStorage.setItem(storageKey, 'true')
     } catch (e) {
       console.warn('⚠️ Não foi possível salvar no sessionStorage:', e)
     }
@@ -698,7 +695,7 @@ const MainVideo = ({
         bonequinhaTimeupdateHandlerRef.current = null
       }
       try {
-        sessionStorage.removeItem('homepageVideoStarted')
+        sessionStorage.removeItem(storageKey)
       } catch (e) {}
       setShowPlayButton(true)
     })

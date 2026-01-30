@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import SafeImage from './SafeImage'
 
-const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initialLibrasActive = false, initialAudioActive = false, librasDisabled = false }) => {
+const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initialLibrasActive = false, initialAudioActive = false, librasDisabled = false, audioDisabled = false }) => {
   const [librasActive, setLibrasActive] = useState(initialLibrasActive)
   const [audioActive, setAudioActive] = useState(initialAudioActive)
 
@@ -33,7 +33,9 @@ const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initi
   }
 
   const handleAudioChange = (e) => {
-    setAudioActive(e.target.checked)
+    if (!audioDisabled) {
+      setAudioActive(e.target.checked)
+    }
   }
 
   return (
@@ -60,6 +62,7 @@ const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initi
               className="toggle-input"
               checked={audioActive}
               onChange={handleAudioChange}
+              disabled={audioDisabled}
             />
             <span className="toggle-slider"></span>
             <SafeImage src="/ayamioja-ra/images/ad.png" alt="áudio descrição" className="toggle-icon" />

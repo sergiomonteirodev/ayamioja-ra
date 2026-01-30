@@ -1,0 +1,131 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
+import Navigation from '../components/Navigation'
+import ToggleControls from '../components/ToggleControls'
+import MainVideo from '../components/MainVideo'
+import InterpreterVideo from '../components/InterpreterVideo'
+import AudioDescription from '../components/AudioDescription'
+import ActionButtons from '../components/ActionButtons'
+
+/** Momento (s) em que a bonequinha surge – mesmo parâmetro da home (AD desativado nesta página). */
+const BONEQUINHA_TIME_SEC = 1.82
+
+const OuvirLivroPage = () => {
+  const [librasActive, setLibrasActive] = useState(false)
+  const [audioActive, setAudioActive] = useState(false)
+  const [videoState, setVideoState] = useState(null)
+  const [adPhase, setAdPhase] = useState('none')
+  const [resumeVideoAt, setResumeVideoAt] = useState(null)
+  const [resumeTrigger, setResumeTrigger] = useState(null)
+  const location = useLocation()
+
+  const onPauseForAD = useCallback((resumeAt) => {
+    setResumeVideoAt(resumeAt)
+    setAdPhase('playing_ad')
+  }, [])
+
+  const onADEnded = useCallback(() => {
+    setAdPhase('none')
+    setResumeTrigger(Date.now())
+  }, [])
+
+  const onResumed = useCallback(() => {
+    setResumeVideoAt(null)
+    setResumeTrigger(null)
+  }, [])
+
+  const onVideoReset = useCallback(() => {
+    setAdPhase('none')
+    setResumeVideoAt(null)
+    setResumeTrigger(null)
+  }, [])
+
+  const handleLibrasToggle = (active) => {
+    setLibrasActive(active)
+    console.log('Toggle Libras (Ouvir Livro):', active)
+  }
+
+  const handleAudioToggle = (active) => {
+    setAudioActive(active)
+    console.log('Toggle Audio (Ouvir Livro):', active)
+  }
+
+  const handleVideoStateChange = (state) => {
+    setVideoState(state)
+  }
+
+  // Forçar carregamento do vídeo ao montar (mesmo padrão da Home)
+  useEffect(() => {
+    const forceVideoLoad = () => {
+      const video = document.getElementById('main-video')
+      if (video) {
+        video.setAttribute('playsinline', '')
+        video.setAttribute('webkit-playsinline', 'true')
+        video.playsInline = true
+        if (video.readyState === 0) {
+          video.load()
+        }
+      }
+    }
+    forceVideoLoad()
+    const timer = setTimeout(forceVideoLoad, 100)
+    return () => clearTimeout(timer)
+  }, [location.pathname])
+
+  const videoSrc = `${import.meta.env.BASE_URL}videos/ouvir_livro.mp4`
+
+  return (
+    <div>
+      <Navigation />
+
+      <ToggleControls
+        onLibrasToggle={handleLibrasToggle}
+        onAudioToggle={handleAudioToggle}
+        showLogo={false}
+        audioDisabled={true}
+      />
+
+      <main className="main-content">
+        <div className="logo-container">
+          <img src="/ayamioja-ra/images/logo_ayamioja.png" alt="Logo Ayà Mi O Já" />
+        </div>
+
+        <MainVideo
+          librasActive={librasActive}
+          audioActive={audioActive}
+          onVideoStateChange={handleVideoStateChange}
+          bonequinhaTime={BONEQUINHA_TIME_SEC}
+          onPauseForAD={onPauseForAD}
+          resumeFrom={resumeVideoAt}
+          resumeTrigger={resumeTrigger}
+          onResumed={onResumed}
+          onVideoReset={onVideoReset}
+          adPhase={adPhase}
+          videoSrc={videoSrc}
+          storageKey="ouvirLivroVideoStarted"
+          resetWhenPathname="/ouvir-livro"
+        />
+
+        <ActionButtons showAccessButton={false} />
+      </main>
+
+      <InterpreterVideo
+        librasActive={librasActive}
+        videoState={videoState}
+        adPhase={adPhase}
+        audioActive={audioActive}
+      />
+
+      <AudioDescription
+        audioActive={audioActive}
+        videoState={videoState}
+        playAdStandalone={adPhase === 'playing_ad'}
+        onADEnded={onADEnded}
+      />
+
+      <footer>Copyright © 2025 Aya mi o ja - Eu não tenho medo. Todos os direitos reservados</footer>
+    </div>
+  )
+}
+
+export default OuvirLivroPage
