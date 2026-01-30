@@ -73,6 +73,7 @@ const OuvirLivroPage = () => {
   }, [location.pathname])
 
   const videoSrc = `${import.meta.env.BASE_URL}videos/ouvir_livro.mp4`
+  const librasVideoSrc = `${import.meta.env.BASE_URL}videos/libras_ouvir_livro.mp4`
 
   return (
     <div>
@@ -110,6 +111,7 @@ const OuvirLivroPage = () => {
         videoState={videoState}
         adPhase={adPhase}
         audioActive={audioActive}
+        customVideoSrc={librasVideoSrc}
       />
 
       <AudioDescription
