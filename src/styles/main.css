@@ -427,6 +427,66 @@ html.scan-page-active {
     z-index: 15; /* Aumentado para garantir que fique acima de todos os elementos do main-circle */
 }
 
+/* OuvirLivroPage: círculo do vídeo maior */
+.main-content--ouvir-livro .circular-text-container {
+    width: 850px;
+    height: 850px;
+}
+.main-content--ouvir-livro .main-circle {
+    width: 850px;
+    height: 850px;
+}
+@media (max-width: 1024px) {
+    .main-content--ouvir-livro .circular-text-container {
+        width: 650px;
+        height: 650px;
+    }
+    .main-content--ouvir-livro .main-circle {
+        width: 650px;
+        height: 650px;
+    }
+}
+@media (max-width: 768px) {
+    .main-content--ouvir-livro .circular-text-container {
+        width: 560px;
+        height: 560px;
+    }
+    .main-content--ouvir-livro .main-circle {
+        width: 560px;
+        height: 560px;
+    }
+}
+@media (max-width: 600px) {
+    .main-content--ouvir-livro .circular-text-container {
+        width: 420px;
+        height: 420px;
+    }
+    .main-content--ouvir-livro .main-circle {
+        width: 420px;
+        height: 420px;
+    }
+}
+@media (max-width: 480px) {
+    .main-content--ouvir-livro .circular-text-container {
+        width: 360px;
+        height: 360px;
+    }
+    .main-content--ouvir-livro .main-circle {
+        width: 360px;
+        height: 360px;
+    }
+}
+@media (max-width: 375px) {
+    .main-content--ouvir-livro .circular-text-container {
+        width: 320px;
+        height: 320px;
+    }
+    .main-content--ouvir-livro .main-circle {
+        width: 320px;
+        height: 320px;
+    }
+}
+
 /* Botão Assistir Novamente */
 .replay-button {
     position: absolute;

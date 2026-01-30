@@ -104,7 +104,7 @@ const OuvirLivroPage = () => {
         audioDisabled={true}
       />
 
-      <main className="main-content">
+      <main className="main-content main-content--ouvir-livro">
         <MainVideo
           librasActive={librasActive}
           audioActive={audioActive}
