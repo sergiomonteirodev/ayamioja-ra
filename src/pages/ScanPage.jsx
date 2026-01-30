@@ -230,19 +230,6 @@ const ScanPage = () => {
     }
   }, [])
 
-  // Android: esconder overlay de loading após timeout para não cobrir o vídeo com fundo preto
-  useEffect(() => {
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    if (!isAndroid || !cameraPermissionGranted) return
-
-    const timer = setTimeout(() => {
-      setIsArReady(true)
-      console.log('🤖 Android: timeout de segurança - escondendo overlay de loading para mostrar vídeo')
-    }, 5000)
-
-    return () => clearTimeout(timer)
-  }, [cameraPermissionGranted])
-
   // Detectar orientação do dispositivo (apenas para referência, sem ajustar vídeos)
   useEffect(() => {
     const updateOrientation = () => {
@@ -396,23 +383,9 @@ const ScanPage = () => {
       return
     }
     
-    // MindAR controla ao máximo (Android inclusive). Só reagimos: play/pause, visible, estado React.
+    // MindAR controla a cena e o canvas; React só reage aos eventos (targetFound/targetLost) para estado e UI.
     const handleSceneLoaded = () => {
-      // Android: forçar canvas transparente assim que a cena carregar (evita preto cobrindo vídeo)
-      const isAndroid = /Android/i.test(navigator.userAgent)
-      if (isAndroid && sceneRef.current) {
-        const applyTransparentClear = () => {
-          const el = sceneRef.current
-          if (el && el.renderer && typeof el.renderer.setClearColor === 'function') {
-            el.renderer.setClearColor(0x000000, 0)
-            console.log('🤖 Android: clear color transparente aplicado na cena')
-          }
-        }
-        applyTransparentClear()
-        setTimeout(applyTransparentClear, 500)
-      }
-
-      // Pré-carregar vídeos para evitar retângulo preto no Android
+      // Pré-carregar vídeos AR
       const preloadVideos = () => {
         const videos = ['video1', 'video2', 'video3']
         videos.forEach((videoId) => {
@@ -492,11 +465,6 @@ const ScanPage = () => {
           
           // Aguardar vídeo estar pronto antes de configurar material e mostrar plano
           ensureVideoReady().then(() => {
-            // Android: delay maior antes de mostrar o plano (evita retângulo preto)
-            const isAndroid = /Android/i.test(navigator.userAgent)
-            const showDelay = isAndroid ? 350 : 100
-            
-            // Configurar material do plano APÓS vídeo estar pronto (evita retângulo preto)
             plane.setAttribute('material', {
               shader: 'flat',
               src: `#${videoId}`,
@@ -504,19 +472,15 @@ const ScanPage = () => {
               opacity: 1,
               side: 'double'
             })
-            
             setTimeout(() => {
-              // Só mostrar o plano se o vídeo realmente tem dimensões válidas
               if (video.videoWidth > 0 && video.videoHeight > 0) {
                 plane.setAttribute('opacity', '1')
                 plane.setAttribute('visible', 'true')
                 video.play().catch((err) => {
                   console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
                 })
-              } else {
-                console.warn(`⚠️ Vídeo ${videoId} não tem dimensões válidas`)
               }
-            }, showDelay)
+            }, 100)
           })
         }
       }
@@ -554,62 +518,6 @@ const ScanPage = () => {
     const handleArReady = () => {
       console.log('✅ MindAR pronto')
       setIsArReady(true)
-
-      // Android: forçar canvas transparente para não cobrir o vídeo com preto
-      const isAndroid = /Android/i.test(navigator.userAgent)
-      if (isAndroid && sceneRef.current) {
-        const sceneEl = sceneRef.current
-        if (sceneEl.renderer && typeof sceneEl.renderer.setClearColor === 'function') {
-          sceneEl.renderer.setClearColor(0x000000, 0)
-          console.log('🤖 Android: clear color do canvas definido como transparente')
-        }
-      }
-      
-      if (isAndroid) {
-        console.log('🤖 Android detectado - configurando correção para retângulos pretos')
-        
-        // Função para corrigir planos pretos (executar apenas quando necessário)
-        const fixBlackPlanes = () => {
-          const planes = ['videoPlane0', 'videoPlane1', 'videoPlane2']
-          planes.forEach((planeId, idx) => {
-            const plane = document.getElementById(planeId)
-            const video = document.getElementById(`video${idx + 1}`)
-            
-            if (plane && video) {
-              const isVisible = plane.getAttribute('visible')
-              
-              // Se o plano está visível, garantir que o material está correto E o vídeo está pronto
-              if (isVisible === 'true' || isVisible === true) {
-                // Verificar se o vídeo tem dimensões válidas antes de aplicar material
-                if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-                  const material = plane.getAttribute('material')
-                  if (!material || !material.src || material.src === '') {
-                    plane.setAttribute('material', {
-                      shader: 'flat',
-                      src: `#video${idx + 1}`,
-                      transparent: true,
-                      opacity: 1,
-                      side: 'double'
-                    })
-                  }
-                } else {
-                  // Se vídeo não está pronto, esconder o plano temporariamente
-                  console.log(`⚠️ Vídeo ${idx + 1} não está pronto - escondendo plano temporariamente`)
-                  plane.setAttribute('visible', 'false')
-                }
-              }
-            }
-          })
-        }
-        
-        // Executar periodicamente no Android para corrigir retângulos pretos
-        const intervalId = setInterval(fixBlackPlanes, 500)
-        
-        // Limpar após 30 segundos (Android precisa de mais tempo)
-        setTimeout(() => {
-          clearInterval(intervalId)
-        }, 30000)
-      }
     }
 
     scene.addEventListener('loaded', handleSceneLoaded)
