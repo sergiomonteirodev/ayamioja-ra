@@ -6,14 +6,18 @@ export default defineConfig({
   plugins: [
     react()
   ],
-  base: '/ayamioja-ra/', // Substitua pelo nome do seu repositório
+  base: '/', // Raiz do domínio para Hostinger
   server: {
     host: true,
     port: 3000
   },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets'
+    assetsDir: 'assets',
+    minify: 'esbuild'
+  },
+  esbuild: {
+    drop: ['console', 'debugger']
   },
   publicDir: 'public'
 })

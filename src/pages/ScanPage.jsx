@@ -44,7 +44,7 @@ const ScanPage = () => {
   const handleBackClick = () => {
     // Garantir que a URL tenha a barra no final para carregar o background corretamente
     const baseUrl = window.location.origin
-    window.location.href = `${baseUrl}/ayamioja-ra/`
+    window.location.href = `${baseUrl}/`
   }
 
   const startMindAR = async () => {
@@ -596,7 +596,7 @@ const ScanPage = () => {
           opacity: 1
         }}
       >
-        <SafeImage src="/ayamioja-ra/images/voltar_botao.png" alt="Voltar" className="back-button-image-overlay" />
+        <SafeImage src="/images/voltar_botao.png" alt="Voltar" className="back-button-image-overlay" />
       </div>
 
       {/* Vídeo de fundo da câmera - MindAR gerencia o vídeo da câmera (#arVideo) */}
@@ -659,7 +659,7 @@ const ScanPage = () => {
       {/* A-Frame + MindAR */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.001; filterBeta: 0.01; missTolerance: 15; warmupTolerance: 5; autoStart: false; showStats: false;"
+        mindar-image="imageTargetSrc: /ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.001; filterBeta: 0.01; missTolerance: 15; warmupTolerance: 5; autoStart: false; showStats: false;"
         embedded
         renderer="alpha: true; antialias: false"
         background="transparent: true"
@@ -671,7 +671,7 @@ const ScanPage = () => {
         <a-assets>
           <video 
             id="video1" 
-            src="/ayamioja-ra/ar-assets/assets/anim_4.mp4" 
+            src="/ar-assets/assets/anim_4.mp4" 
             preload="auto" 
             crossOrigin="anonymous" 
             loop 
@@ -681,7 +681,7 @@ const ScanPage = () => {
           />
           <video 
             id="video2" 
-            src="/ayamioja-ra/ar-assets/assets/anim_3.mp4" 
+            src="/ar-assets/assets/anim_3.mp4" 
             preload="auto" 
             crossOrigin="anonymous" 
             loop 
@@ -691,7 +691,7 @@ const ScanPage = () => {
           />
           <video 
             id="video3" 
-            src="/ayamioja-ra/ar-assets/assets/anim_2.mp4" 
+            src="/ar-assets/assets/anim_2.mp4" 
             preload="auto" 
             crossOrigin="anonymous" 
             loop 

@@ -611,6 +611,7 @@ html.scan-page-active {
     border: none;
     padding: 12px 24px;
     border-radius: 25px;
+    font-family: 'RooneySans', Arial, sans-serif;
     font-weight: 700;
     min-width: 200px;
     font-size: 25px;
@@ -627,6 +628,7 @@ html.scan-page-active {
     border: none;
     padding: 12px 24px;
     border-radius: 25px;
+    font-family: 'RooneySans', Arial, sans-serif;
     font-weight: 700;
     font-size: 25px;
     cursor: pointer;

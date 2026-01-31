@@ -74,8 +74,8 @@ const AudioDescription = ({ audioActive, videoState, playAdStandalone, onADEnded
       preload="auto"
       style={{ display: 'none' }}
     >
-      <source src="/ayamioja-ra/videos/ad_anim_1.m4a" type="audio/mp4" />
-      <source src="/ayamioja-ra/videos/ad_anim_1.m4a" type="audio/mpeg" />
+      <source src="/videos/ad_anim_1.m4a" type="audio/mp4" />
+      <source src="/videos/ad_anim_1.m4a" type="audio/mpeg" />
     </audio>
   )
 }

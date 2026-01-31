@@ -49,7 +49,7 @@ const MainVideo = ({
   
   // Resetar vídeo quando voltar para a página (home ou ouvirlivro)
   useEffect(() => {
-    const isHome = location.pathname === '/' || location.pathname === '/ayamioja-ra/'
+    const isHome = location.pathname === '/'
     const isResetPage = resetWhenPathname ? location.pathname === resetWhenPathname : false
     if (!isHome && !isResetPage) {
       return

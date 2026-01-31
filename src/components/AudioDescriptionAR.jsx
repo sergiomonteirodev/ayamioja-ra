@@ -8,13 +8,13 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
   const getAudioSource = () => {
     if (activeTargetIndex === 0) {
       // Primeiro target (target0, video1 - anim_4.mp4) - usar ad_anim_4.m4a
-      return '/ayamioja-ra/ar-assets/assets/ads/ad_anim_4.m4a'
+      return '/ar-assets/assets/ads/ad_anim_4.m4a'
     } else if (activeTargetIndex === 1) {
       // Segundo target (target1, video2 - anim_3.mp4) - usar ad_anim_3.m4a
-      return '/ayamioja-ra/ar-assets/assets/ads/ad_anim_3.m4a'
+      return '/ar-assets/assets/ads/ad_anim_3.m4a'
     } else if (activeTargetIndex === 2) {
       // Terceiro target (target2, video3 - anim_2.mp4) - usar ad_anim_2.m4a
-      return '/ayamioja-ra/ar-assets/assets/ads/ad_anim_2.m4a'
+      return '/ar-assets/assets/ads/ad_anim_2.m4a'
     }
     // Nenhum target ativo
     return null
