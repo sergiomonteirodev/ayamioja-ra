@@ -659,7 +659,7 @@ const ScanPage = () => {
       {/* A-Frame + MindAR */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 3; autoStart: false; showStats: false;"
+        mindar-image="imageTargetSrc: /ayamioja-ra/ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.001; filterBeta: 0.01; missTolerance: 15; warmupTolerance: 5; autoStart: false; showStats: false;"
         embedded
         renderer="alpha: true; antialias: false"
         background="transparent: true"
