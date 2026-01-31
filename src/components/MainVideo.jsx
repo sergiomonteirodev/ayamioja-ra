@@ -27,6 +27,7 @@ const MainVideo = ({
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
+  const hasEndedRef = useRef(false) // Ref para evitar problemas de closure no iOS
   const [waitingBonequinha, setWaitingBonequinha] = useState(false)
   const [captionText, setCaptionText] = useState('')
   const [videoIsPlaying, setVideoIsPlaying] = useState(false)
@@ -83,6 +84,7 @@ const MainVideo = ({
     setShowPlayButton(true)
     setShowReplay(false)
     setHasEnded(false)
+    hasEndedRef.current = false // Reset ref também
     setWaitingBonequinha(false)
     setPointerOverVideo(false)
     if (pointerHideTimeoutRef.current) {
@@ -569,7 +571,8 @@ const MainVideo = ({
     }
 
     const handleEnded = () => {
-      console.log('✅ MainVideo: ended event - vídeo terminou')
+      if (hasEndedRef.current) return // Evitar chamadas duplicadas
+      hasEndedRef.current = true
       setShowReplay(true)
       setHasEnded(true)
       onVideoEnded?.()
@@ -583,15 +586,18 @@ const MainVideo = ({
       }
     }
 
-    // iOS FALLBACK: Verificar se vídeo terminou via timeupdate (iOS às vezes não dispara 'ended')
+    // iOS FALLBACK: Verificar se vídeo terminou via timeupdate ou ended property
     const handleTimeUpdate = () => {
-      if (video.duration > 0 && video.currentTime >= video.duration - 0.1) {
-        if (!hasEnded) {
-          console.log('✅ MainVideo: iOS - Vídeo terminou detectado via timeupdate')
-          setShowReplay(true)
-          setHasEnded(true)
-          onVideoEnded?.()
-        }
+      if (hasEndedRef.current) return // Já detectou fim
+      
+      // Verificar se video.ended é true OU se currentTime está muito próximo do final
+      const isAtEnd = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.3)
+      
+      if (isAtEnd) {
+        hasEndedRef.current = true
+        setShowReplay(true)
+        setHasEnded(true)
+        onVideoEnded?.()
       }
     }
 
@@ -674,7 +680,7 @@ const MainVideo = ({
       video.removeEventListener('error', handleError)
       video.removeEventListener('timeupdate', handleTimeUpdate)
     }
-  }, [hasEnded, onVideoEnded])
+  }, [onVideoEnded])
 
   const handlePlayButtonClick = () => {
     const video = videoRef.current
@@ -752,6 +758,7 @@ const MainVideo = ({
     onVideoReset?.()
     setShowReplay(false)
     setHasEnded(false)
+    hasEndedRef.current = false // Reset ref também
     video.currentTime = 0
 
     const prev = bonequinhaTimeupdateHandlerRef.current

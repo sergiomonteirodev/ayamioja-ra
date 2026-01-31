@@ -7,9 +7,17 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
   const [isVideoReady, setIsVideoReady] = useState(false)
   const hideTimeoutRef = useRef(null)
   const lastVideoStateRef = useRef(null)
+  const hasLibrasEndedRef = useRef(false) // Ref para evitar chamadas duplicadas no iOS
 
   // Determinar se estamos na HomePage (sem customVideoSrc = usar vídeos padrão)
   const isHomePage = !customVideoSrc
+  
+  // Reset do ref quando mainVideoEnded mudar para false (vídeo principal reiniciou)
+  useEffect(() => {
+    if (!mainVideoEnded) {
+      hasLibrasEndedRef.current = false
+    }
+  }, [mainVideoEnded])
 
   // Carregar vídeo apenas quando a fonte mudar
   useEffect(() => {
@@ -23,6 +31,9 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
 
     // Garantir que o vídeo não está em loop
     video.loop = false
+    
+    // Reset do ref quando novo vídeo for carregado
+    hasLibrasEndedRef.current = false
 
     const handleCanPlay = () => {
       setIsVideoReady(true)
@@ -33,14 +44,32 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
     }
 
     const handleLibrasEnded = () => {
+      if (hasLibrasEndedRef.current) return // Evitar chamadas duplicadas
+      hasLibrasEndedRef.current = true
       setIsVisible(false)
       setShowPausedMessage(false)
       onLibrasEnded?.()
     }
 
+    // iOS FALLBACK: Verificar fim via timeupdate (iOS às vezes não dispara 'ended')
+    const handleTimeUpdate = () => {
+      if (hasLibrasEndedRef.current) return
+      
+      // Verificar se video.ended é true OU se currentTime está muito próximo do final
+      const isAtEnd = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.3)
+      
+      if (isAtEnd) {
+        hasLibrasEndedRef.current = true
+        setIsVisible(false)
+        setShowPausedMessage(false)
+        onLibrasEnded?.()
+      }
+    }
+
     video.addEventListener('canplay', handleCanPlay)
     video.addEventListener('error', handleError)
     video.addEventListener('ended', handleLibrasEnded)
+    video.addEventListener('timeupdate', handleTimeUpdate)
     
     // Carregar vídeo apenas se a fonte mudou
     if (video.src !== videoSource && video.src !== window.location.origin + videoSource) {
@@ -51,6 +80,7 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
       video.removeEventListener('canplay', handleCanPlay)
       video.removeEventListener('error', handleError)
       video.removeEventListener('ended', handleLibrasEnded)
+      video.removeEventListener('timeupdate', handleTimeUpdate)
     }
   }, [customVideoSrc, isHomePage, onLibrasEnded])
 
@@ -137,11 +167,13 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
         // Vídeo principal pausou ou terminou
         if (mainVideoEnded) {
           // Principal terminou: manter Libras visível e tocando até o vídeo de Libras terminar
-          if (video.ended) {
+          const isLibrasAtEnd = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.3)
+          if (isLibrasAtEnd && !hasLibrasEndedRef.current) {
+            hasLibrasEndedRef.current = true
             setIsVisible(false)
             setShowPausedMessage(false)
             onLibrasEnded?.()
-          } else {
+          } else if (!isLibrasAtEnd) {
             if (video.paused) {
               video.play().catch(() => {})
             }
@@ -151,11 +183,13 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
           if (!video.paused) {
             video.pause()
           }
-          if (video.ended) {
+          const isLibrasAtEnd = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.3)
+          if (isLibrasAtEnd && !hasLibrasEndedRef.current) {
+            hasLibrasEndedRef.current = true
             setIsVisible(false)
             setShowPausedMessage(false)
             onLibrasEnded?.()
-          } else {
+          } else if (!isLibrasAtEnd) {
             hideTimeoutRef.current = setTimeout(() => {
               if (!videoState?.isPlaying) {
                 setIsVisible(false)
@@ -180,7 +214,7 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
         hideTimeoutRef.current = null
       }
     }
-  }, [librasActive, videoState?.isPlaying, customVideoSrc, isHomePage, videoState?.currentTime, adPhase, audioActive, mainVideoEnded])
+  }, [librasActive, videoState?.isPlaying, customVideoSrc, isHomePage, videoState?.currentTime, adPhase, audioActive, mainVideoEnded, onLibrasEnded])
 
   // Detectar mobile para usar CSS responsivo ao invés de estilos inline fixos
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
