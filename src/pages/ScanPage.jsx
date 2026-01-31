@@ -21,6 +21,8 @@ const ScanPage = () => {
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
   const [isRequestingPermission, setIsRequestingPermission] = useState(false)
   
+  const base = import.meta.env.BASE_URL || '/'
+  
   const sceneRef = useRef(null)
   const initialCameraCheckRef = useRef(null)
   const initialCameraTimeoutRef = useRef(null)
@@ -601,7 +603,7 @@ const ScanPage = () => {
           opacity: 1
         }}
       >
-        <SafeImage src="/images/voltar_botao.png" alt="Voltar" className="back-button-image-overlay" />
+        <SafeImage src={`${base}images/voltar_botao.png`} alt="Voltar" className="back-button-image-overlay" />
       </div>
 
       {/* Vídeo de fundo da câmera - MindAR gerencia o vídeo da câmera (#arVideo) */}
@@ -676,7 +678,7 @@ const ScanPage = () => {
         <a-assets>
           <video 
             id="video1" 
-            src="/ar-assets/assets/anim_4.mp4" 
+            src={`${base}ar-assets/assets/anim_4.mp4`} 
             preload="auto" 
             crossOrigin="anonymous" 
             loop 
@@ -686,7 +688,7 @@ const ScanPage = () => {
           />
           <video 
             id="video2" 
-            src="/ar-assets/assets/anim_3.mp4" 
+            src={`${base}ar-assets/assets/anim_3.mp4`} 
             preload="auto" 
             crossOrigin="anonymous" 
             loop 
@@ -696,7 +698,7 @@ const ScanPage = () => {
           />
           <video 
             id="video3" 
-            src="/ar-assets/assets/anim_2.mp4" 
+            src={`${base}ar-assets/assets/anim_2.mp4`} 
             preload="auto" 
             crossOrigin="anonymous" 
             loop 

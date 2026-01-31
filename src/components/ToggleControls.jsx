@@ -4,6 +4,8 @@ import SafeImage from './SafeImage'
 const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initialLibrasActive = false, initialAudioActive = false, librasDisabled = false, audioDisabled = false }) => {
   const [librasActive, setLibrasActive] = useState(initialLibrasActive)
   const [audioActive, setAudioActive] = useState(initialAudioActive)
+  
+  const base = import.meta.env.BASE_URL || '/'
 
   // CRÍTICO: Usar useRef para evitar loops infinitos
   // Só chamar callbacks quando o valor realmente mudar (não a cada render)
@@ -44,7 +46,7 @@ const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initi
       <div className="toggles-row">
         <div className="toggle-left">
           <label className="toggle-label">
-            <SafeImage src="/images/libras.png" alt="Libras" className="toggle-icon" />
+            <SafeImage src={`${base}images/libras.png`} alt="Libras" className="toggle-icon" />
             <input 
               type="checkbox" 
               className="toggle-input"
@@ -65,7 +67,7 @@ const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initi
               disabled={audioDisabled}
             />
             <span className="toggle-slider"></span>
-            <SafeImage src="/images/ad.png" alt="áudio descrição" className="toggle-icon" />
+            <SafeImage src={`${base}images/ad.png`} alt="áudio descrição" className="toggle-icon" />
           </label>
         </div>
       </div>
@@ -73,7 +75,7 @@ const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initi
       {/* Logo abaixo dos toggles */}
       {showLogo && (
         <div className="logo-container">
-          <SafeImage src="/images/logo_ayamioja.png" alt="Logo Ayà Mi O Já" />
+          <SafeImage src={`${base}images/logo_ayamioja.png`} alt="Logo Ayà Mi O Já" />
         </div>
       )}
     </div>

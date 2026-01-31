@@ -8,6 +8,8 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
   const hideTimeoutRef = useRef(null)
   const lastVideoStateRef = useRef(null)
   const hasLibrasEndedRef = useRef(false) // Ref para evitar chamadas duplicadas no iOS
+  
+  const base = import.meta.env.BASE_URL || '/'
 
   // Determinar se estamos na HomePage (sem customVideoSrc = usar vídeos padrão)
   const isHomePage = !customVideoSrc
@@ -25,7 +27,7 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
     if (!video) return
 
     // Se não há customVideoSrc, usar vídeos padrão da HomePage
-    const videoSource = customVideoSrc || (isHomePage ? '/videos/libras_anim_ayo.mp4' : null)
+    const videoSource = customVideoSrc || (isHomePage ? `${base}videos/libras_anim_ayo.mp4` : null)
     
     if (!videoSource) return
 
@@ -275,8 +277,8 @@ const InterpreterVideo = ({ librasActive, videoState, customVideoSrc, adPhase = 
         ) : (
           // Se não há customVideoSrc, usar vídeos padrão (apenas na página inicial)
           <>
-            <source src="/videos/libras_anim_ayo.mp4" type="video/mp4" />
-            <source src="/videos/libras_anim_ayo_2.mp4" type="video/mp4" />
+            <source src={`${base}videos/libras_anim_ayo.mp4`} type="video/mp4" />
+            <source src={`${base}videos/libras_anim_ayo_2.mp4`} type="video/mp4" />
           </>
         )}
       </video>

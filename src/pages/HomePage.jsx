@@ -21,6 +21,8 @@ const HomePage = () => {
   const [librasVideoEnded, setLibrasVideoEnded] = useState(false)
   const location = useLocation()
   const mountedRef = useRef(false)
+  
+  const base = import.meta.env.BASE_URL || '/'
 
   const canShowReplay = mainVideoEnded && (!librasActive || librasVideoEnded)
 
@@ -194,7 +196,7 @@ const HomePage = () => {
       
       <main className="main-content">
         <div className="logo-container">
-          <img src="/images/logo_ayamioja.png" alt="Logo Ayà Mi O Já" />
+          <img src={`${base}images/logo_ayamioja.png`} alt="Logo Ayà Mi O Já" />
         </div>
         
         <MainVideo 

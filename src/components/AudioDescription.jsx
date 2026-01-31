@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react'
 const AudioDescription = ({ audioActive, videoState, playAdStandalone, onADEnded }) => {
   const audioRef = useRef(null)
   const [isAudioReady, setIsAudioReady] = useState(false)
+  
+  const base = import.meta.env.BASE_URL || '/'
 
   // Carregar e preparar o áudio quando o componente montar
   useEffect(() => {
@@ -74,8 +76,8 @@ const AudioDescription = ({ audioActive, videoState, playAdStandalone, onADEnded
       preload="auto"
       style={{ display: 'none' }}
     >
-      <source src="/videos/ad_anim_1.m4a" type="audio/mp4" />
-      <source src="/videos/ad_anim_1.m4a" type="audio/mpeg" />
+      <source src={`${base}videos/ad_anim_1.m4a`} type="audio/mp4" />
+      <source src={`${base}videos/ad_anim_1.m4a`} type="audio/mpeg" />
     </audio>
   )
 }
