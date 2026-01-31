@@ -666,7 +666,7 @@ const ScanPage = () => {
       {/* A-Frame + MindAR */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.005; filterBeta: 0.001; missTolerance: 20; warmupTolerance: 8; autoStart: false; showStats: false;"
+        mindar-image={`imageTargetSrc: ${base}ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.005; filterBeta: 0.001; missTolerance: 20; warmupTolerance: 8; autoStart: false; showStats: false;`}
         embedded
         renderer="alpha: true; antialias: false"
         background="transparent: true"
