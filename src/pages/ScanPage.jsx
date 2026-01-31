@@ -461,19 +461,24 @@ const ScanPage = () => {
           
           // Aguardar vídeo estar pronto antes de configurar material e mostrar plano
           ensureVideoReady().then(() => {
-            plane.setAttribute('material', {
-              shader: 'flat',
-              src: `#${videoId}`,
-              transparent: true,
-              opacity: 1,
-              side: MATERIAL_SIDE
-            })
+            // Configurar material apenas se ainda não foi configurado
+            const currentMaterial = plane.getAttribute('material')
+            if (!currentMaterial || !currentMaterial.src || currentMaterial.src !== `#${videoId}`) {
+              plane.setAttribute('material', {
+                shader: 'flat',
+                src: `#${videoId}`,
+                transparent: true,
+                opacity: 1,
+                side: MATERIAL_SIDE
+              })
+            }
             setTimeout(() => {
               if (video.videoWidth > 0 && video.videoHeight > 0) {
                 plane.setAttribute('opacity', '1')
                 plane.setAttribute('visible', 'true')
+                // Continuar de onde parou (ou do início se é a primeira vez)
                 video.play().catch((err) => {
-                  console.warn('⚠️ Erro ao reproduzir vídeo AR:', err)
+                  // Silenciar erro - vídeo pode já estar tocando
                 })
               }
             }, 100)
@@ -488,7 +493,7 @@ const ScanPage = () => {
         const p = document.getElementById(planeId)
         if (v) {
           v.pause()
-          v.currentTime = 0 // Resetar vídeo
+          // NÃO resetar currentTime - manter posição para continuar de onde parou
         }
         if (p) {
           p.setAttribute('visible', 'false')
@@ -659,7 +664,7 @@ const ScanPage = () => {
       {/* A-Frame + MindAR */}
       <a-scene 
         ref={sceneRef}
-        mindar-image="imageTargetSrc: /ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.001; filterBeta: 0.01; missTolerance: 15; warmupTolerance: 5; autoStart: false; showStats: false;"
+        mindar-image="imageTargetSrc: /ar-assets/targets/targets(13).mind; maxTrack: 3; filterMinCF: 0.005; filterBeta: 0.001; missTolerance: 20; warmupTolerance: 8; autoStart: false; showStats: false;"
         embedded
         renderer="alpha: true; antialias: false"
         background="transparent: true"
