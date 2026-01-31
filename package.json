@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:hostinger": "VITE_BASE_URL=/ vite build",
+    "build:github": "VITE_BASE_URL=/ayamioja-ra/ vite build",
     "optimize-equipe": "node scripts/optimize-equipe-images.mjs",
     "copy-equipe": "mkdir -p dist/images && cp -r public/images/equipe dist/images/",
     "equipe:all": "npm run optimize-equipe && npm run build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build:github && gh-pages -d dist"
   },
   "dependencies": {
     "aframe": "^1.4.0",

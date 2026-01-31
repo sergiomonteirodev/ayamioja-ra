@@ -7,9 +7,12 @@ import AboutPage from './pages/AboutPage'
 import TeamPage from './pages/TeamPage'
 
 function App() {
+  // Usa o BASE_URL definido pelo Vite (/ para Hostinger, /ayamioja-ra/ para GitHub Pages)
+  const basename = import.meta.env.BASE_URL || '/'
+  
   return (
     <Router
-      basename="/"
+      basename={basename}
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true

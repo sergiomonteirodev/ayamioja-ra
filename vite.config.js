@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [
     react()
   ],
-  base: '/', // Raiz do domínio para Hostinger
+  // BASE_URL: '/' para Hostinger, '/ayamioja-ra/' para GitHub Pages
+  base: process.env.VITE_BASE_URL || '/',
   server: {
     host: true,
     port: 3000
