@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:github": "VITE_BASE_URL=/ayamioja-ra/ vite",
     "build": "vite build",
     "build:hostinger": "VITE_BASE_URL=/ vite build",
     "build:github": "VITE_BASE_URL=/ayamioja-ra/ vite build",

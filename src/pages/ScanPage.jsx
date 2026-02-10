@@ -423,16 +423,20 @@ const ScanPage = () => {
           // Garantir que o vídeo não esteja muted
           video.muted = false
           
-          // Função para garantir que o vídeo está totalmente pronto antes de mostrar o plano
+          // Função para garantir que o vídeo está pronto antes de mostrar o plano.
+          // Ao RETOMAR (target reencontrado): NUNCA chamar video.load() - preserva currentTime.
           const ensureVideoReady = () => {
             return new Promise((resolve) => {
-              // Se vídeo já está pronto (readyState >= 2 = HAVE_CURRENT_DATA)
+              const isResuming = video.currentTime > 0
+              if (isResuming) {
+                // Vídeo já estava tocando: só mostrar e dar play, não tocar em load()
+                resolve()
+                return
+              }
               if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
                 resolve()
                 return
               }
-              
-              // Aguardar vídeo estar totalmente carregado
               const checkReady = () => {
                 if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
                   video.removeEventListener('canplay', checkReady)
@@ -441,17 +445,13 @@ const ScanPage = () => {
                   resolve()
                 }
               }
-              
               video.addEventListener('canplay', checkReady)
               video.addEventListener('loadeddata', checkReady)
               video.addEventListener('loadedmetadata', checkReady)
-              
-              // Forçar carregamento se necessário
-              if (video.readyState === 0) {
+              // Só chamar load() na primeira vez (vídeo nunca iniciado) - evita reset em todos os dispositivos
+              if (video.readyState === 0 && video.currentTime === 0) {
                 video.load()
               }
-              
-              // Timeout de segurança
               setTimeout(() => {
                 video.removeEventListener('canplay', checkReady)
                 video.removeEventListener('loadeddata', checkReady)
@@ -460,10 +460,7 @@ const ScanPage = () => {
               }, 2000)
             })
           }
-          
-          // Aguardar vídeo estar pronto antes de configurar material e mostrar plano
           ensureVideoReady().then(() => {
-            // Configurar material apenas se ainda não foi configurado
             const currentMaterial = plane.getAttribute('material')
             if (!currentMaterial || !currentMaterial.src || currentMaterial.src !== `#${videoId}`) {
               plane.setAttribute('material', {
@@ -478,10 +475,7 @@ const ScanPage = () => {
               if (video.videoWidth > 0 && video.videoHeight > 0) {
                 plane.setAttribute('opacity', '1')
                 plane.setAttribute('visible', 'true')
-                // Continuar de onde parou (ou do início se é a primeira vez)
-                video.play().catch((err) => {
-                  // Silenciar erro - vídeo pode já estar tocando
-                })
+                video.play().catch(() => {})
               }
             }, 100)
           })
