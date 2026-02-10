@@ -1,26 +1,36 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 
-const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
+const base = import.meta.env.BASE_URL || '/'
+
+const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIndex }, ref) => {
   const audioRef = useRef(null)
   const [isAudioReady, setIsAudioReady] = useState(false)
-  
+
   // Determinar qual arquivo de audiodescrição usar baseado no target ativo
   const getAudioSource = () => {
     if (activeTargetIndex === 0) {
-      // Primeiro target (target0, video1 - anim_4.mp4) - usar ad_anim_4.m4a
-      return '/ar-assets/assets/ads/ad_anim_4.m4a'
+      return `${base}ar-assets/assets/ads/ad_anim_4.m4a`
     } else if (activeTargetIndex === 1) {
-      // Segundo target (target1, video2 - anim_3.mp4) - usar ad_anim_3.m4a
-      return '/ar-assets/assets/ads/ad_anim_3.m4a'
+      return `${base}ar-assets/assets/ads/ad_anim_3.m4a`
     } else if (activeTargetIndex === 2) {
-      // Terceiro target (target2, video3 - anim_2.mp4) - usar ad_anim_2.m4a
-      return '/ar-assets/assets/ads/ad_anim_2.m4a'
+      return `${base}ar-assets/assets/ads/ad_anim_2.m4a`
     }
-    // Nenhum target ativo
     return null
   }
   
   const audioSource = getAudioSource()
+
+  // iOS/Android: play no mesmo gesto do toggle (obrigatório em mobile)
+  useImperativeHandle(ref, () => ({
+    playAD: (currentTime = 0) => {
+      const audio = audioRef.current
+      if (!audio || !audioSource || activeTargetIndex === null) return
+      audio.volume = 1.0
+      audio.muted = false
+      audio.currentTime = currentTime
+      audio.play().catch(() => {})
+    }
+  }), [audioSource, activeTargetIndex])
 
   // Carregar e preparar o áudio quando o componente montar ou quando o target mudar
   useEffect(() => {
@@ -38,8 +48,9 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
       return
     }
 
-    // Configurar volume do áudio de audiodescrição (mais alto quando ativo)
-    audio.volume = 1.0 // Volume alto para audiodescrição (100%)
+    // Android/iOS: garantir não muted e volume alto
+    audio.muted = false
+    audio.volume = 1.0
 
     console.log(`🎧 AudioDescriptionAR: Carregando áudio para target ${activeTargetIndex}:`, audioSource)
 
@@ -66,12 +77,8 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
     audio.addEventListener('loadeddata', handleLoadedData)
     audio.addEventListener('error', handleError)
     
-    // Atualizar a fonte do áudio se necessário
-    const source = audio.querySelector('source')
-    if (source && source.src !== audioSource) {
-      source.src = audioSource
-      console.log(`🔄 Atualizando fonte do áudio para: ${audioSource}`)
-    }
+    // Atualizar a fonte do áudio (ambos os <source>)
+    audio.querySelectorAll('source').forEach((s) => { s.src = audioSource })
     
     console.log(`⏳ Forçando carregamento do áudio de Audiodescrição AR para target ${activeTargetIndex}...`)
     setIsAudioReady(false)
@@ -140,7 +147,8 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
             audio.currentTime = videoState.currentTime
             console.log('⏩ Sincronizando áudio AD com vídeo:', videoState.currentTime.toFixed(2), 's')
           }
-          // Garantir volume configurado antes de reproduzir (alto para audiodescrição)
+          // Android/iOS: garantir não muted e volume alto
+          audio.muted = false
           audio.volume = 1.0
           console.log('▶️ Reproduzindo áudio de Audiodescrição AR')
           audio.play()
@@ -188,13 +196,16 @@ const AudioDescriptionAR = ({ audioActive, videoState, activeTargetIndex }) => {
       className="audio-description-ar"
       loop={false}
       preload="auto"
+      muted={false}
       style={{ display: 'none' }}
     >
       <source src={audioSource} type="audio/mp4" />
       <source src={audioSource} type="audio/mpeg" />
     </audio>
   )
-}
+})
+
+AudioDescriptionAR.displayName = 'AudioDescriptionAR'
 
 export default AudioDescriptionAR
 

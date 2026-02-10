@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import ToggleControls from '../components/ToggleControls'
@@ -22,6 +22,7 @@ const ScanPage = () => {
   const [isRequestingPermission, setIsRequestingPermission] = useState(false)
   
   const base = import.meta.env.BASE_URL || '/'
+  const adArRef = useRef(null)
   
   const sceneRef = useRef(null)
   const initialCameraCheckRef = useRef(null)
@@ -40,8 +41,13 @@ const ScanPage = () => {
 
   const handleAudioToggle = (active) => {
     setAudioActive(active)
-    console.log('Toggle Audio:', active)
   }
+
+  // iOS/Android: play AD no mesmo gesto do toggle (obrigatório em mobile)
+  const handleAudioToggleImmediate = useCallback((checked) => {
+    if (!checked) return
+    adArRef.current?.playAD(videoState?.currentTime ?? 0)
+  }, [videoState?.currentTime])
 
   const handleBackClick = () => {
     // Garantir que a URL tenha a barra no final para carregar o background corretamente
@@ -578,6 +584,7 @@ const ScanPage = () => {
         <ToggleControls 
           onLibrasToggle={handleLibrasToggle}
           onAudioToggle={handleAudioToggle}
+          onAudioToggleImmediate={handleAudioToggleImmediate}
           showLogo={false}
           initialLibrasActive={false}
           librasDisabled={true}
@@ -804,6 +811,7 @@ const ScanPage = () => {
 
       {/* Audiodescrição sincronizada com vídeos AR */}
       <AudioDescriptionAR 
+        ref={adArRef}
         audioActive={audioActive}
         videoState={videoState}
         activeTargetIndex={activeTargetIndex}
