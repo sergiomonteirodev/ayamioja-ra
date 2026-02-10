@@ -330,7 +330,7 @@ const ScanPage = () => {
     const video3 = document.getElementById('video3')
 
     if (audioActive) {
-      // Audiodescrição ativa: vídeos bem baixos (10%) para AD sobrepor em todos os targets (ad_anim_2/4 mais baixos que ad_anim_3)
+      // iOS e Android: vídeos em 10% com AD ativa para AD sobrepor em todos os targets e dispositivos
       const adVideoVolume = 0.1
       if (video1) video1.volume = adVideoVolume
       if (video2) video2.volume = adVideoVolume

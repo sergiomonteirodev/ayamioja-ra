@@ -24,7 +24,7 @@ const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIn
   
   const audioSource = getAudioSource()
 
-  // iOS/Android: play no mesmo gesto do toggle (obrigatório em mobile)
+  // iOS e Android: play no mesmo gesto do toggle (obrigatório em mobile)
   useImperativeHandle(ref, () => ({
     playAD: (currentTime = 0) => {
       const audio = audioRef.current
@@ -52,7 +52,7 @@ const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIn
       return
     }
 
-    // Android/iOS: garantir não muted e volume alto
+    // iOS e Android: garantir não muted e volume alto
     audio.muted = false
     audio.volume = 1.0
 
@@ -62,7 +62,7 @@ const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIn
       setIsAudioReady(true)
       audio.muted = false
       audio.volume = 1.0
-      // iOS: ao trocar de target, dar play no mesmo tick do canplay para AD ativar
+      // iOS e Android: ao trocar de target, dar play no mesmo tick do canplay para AD ativar em todos os dispositivos
       if (audioActiveRef.current && videoStateRef.current?.isPlaying) {
         audio.currentTime = videoStateRef.current?.currentTime ?? 0
         audio.play().catch(() => {})
@@ -158,7 +158,7 @@ const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIn
             audio.currentTime = videoState.currentTime
             console.log('⏩ Sincronizando áudio AD com vídeo:', videoState.currentTime.toFixed(2), 's')
           }
-          // Android/iOS: garantir não muted e volume alto
+          // iOS e Android: garantir não muted e volume alto
           audio.muted = false
           audio.volume = 1.0
           console.log('▶️ Reproduzindo áudio de Audiodescrição AR')
