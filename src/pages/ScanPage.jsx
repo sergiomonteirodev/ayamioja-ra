@@ -330,34 +330,15 @@ const ScanPage = () => {
     const video3 = document.getElementById('video3')
 
     if (audioActive) {
-      // Audiodescrição ativa: reduzir volume dos vídeos para priorizar a voz da AD
-      // Deixar vídeos bem mais baixos (20%) para a AD se sobressair
-      if (video1) {
-        console.log('🔊 Audiodescrição ativa - reduzindo volume do video1 (anim_4) para 0.2')
-        video1.volume = 0.2
-      }
-      if (video2) {
-        console.log('🔊 Audiodescrição ativa - reduzindo volume do video2 para 0.3')
-        video2.volume = 0.3
-      }
-      if (video3) {
-        console.log('🔊 Audiodescrição ativa - reduzindo volume do video3 para 0.3')
-        video3.volume = 0.3
-      }
+      // Audiodescrição ativa: vídeos bem baixos (15%) para a AD sobrepor em todos os targets (incl. anim_2 no iOS)
+      const adVideoVolume = 0.15
+      if (video1) video1.volume = adVideoVolume
+      if (video2) video2.volume = adVideoVolume
+      if (video3) video3.volume = adVideoVolume
     } else {
-      // Audiodescrição inativa: restaurar volume dos vídeos para 1.0 (100%)
-      if (video1) {
-        console.log('🔊 Audiodescrição inativa - restaurando volume do video1 (anim_4) para 1.0')
-        video1.volume = 1.0
-      }
-      if (video2) {
-        console.log('🔊 Audiodescrição inativa - restaurando volume do video2 para 1.0')
-        video2.volume = 1.0
-      }
-      if (video3) {
-        console.log('🔊 Audiodescrição inativa - restaurando volume do video3 para 1.0')
-        video3.volume = 1.0
-      }
+      if (video1) video1.volume = 1.0
+      if (video2) video2.volume = 1.0
+      if (video3) video3.volume = 1.0
     }
   }, [audioActive])
 
