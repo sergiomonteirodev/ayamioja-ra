@@ -22,6 +22,7 @@ const HomePage = () => {
   const location = useLocation()
   const mountedRef = useRef(false)
   const adAudioRef = useRef(null)
+  const mainVideoRef = useRef(null)
   
   const base = import.meta.env.BASE_URL || '/'
 
@@ -179,11 +180,12 @@ const HomePage = () => {
     }
   }
 
-  // iOS: chamar play da AD no mesmo gesto do toggle (obrigatório no iPhone)
+  // iOS: pausar vídeo e dar play na AD no mesmo gesto do toggle (obrigatório no iPhone)
   const handleAudioToggleImmediate = useCallback((checked) => {
     if (!checked) return
     if (videoState?.isPlaying) {
-      onPauseForAD(videoState.currentTime ?? 0)
+      const resumeAt = mainVideoRef.current?.pauseVideo?.() ?? videoState.currentTime ?? 0
+      onPauseForAD(resumeAt)
     } else {
       setAdPhase('playing_ad')
     }
@@ -212,6 +214,7 @@ const HomePage = () => {
         </div>
         
         <MainVideo 
+          ref={mainVideoRef}
           librasActive={librasActive}
           audioActive={audioActive}
           onVideoStateChange={handleVideoStateChange}

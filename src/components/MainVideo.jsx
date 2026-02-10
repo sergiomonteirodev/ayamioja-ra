@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useLocation } from 'react-router-dom'
 
-const MainVideo = ({
+const MainVideo = forwardRef(({
   librasActive,
   audioActive,
   onVideoStateChange,
@@ -22,7 +22,7 @@ const MainVideo = ({
   trackLabel = 'Português',
   captionOutside = false,
   showPauseOnInteract = false
-}) => {
+}, ref) => {
   const [showLoading, setShowLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [showReplay, setShowReplay] = useState(false)
@@ -47,6 +47,18 @@ const MainVideo = ({
   const [showPlayButton, setShowPlayButton] = useState(!hasVideoBeenStarted())
   const videoRef = useRef(null)
   const bonequinhaTimeupdateHandlerRef = useRef(null)
+
+  // iOS: pausar vídeo no mesmo gesto do toggle (obrigatório no iPhone)
+  useImperativeHandle(ref, () => ({
+    pauseVideo: () => {
+      const v = videoRef.current
+      if (v && !v.paused) {
+        v.pause()
+        return v.currentTime
+      }
+      return v ? v.currentTime : 0
+    }
+  }), [])
   
   // Resetar vídeo quando voltar para a página (home ou ouvirlivro)
   useEffect(() => {
@@ -171,6 +183,14 @@ const MainVideo = ({
       video.volume = 0.7
     }
   }, [audioActive])
+
+  // Quando AD está tocando: garantir que o vídeo está pausado (toggle ativado durante execução).
+  useEffect(() => {
+    if (adPhase !== 'playing_ad') return
+    const video = videoRef.current
+    if (!video || video.paused) return
+    video.pause()
+  }, [adPhase])
 
   // AD ativado com vídeo já rodando: pausar no ponto atual (sem seek para bonequinha).
   useEffect(() => {
@@ -999,6 +1019,8 @@ const MainVideo = ({
       )}
     </section>
   )
-}
+})
+
+MainVideo.displayName = 'MainVideo'
 
 export default MainVideo
