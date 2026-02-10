@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import SafeImage from './SafeImage'
 
-const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initialLibrasActive = false, initialAudioActive = false, librasDisabled = false, audioDisabled = false }) => {
+const ToggleControls = ({ onLibrasToggle, onAudioToggle, onAudioToggleImmediate, showLogo = false, initialLibrasActive = false, initialAudioActive = false, librasDisabled = false, audioDisabled = false }) => {
   const [librasActive, setLibrasActive] = useState(initialLibrasActive)
   const [audioActive, setAudioActive] = useState(initialAudioActive)
   
@@ -36,7 +36,12 @@ const ToggleControls = ({ onLibrasToggle, onAudioToggle, showLogo = false, initi
 
   const handleAudioChange = (e) => {
     if (!audioDisabled) {
-      setAudioActive(e.target.checked)
+      const checked = e.target.checked
+      // iOS: disparar play da AD no mesmo gesto do usuário (obrigatório no iPhone)
+      if (checked && onAudioToggleImmediate) {
+        onAudioToggleImmediate(checked)
+      }
+      setAudioActive(checked)
     }
   }
 

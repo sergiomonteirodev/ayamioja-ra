@@ -1,10 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 
-const AudioDescription = ({ audioActive, videoState, playAdStandalone, onADEnded }) => {
+const AudioDescription = forwardRef(({ audioActive, videoState, playAdStandalone, onADEnded }, ref) => {
   const audioRef = useRef(null)
   const [isAudioReady, setIsAudioReady] = useState(false)
   
   const base = import.meta.env.BASE_URL || '/'
+
+  // iOS: play() deve ser chamado dentro do gesto do usuário. Expor para o pai chamar no toggle.
+  useImperativeHandle(ref, () => ({
+    playAD: () => {
+      const audio = audioRef.current
+      if (!audio) return
+      audio.volume = 0.8
+      audio.currentTime = 0
+      audio.play().catch(() => {})
+    }
+  }), [])
 
   // Carregar e preparar o áudio quando o componente montar
   useEffect(() => {
@@ -80,7 +91,9 @@ const AudioDescription = ({ audioActive, videoState, playAdStandalone, onADEnded
       <source src={`${base}videos/ad_anim_1.m4a`} type="audio/mpeg" />
     </audio>
   )
-}
+})
+
+AudioDescription.displayName = 'AudioDescription'
 
 export default AudioDescription
 

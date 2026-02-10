@@ -21,6 +21,7 @@ const HomePage = () => {
   const [librasVideoEnded, setLibrasVideoEnded] = useState(false)
   const location = useLocation()
   const mountedRef = useRef(false)
+  const adAudioRef = useRef(null)
   
   const base = import.meta.env.BASE_URL || '/'
 
@@ -172,12 +173,22 @@ const HomePage = () => {
 
   const handleAudioToggle = (active) => {
     setAudioActive(active)
-    console.log('Toggle Audio:', active)
     if (!active && adPhase === 'playing_ad') {
       setAdPhase('none')
       setResumeTrigger(Date.now())
     }
   }
+
+  // iOS: chamar play da AD no mesmo gesto do toggle (obrigatório no iPhone)
+  const handleAudioToggleImmediate = useCallback((checked) => {
+    if (!checked) return
+    if (videoState?.isPlaying) {
+      onPauseForAD(videoState.currentTime ?? 0)
+    } else {
+      setAdPhase('playing_ad')
+    }
+    adAudioRef.current?.playAD()
+  }, [onPauseForAD, videoState?.isPlaying, videoState?.currentTime])
 
   const handleVideoStateChange = (state) => {
     console.log('📹 HomePage - VideoState atualizado:', state)
@@ -191,6 +202,7 @@ const HomePage = () => {
       <ToggleControls 
         onLibrasToggle={handleLibrasToggle}
         onAudioToggle={handleAudioToggle}
+        onAudioToggleImmediate={handleAudioToggleImmediate}
         showLogo={false}
       />
       
@@ -227,6 +239,7 @@ const HomePage = () => {
       />
 
       <AudioDescription 
+        ref={adAudioRef}
         audioActive={audioActive}
         videoState={videoState}
         playAdStandalone={adPhase === 'playing_ad'}
