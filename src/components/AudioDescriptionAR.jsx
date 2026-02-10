@@ -5,6 +5,10 @@ const base = import.meta.env.BASE_URL || '/'
 const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIndex }, ref) => {
   const audioRef = useRef(null)
   const [isAudioReady, setIsAudioReady] = useState(false)
+  const audioActiveRef = useRef(audioActive)
+  const videoStateRef = useRef(videoState)
+  audioActiveRef.current = audioActive
+  videoStateRef.current = videoState
 
   // Determinar qual arquivo de audiodescrição usar baseado no target ativo
   const getAudioSource = () => {
@@ -55,17 +59,24 @@ const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIn
     console.log(`🎧 AudioDescriptionAR: Carregando áudio para target ${activeTargetIndex}:`, audioSource)
 
     const handleCanPlay = () => {
-      console.log(`✅ Áudio de Audiodescrição AR pronto para reproduzir (target ${activeTargetIndex})`)
       setIsAudioReady(true)
-      // Garantir volume configurado (alto para audiodescrição)
+      audio.muted = false
       audio.volume = 1.0
+      // iOS: ao trocar de target, dar play no mesmo tick do canplay para AD ativar
+      if (audioActiveRef.current && videoStateRef.current?.isPlaying) {
+        audio.currentTime = videoStateRef.current?.currentTime ?? 0
+        audio.play().catch(() => {})
+      }
     }
 
     const handleLoadedData = () => {
-      console.log(`✅ Áudio de Audiodescrição AR - dados carregados (target ${activeTargetIndex})`)
       setIsAudioReady(true)
-      // Garantir volume configurado (alto para audiodescrição)
+      audio.muted = false
       audio.volume = 1.0
+      if (audioActiveRef.current && videoStateRef.current?.isPlaying) {
+        audio.currentTime = videoStateRef.current?.currentTime ?? 0
+        audio.play().catch(() => {})
+      }
     }
 
     const handleError = (e) => {
@@ -183,7 +194,7 @@ const AudioDescriptionAR = forwardRef(({ audioActive, videoState, activeTargetIn
       }
       audio.pause()
     }
-  }, [audioActive, videoState?.isPlaying, isAudioReady]) // Só depender de isPlaying, não de todo videoState
+  }, [audioActive, videoState?.isPlaying, isAudioReady, activeTargetIndex])
 
   // Não renderizar se não há target ativo
   if (!audioSource || activeTargetIndex === null) {
